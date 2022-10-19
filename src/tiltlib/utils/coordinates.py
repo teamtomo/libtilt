@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import einops
 import torch
 from torch.nn import functional as F
@@ -21,21 +23,26 @@ def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
 
 
 def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch.Tensor:
-    """Generate a (batch, n, n, 3) array of rotated central slice coordinates (ordered zyx).
+    """Generate an array of rotated central slice coordinates for sampling a 3D image.
+
+    Notes
+    -----
+    - rotation matrices rotate coordinates ordered xyz
+    - coordinates returned are ordered zyx to match volumetric array indices
 
     Parameters
     ----------
     rotations: torch.Tensor
-        (batch, 3, 3) array of rotation matrices.
+        (batch, 3, 3) array of rotation matrices which rotate xyz coordinates.
     n: int
-        sidelength of square grid on which coordinates are generated.
+        sidelength of cubic grid for which coordinates are generated.
 
     Returns
     -------
     coordinates: torch.Tensor
         (batch, n, n, zyx) array of coordinates.
     """
-    # generate [x, y, z] coordinates centered on image_sidelength // 2
+    # generate [x, y, z] coordinates centered on image_sidelength // 2 (center of DFT)
     x = y = torch.arange(n) - (n // 2)
     xx = einops.repeat(x, 'w -> h w', h=n)
     yy = einops.repeat(y, 'h -> h w', w=n)
@@ -50,3 +57,43 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch
     xyz += n // 2
     zyx = torch.flip(xyz, dims=(-1,))
     return zyx
+
+
+def _array_coordinates_to_grid_sample_coordinates_1d(coordinates: torch.Tensor, dim_length: int) -> torch.Tensor:
+    return (coordinates / (0.5 * dim_length - 0.5)) - 1
+
+
+def _grid_sample_coordinates_to_array_coordinates_1d(coordinates: torch.Tensor, dim_length: int) -> torch.Tensor:
+    return (coordinates + 1) * (0.5 * dim_length - 0.5)
+
+
+def array_coordinates_to_grid_sample_coordinates(
+        array_coordinates: torch.Tensor, array_shape: Sequence[int]
+) -> torch.Tensor:
+    """Generate coordinates for use with torch.nn.functional.grid_sample from array coordinates.
+
+    Notes
+    -----
+    - array coordinates are from [0, N-1] for N elements in each dimension.
+        - 0 is at the center of the first element
+        - N is the length of the dimension
+    - grid sample coordinates are from [-1, 1]
+        - if align_corners=True, -1 and 1 are at the edges of array elements 0 and N-1
+        - if align_corners=False, -1 and 1 are at the centers of array elements 0 and N-1
+    - generated coordinates are
+    """
+    coords = [
+        _array_coordinates_to_grid_sample_coordinates_1d(array_coordinates[..., idx], dim_length)
+        for idx, dim_length
+        in enumerate(array_shape)
+    ]
+    return einops.rearrange(coords[::-1], 'xyz b h w -> b h w xyz')
+
+
+def grid_sample_coordinates_to_array_coordinates(coordinates: torch.Tensor, array_shape: Sequence[int]) -> torch.Tensor:
+    indices = [
+        _grid_sample_coordinates_to_array_coordinates_1d(coordinates[..., idx], dim_length)
+        for idx, dim_length
+        in enumerate(array_shape[::-1])
+    ]
+    return einops.rearrange(indices[::-1], 'zyx b h w -> b h w zyx')
