@@ -37,7 +37,7 @@ def sample_dft(
     dft = einops.rearrange(torch.view_as_real(dft), 'd h w complex -> complex d h w')
     n_slices = slice_coords.shape[0]
     dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_slices)
-    slice_coords = einops.rearrange(slice_coords, 'b h w xyz -> b 1 h w xyz')  # add depth dim
+    slice_coords = einops.rearrange(slice_coords, 'b h w zyx -> b 1 h w zyx')  # add depth dim
     slice_coords = array_coordinates_to_grid_sample_coordinates(slice_coords, array_shape=dft.shape[-3:])
     samples = F.grid_sample(
         input=dft,
