@@ -59,11 +59,29 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch
     return zyx
 
 
-def _array_coordinates_to_grid_sample_coordinates_1d(coordinates: torch.Tensor, dim_length: int) -> torch.Tensor:
+def stacked_2d_coordinates_to_3d_coordinates(coordinates: torch.Tensor) -> torch.Tensor:
+    """Turn stacks of 2D coordinates for n images into 3D array coordinates into image stack.
+
+    b n yx -> (b n) zyx
+    - new z coord is implied by position in dimension n
+    - can be used to sample from tilt-series
+    """
+    b, n = coordinates.shape[:2]
+    output = torch.empty([b, n, 3])
+    output[:, :, 1:] = coordinates
+    output[:, :, 0] = torch.arange(n)
+    return einops.rearrange(output, 'b n zyx -> (b n) zyx')
+
+
+def _array_coordinates_to_grid_sample_coordinates_1d(
+        coordinates: torch.Tensor, dim_length: int
+) -> torch.Tensor:
     return (coordinates / (0.5 * dim_length - 0.5)) - 1
 
 
-def _grid_sample_coordinates_to_array_coordinates_1d(coordinates: torch.Tensor, dim_length: int) -> torch.Tensor:
+def _grid_sample_coordinates_to_array_coordinates_1d(
+        coordinates: torch.Tensor, dim_length: int
+) -> torch.Tensor:
     return (coordinates + 1) * (0.5 * dim_length - 0.5)
 
 
@@ -90,7 +108,8 @@ def array_coordinates_to_grid_sample_coordinates(
     return einops.rearrange(coords[::-1], 'xyz b h w -> b h w xyz')
 
 
-def grid_sample_coordinates_to_array_coordinates(coordinates: torch.Tensor, array_shape: Sequence[int]) -> torch.Tensor:
+def grid_sample_coordinates_to_array_coordinates(coordinates: torch.Tensor,
+                                                 array_shape: Sequence[int]) -> torch.Tensor:
     indices = [
         _grid_sample_coordinates_to_array_coordinates_1d(coordinates[..., idx], dim_length)
         for idx, dim_length
