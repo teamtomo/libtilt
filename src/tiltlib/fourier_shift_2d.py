@@ -27,8 +27,7 @@ def get_phase_shifts_2d(shifts: torch.Tensor, image_shape: Tuple[int, int]):
 
 
 def fourier_shift_dfts_2d(dfts: torch.Tensor, shifts: torch.Tensor):
-    image_shape = dfts.shape[-2:]
-    phase_shifts = get_phase_shifts_2d(shifts=shifts, image_shape=image_shape)
+    phase_shifts = get_phase_shifts_2d(shifts=shifts, image_shape=dfts.shape[-2:])
     return dfts * phase_shifts
 
 
