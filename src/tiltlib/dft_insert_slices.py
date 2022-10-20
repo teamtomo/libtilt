@@ -5,22 +5,32 @@ import numpy as np
 import torch
 
 
-def insert_data_dft(
+def insert_slices_dft(
         dft: torch.Tensor,  # (d, d, d)
-        multiplicity: torch.Tensor,  # (d, d, d)
-        data: torch.Tensor,  # (n, )
-        coordinates: torch.Tensor,  # (n, 3)
+        weights: torch.Tensor,  # (d, d, d)
+        slices: torch.Tensor,  # (batch, h, w)
+        slice_coordinates: torch.Tensor,  # (batch, h, w, 3) ordered zyx
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    cz, cy, cx = einops.rearrange(torch.ceil(coordinates), 'n c -> c n').long()
-    fz, fy, fx = einops.rearrange(torch.floor(coordinates), 'n c -> c n').long()
+    slices = einops.rearrange(slices, 'b h w -> (b h w)')
+    slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> (b h w) zyx').float()
+    valid_coordinates = torch.logical_and(
+        slice_coordinates >= 0, slice_coordinates < torch.tensor(dft.shape) - 1
+    )
+    valid_coordinates = torch.all(valid_coordinates, dim=-1)
+    slices, slice_coordinates = slices[valid_coordinates], slice_coordinates[valid_coordinates]
+    cz, cy, cx = einops.rearrange(torch.ceil(slice_coordinates), 'n c -> c n').long()
+    fz, fy, fx = einops.rearrange(torch.floor(slice_coordinates), 'n c -> c n').long()
 
     def add_for_corner(z, y, x):
-        difference = einops.rearrange([z, y, x], 'zyx n -> n zyx') - coordinates
+        # calculate weighting
+        difference = einops.rearrange([z, y, x], 'zyx n -> n zyx') - slice_coordinates
         distance = einops.reduce(difference ** 2, 'n zyx -> n', reduction='sum') ** 0.5
-        weights = 1 - distance
-        weights[weights < 0] = 0
-        dft.index_put_(indices=(z, y, x), values=weights * data, accumulate=True)
-        multiplicity.index_put_(indices=(z, y, x), values=weights, accumulate=True)
+        corner_weights = 1 - distance
+        corner_weights[corner_weights < 0] = 0
+
+        # insert data
+        dft.index_put_(indices=(z, y, x), values=corner_weights * slices, accumulate=True)
+        weights.index_put_(indices=(z, y, x), values=corner_weights, accumulate=True)
 
     add_for_corner(fz, fy, fx)
     add_for_corner(fz, fy, cx)
@@ -31,7 +41,7 @@ def insert_data_dft(
     add_for_corner(cz, cy, fx)
     add_for_corner(cz, cy, cx)
 
-    return dft, multiplicity
+    return dft, weights
 
 
 def grid_sinc2(shape: Tuple[int, int, int]):
@@ -59,14 +69,7 @@ def reconstruct_from_images(
     data = torch.fft.fftshift(data, dim=(-2, -1))
     data = torch.fft.fftn(data, dim=(-2, -1))
     data = torch.fft.fftshift(data, dim=(-2, -1))
-    data = einops.rearrange(data, 'b h w -> (b h w)')
-    coordinates = einops.rearrange(coordinates, 'b h w zyx -> (b h w) zyx').float()
-    valid_coordinates = torch.logical_and(
-        coordinates >= 0, coordinates < torch.tensor(volume_shape) - 1
-    )
-    valid_coordinates = torch.all(valid_coordinates, dim=-1)
-    data, coordinates = data[valid_coordinates], coordinates[valid_coordinates]
-    output, weights = insert_data_dft(output, weights, data, coordinates)
+    output, weights = insert_slices_dft(output, weights, data, coordinates)
     valid_weights = weights > 1e-3
     output[valid_weights] /= weights[valid_weights]
     output = torch.fft.ifftshift(output, dim=(-3, -2, -1))
