@@ -13,11 +13,9 @@ def insert_slices_dft(
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     slices = einops.rearrange(slices, 'b h w -> (b h w)')
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> (b h w) zyx').float()
-    valid_coordinates = torch.logical_and(
-        slice_coordinates >= 0, slice_coordinates < torch.tensor(dft.shape) - 1
-    )
-    valid_coordinates = torch.all(valid_coordinates, dim=-1)
-    slices, slice_coordinates = slices[valid_coordinates], slice_coordinates[valid_coordinates]
+    in_volume_idx = (slice_coordinates >= 0) & (slice_coordinates <= torch.tensor(dft.shape) - 1)
+    in_volume_idx = torch.all(in_volume_idx, dim=-1)
+    slices, slice_coordinates = slices[in_volume_idx], slice_coordinates[in_volume_idx]
     cz, cy, cx = einops.rearrange(torch.ceil(slice_coordinates), 'n c -> c n').long()
     fz, fy, fx = einops.rearrange(torch.floor(slice_coordinates), 'n c -> c n').long()
 
