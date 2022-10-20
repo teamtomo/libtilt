@@ -2,9 +2,7 @@ import einops
 import mrcfile
 import napari
 import numpy as np
-import scipy.stats
 import torch
-from scipy.stats import special_ortho_group
 
 from libtilt.dft_extract_slices import slice_dft
 from libtilt.backprojection import backproject
