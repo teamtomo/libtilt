@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import special_ortho_group
 
 from tiltlib.utils.coordinates import generate_rotated_slice_coordinates
-from tiltlib.extract_slices import slice_dft
+from tiltlib.extract_dft_slices import slice_dft
 from tiltlib.fourier_shift_2d import fourier_shift_dfts_2d, fourier_shift_images_2d
 from tiltlib.reconstruction import reconstruct_from_images
 
