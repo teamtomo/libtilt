@@ -35,8 +35,8 @@ def insert_data_dft(
 
 
 def grid_sinc2(shape: Tuple[int, int, int]):
-    d = torch.Tensor(np.stack(np.indices(tuple(shape)), axis=-1))
-    d -= torch.Tensor(tuple(shape)) // 2
+    d = torch.tensor(np.stack(np.indices(tuple(shape)), axis=-1)).float()
+    d -= torch.tensor(tuple(shape)) // 2
     d = torch.linalg.norm(d, dim=-1)
     d /= shape[-1]
     sinc2 = torch.sinc(d) ** 2
@@ -62,7 +62,7 @@ def reconstruct_from_images(
     data = einops.rearrange(data, 'b h w -> (b h w)')
     coordinates = einops.rearrange(coordinates, 'b h w zyx -> (b h w) zyx').float()
     valid_coordinates = torch.logical_and(
-        coordinates >= 0, coordinates < torch.Tensor(volume_shape) - 1
+        coordinates >= 0, coordinates < torch.tensor(volume_shape) - 1
     )
     valid_coordinates = torch.all(valid_coordinates, dim=-1)
     data, coordinates = data[valid_coordinates], coordinates[valid_coordinates]
@@ -74,7 +74,7 @@ def reconstruct_from_images(
     output = torch.fft.ifftshift(output, dim=(-3, -2, -1))
     if do_gridding_correction is True:
         output /= grid_sinc2(volume_shape)
-    return output
+    return torch.real(output)
 
 
 
