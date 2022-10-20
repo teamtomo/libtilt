@@ -1,8 +1,14 @@
-from typing import Sequence
+from typing import Sequence, Tuple, Literal
 
 import einops
+import numpy as np
 import torch
 from torch.nn import functional as F
+
+
+def get_grid_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
+    indices = torch.tensor(np.indices(grid_dimensions))  # (coordinates, *grid_dimensions)
+    return einops.rearrange(indices, 'coordinates ... -> ... coordinates')
 
 
 def promote_2d_to_3d(shifts: torch.Tensor) -> torch.Tensor:
@@ -60,18 +66,38 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch
     return zyx
 
 
-def stacked_2d_coordinates_to_3d_coordinates(coordinates: torch.Tensor) -> torch.Tensor:
-    """Turn stacks of 2D coordinates for n images into 3D array coordinates into image stack.
+def add_implied_coordinate_from_dimension(
+        coordinates: torch.Tensor, dim: int, prepend_new_coordinate: bool = False
+) -> torch.Tensor:
+    """Make an implicit coordinate in a multidimensional arrays of coordinates explicit.
 
-    b n yx -> (b n) zyx
-    - new z coord is implied by position in dimension n
-    - can be used to sample from tilt-series
+    For an array of coordinates with shape (n, t, 3), this function produces an array of
+    shape (n, t, 4). The values in the new column reflect the position of the coordinate in `dim`.
+    `prepend_new_coordinate` controls whether the new coordinate is prepended
+    (`prepend_new_coordinate=True`) or appended (`prepend_new_coordinate=False`) to the existing
+    coordinates.
+
+    Parameters
+    ----------
+    coordinates: torch.Tensor
+        (..., d) array of coordinates where d is the dimensionality of coordinates.
+    dim: int
+        dimension from which the value of the new coordinate will be inferred.
+    prepend_new_coordinate: bool
+        controls whether the new coordinate is prepended or appended to existing coordinates.
+
+    Returns
+    -------
+    coordinates: torch.Tensor
+        (..., d+1)
     """
-    b, n = coordinates.shape[:2]
-    output = torch.empty([b, n, 3])
-    output[:, :, 1:] = coordinates
-    output[:, :, 0] = torch.arange(n)
-    return einops.rearrange(output, 'b n zyx -> (b n) zyx')
+    if prepend_new_coordinate is True:
+        pad, new_coordinate_index = (1, 0), 0
+    else:  # append
+        pad, new_coordinate_index = (0, 1), -1
+    output = F.pad(coordinates, pad=pad, mode='constant', value=0)
+    output[..., new_coordinate_index] = torch.arange(coordinates.shape[dim])
+    return output
 
 
 def _array_coordinates_to_grid_sample_coordinates_1d(
