@@ -7,7 +7,7 @@ from torch.nn import functional as F
 
 
 def get_grid_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
-    indices = torch.tensor(np.indices(grid_dimensions))  # (coordinates, *grid_dimensions)
+    indices = torch.tensor(np.indices(grid_dimensions)).float()  # (coordinates, *grid_dimensions)
     return einops.rearrange(indices, 'coordinates ... -> ... coordinates')
 
 
@@ -132,7 +132,7 @@ def array_coordinates_to_grid_sample_coordinates(
         for idx, dim_length
         in enumerate(array_shape)
     ]
-    return einops.rearrange(coords[::-1], 'xyz b h w -> b h w xyz')
+    return einops.rearrange(coords[::-1], 'xyz ... -> ... xyz')
 
 
 def grid_sample_coordinates_to_array_coordinates(coordinates: torch.Tensor,

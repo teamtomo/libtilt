@@ -7,6 +7,7 @@ import torch
 from scipy.stats import special_ortho_group
 
 from libtilt.dft_extract_slices import slice_dft
+from libtilt.backprojection import backproject
 from libtilt.transformations import Rx, Ry, Rz, S
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates
 
@@ -41,7 +42,14 @@ projections = torch.fft.ifftn(projections, dim=(1, 2))
 projections = torch.fft.ifftshift(projections, dim=(1, 2))
 projections = torch.real(projections)
 
+reconstruction = backproject(
+    image_stack=projections,
+    projection_matrices=projection_matrices,
+    output_dimensions=volume_shape,
+)
+
 viewer = napari.Viewer()
 viewer.add_image(np.array(volume))
 viewer.add_image(np.array(projections))
+viewer.add_image(np.array(reconstruction))
 napari.run()
