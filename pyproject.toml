@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 # https://peps.python.org/pep-0621/
 [project]
-name = "tiltlib"
+name = "libtilt"
 description = "Image processing routines for cryo-electron tomography in PyTorch"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -56,8 +56,8 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/alisterburt/tiltlib"
-repository = "https://github.com/alisterburt/tiltlib"
+homepage = "https://github.com/alisterburt/libtilt"
+repository = "https://github.com/alisterburt/libtilt"
 
 # same as console_scripts entry point
 # [project.scripts]
@@ -84,7 +84,7 @@ packages = {find = {where = ["src"], exclude=[]}}
 # https://pycqa.github.io/isort/docs/configuration/options.html
 [tool.isort]
 profile = "black"
-src_paths = ["src/tiltlib", "tests"]
+src_paths = ["src/libtilt", "tests"]
 
 # https://flake8.pycqa.org/en/latest/user/options.html
 # https://gitlab.com/durko/flake8-pyprojecttoml
@@ -108,7 +108,7 @@ per-file-ignores = [
 
 # http://www.pydocstyle.org/en/stable/usage.html
 [tool.pydocstyle]
-match_dir = "src/tiltlib"
+match_dir = "src/libtilt"
 convention = "numpy"
 add_select = "D402,D415,D417"
 ignore = "D100,D213,D401,D413,D107"

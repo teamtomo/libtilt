@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import napari
 
-from tiltlib.fourier_shift_2d import fourier_shift_images_2d
+from libtilt.fourier_shift_2d import fourier_shift_images_2d
 
 volume_file = Path(__file__).parent / 'ribo-16Apx.mrc'
 

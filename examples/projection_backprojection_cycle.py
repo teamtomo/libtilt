@@ -4,10 +4,10 @@ import torch
 import numpy as np
 from scipy.stats import special_ortho_group
 
-from tiltlib.utils.coordinates import generate_rotated_slice_coordinates
-from tiltlib.dft_extract_slices import slice_dft
-from tiltlib.fourier_shift_2d import fourier_shift_dfts_2d, fourier_shift_images_2d
-from tiltlib.dft_insert_slices import reconstruct_from_images
+from libtilt.utils.coordinates import generate_rotated_slice_coordinates
+from libtilt.dft_extract_slices import slice_dft
+from libtilt.fourier_shift_2d import fourier_shift_dfts_2d, fourier_shift_images_2d
+from libtilt.dft_insert_slices import reconstruct_from_images
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 N_IMAGES = 1000
