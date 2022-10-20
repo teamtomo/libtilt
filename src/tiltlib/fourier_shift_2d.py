@@ -14,15 +14,13 @@ def get_phase_shifts_2d(shifts: torch.Tensor, image_shape: Tuple[int, int]):
     image_shape: Tuple[int, int]
         shape of images onto which phase shifts will be applied.
     """
-    y, x = (
-        torch.arange(image_shape[0]) - image_shape[0] // 2,
-        torch.arange(image_shape[1]) - image_shape[1] // 2,
-    )
-    yy, xx = torch.meshgrid(y, x, indexing='ij')
+    y = torch.fft.fftshift(torch.fft.fftfreq(image_shape[0]))
+    x = torch.fft.fftshift(torch.fft.fftfreq(image_shape[1]))
+    yy = einops.repeat(y, 'h -> h w', w=image_shape[1])
+    xx = einops.repeat(x, 'w -> h w', h=image_shape[0])
     y_shifts = einops.rearrange(shifts[:, 0], 'b -> b 1 1')
     x_shifts = einops.rearrange(shifts[:, 1], 'b -> b 1 1')
-    factors = -2 * torch.pi * (y_shifts * yy / image_shape[0] +
-                               x_shifts * xx / image_shape[1])
+    factors = -2 * torch.pi * (y_shifts * yy + x_shifts * xx)
     return torch.cos(factors) + 1j * torch.sin(factors)
 
 
