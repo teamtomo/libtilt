@@ -13,7 +13,9 @@ def backproject(
         projection_matrices: torch.Tensor,  # (b, 4, 4)
         output_dimensions: Tuple[int, int, int]
 ) -> torch.Tensor:
-    grid_coordinates = homogenise_coordinates(get_grid_coordinates(output_dimensions))
+    grid_coordinates = get_grid_coordinates(output_dimensions)  # (d, h, w, zyx)
+    grid_coordinates = torch.flip(grid_coordinates, dims=(-1, ))  # (d, h, w, xyz)
+    grid_coordinates = homogenise_coordinates(grid_coordinates)  # (d, h, w, zyx)
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w 1 xyzw 1')
     projection_matrices = einops.rearrange(projection_matrices, 'img i j -> 1 img i j')[..., :2, :]
     projected_coordinates = projection_matrices @ grid_coordinates
@@ -37,7 +39,7 @@ def backproject(
         padding_mode='zeros',
         align_corners=False,
     )
-    reconstruction = einops.reduce(samples, 'b 1 d h w -> d h w', reduction='mean')
+    reconstruction = einops.reduce(samples, 'img 1 d h w -> d h w', reduction='sum')
     return reconstruction
 
 
