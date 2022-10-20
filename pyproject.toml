@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 # https://peps.python.org/pep-0621/
 [project]
 name = "tiltlib"
-description = "Image processing library for cryo-electron tomography in PyTorch"
+description = "Image processing routines for cryo-electron tomography in PyTorch"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "BSD 3-Clause License"}

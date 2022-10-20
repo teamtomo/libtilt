@@ -6,4 +6,4 @@
 [![CI](https://github.com/alisterburt/tiltlib/actions/workflows/ci.yml/badge.svg)](https://github.com/alisterburt/tiltlib/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/alisterburt/tiltlib/branch/main/graph/badge.svg)](https://codecov.io/gh/alisterburt/tiltlib)
 
-Image processing library for cryo-electron tomography in PyTorch
+Image processing routines for cryo-electron tomography in PyTorch
