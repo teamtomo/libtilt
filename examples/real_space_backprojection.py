@@ -19,9 +19,9 @@ volume_center = volume_shape // 2
 tilt_image_center = volume_center[:2]
 
 s0 = S(-volume_center)
-r0 = Rx(30)
-r1 = Ry(torch.linspace(-90, 90 - (180/30), steps=30))
-r2 = Rz(25)
+r0 = Rx(0)
+r1 = Ry(torch.linspace(-60, 60, steps=41))
+r2 = Rz(0)
 s1 = S([0, 0])
 s2 = S(tilt_image_center)
 
@@ -67,6 +67,6 @@ reconstruction = backproject(
 
 viewer = napari.Viewer()
 volume_layer = viewer.add_image(np.array(volume), name='original 3D volume')
-# projection_layer = viewer.add_image(np.array(projections), name='projection images')
+projection_layer = viewer.add_image(np.array(projections), name='projection images')
 reconstruction_layer = viewer.add_image(np.array(reconstruction), name='3D reconstruction (WBP)')
 napari.run()
