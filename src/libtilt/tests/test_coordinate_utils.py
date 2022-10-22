@@ -4,7 +4,7 @@ import numpy as np
 
 from libtilt.coordinate_utils import array_coordinates_to_grid_sample_coordinates, \
     _array_coordinates_to_grid_sample_coordinates_1d, grid_sample_coordinates_to_array_coordinates, \
-    _grid_sample_coordinates_to_array_coordinates_1d, stacked_2d_coordinates_to_3d_coordinates
+    _grid_sample_coordinates_to_array_coordinates_1d, add_implied_coordinate_from_dimension
 
 
 def test_array_coordinates_to_grid_sample_coordinates_1d():
@@ -55,9 +55,17 @@ def test_grid_sample_coordinates_to_array_coordinates_nd():
     assert torch.allclose(array_coordinates, expected_array_coordinates)
 
 
-def test_stacked_2d_coordinates_to_3d_coordinates():
-    batch_of_stacked_2d = torch.zeros(size=(1, 5, 2))  # (b, stack, 2)
-    result = stacked_2d_coordinates_to_3d_coordinates(batch_of_stacked_2d)
-    expected = torch.zeros(size=(5, 3))
-    expected[:, 0] = torch.arange(5)
+def test_add_implied_coordinate_from_dimension():
+    batch_of_stacked_2d_coords = torch.zeros(size=(1, 5, 2))  # (b, stack, 2)
+    result = add_implied_coordinate_from_dimension(batch_of_stacked_2d_coords, dim=1)
+    expected = torch.zeros(size=(1, 5, 3))
+    expected[0, :, 2] = torch.arange(5)
+    assert torch.allclose(result, expected)
+
+
+def test_add_implied_coordinate_from_dimension_prepend():
+    batch_of_stacked_2d_coords = torch.zeros(size=(1, 5, 2))  # (b, stack, 2)
+    result = add_implied_coordinate_from_dimension(batch_of_stacked_2d_coords, dim=1, prepend_new_coordinate=True)
+    expected = torch.zeros(size=(1, 5, 3))
+    expected[0, :, 0] = torch.arange(5)
     assert torch.allclose(result, expected)
