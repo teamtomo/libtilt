@@ -5,22 +5,23 @@ import torch
 
 
 def get_phase_shifts_2d(shifts: torch.Tensor, image_shape: Tuple[int, int]):
-    """
+    """Generate a complex-valued array of phase shifts for 2D images.
 
     Parameters
     ----------
     shifts: torch.Tensor
-        (n, 2) array of yx shifts.
+        (n, 2) array of xy shifts where xy coordinates index into
+        dims 1 and 0 of 2D images respectively.
     image_shape: Tuple[int, int]
-        shape of images onto which phase shifts will be applied.
+        shape of 2D image(s) onto which phase shifts will be applied.
     """
-    y = torch.fft.fftshift(torch.fft.fftfreq(image_shape[0]))
     x = torch.fft.fftshift(torch.fft.fftfreq(image_shape[1]))
+    y = torch.fft.fftshift(torch.fft.fftfreq(image_shape[0]))
     yy = einops.repeat(y, 'h -> h w', w=image_shape[1])
     xx = einops.repeat(x, 'w -> h w', h=image_shape[0])
-    y_shifts = einops.rearrange(shifts[:, 0], 'b -> b 1 1')
-    x_shifts = einops.rearrange(shifts[:, 1], 'b -> b 1 1')
-    factors = -2 * torch.pi * (y_shifts * yy + x_shifts * xx)
+    x_shifts = einops.rearrange(shifts[:, 0], 'b -> b 1 1')
+    y_shifts = einops.rearrange(shifts[:, 1], 'b -> b 1 1')
+    factors = -2 * torch.pi * (x_shifts * xx + y_shifts * yy)
     return torch.cos(factors) + 1j * torch.sin(factors)
 
 
