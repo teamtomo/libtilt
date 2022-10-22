@@ -6,7 +6,7 @@ from scipy.stats import special_ortho_group
 
 from libtilt.coordinate_utils import generate_rotated_slice_coordinates
 from libtilt.dft_extract_slices import slice_dft
-from libtilt.fourier_shift_2d import fourier_shift_dfts_2d, fourier_shift_images_2d
+from libtilt.phase_shift_2d import fourier_shift_dfts_2d, fourier_shift_images_2d
 from libtilt.dft_insert_slices import reconstruct_from_images
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
