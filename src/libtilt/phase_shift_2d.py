@@ -30,7 +30,7 @@ def fourier_shift_dfts_2d(dfts: torch.Tensor, shifts: torch.Tensor):
     return dfts * phase_shifts
 
 
-def fourier_shift_images_2d(images: torch.Tensor, shifts: torch.Tensor):
+def phase_shift_images_2d(images: torch.Tensor, shifts: torch.Tensor):
     images = torch.fft.fftn(images, dim=(-2, -1))
     images = torch.fft.fftshift(images, dim=(-2, -1))
     images = fourier_shift_dfts_2d(images, shifts)

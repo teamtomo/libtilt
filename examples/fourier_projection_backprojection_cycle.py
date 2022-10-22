@@ -6,7 +6,7 @@ from scipy.stats import special_ortho_group
 
 from libtilt.coordinate_utils import generate_rotated_slice_coordinates
 from libtilt.dft_extract_slices import slice_dft
-from libtilt.phase_shift_2d import fourier_shift_dfts_2d, fourier_shift_images_2d
+from libtilt.phase_shift_2d import fourier_shift_dfts_2d, phase_shift_images_2d
 from libtilt.dft_insert_slices import reconstruct_from_images
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
@@ -30,7 +30,7 @@ projections = torch.real(projections)
 
 # shifts can also be applied on images directly
 # let's do this to recenter our projections for 3D reconstruction
-recentered_projections = fourier_shift_images_2d(projections, shifts=-shifts)
+recentered_projections = phase_shift_images_2d(projections, shifts=-shifts)
 
 # 3D reconstruction from projection data
 reconstruction = reconstruct_from_images(data=recentered_projections, coordinates=slice_coordinates)

@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.phase_shift_2d import get_phase_shifts_2d, fourier_shift_images_2d
+from libtilt.phase_shift_2d import get_phase_shifts_2d, phase_shift_images_2d
 
 
 def test_get_phase_shifts_2d():
@@ -13,3 +13,13 @@ def test_get_phase_shifts_2d():
     expected = torch.tensor([[[1. + 1.7485e-07j, -1. - 8.7423e-08j],
                               [-1. - 8.7423e-08j, 1. + 0.0000e+00j]]])
     assert torch.allclose(phase_shifts, expected)
+
+
+def test_phase_shift_images_2d():
+    image = torch.zeros((4, 4))
+    image[2, 2] = 1
+    shifts = torch.ones((1, 2))
+    shifted = phase_shift_images_2d(image, shifts)
+    expected = torch.zeros((4, 4))
+    expected[3, 3] = 1
+    assert torch.allclose(shifted, expected, atol=1e-5)
