@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from libtilt.dft_extract_slices import slice_dft
-from libtilt.backprojection import backproject
+from libtilt.real_space_backprojection import backproject
 from libtilt.transformations import Rx, Ry, Rz, S
 from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_grid_coordinates
 

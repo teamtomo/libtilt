@@ -7,7 +7,7 @@ from magicgui import magicgui
 from napari.types import ImageData
 
 from libtilt.dft_extract_slices import slice_dft
-from libtilt.backprojection import backproject
+from libtilt.real_space_backprojection import backproject
 from libtilt.transformations import Ry, S
 from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_grid_coordinates
 
