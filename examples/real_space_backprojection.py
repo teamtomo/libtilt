@@ -3,12 +3,11 @@ import mrcfile
 import napari
 import numpy as np
 import torch
-from scipy.stats import special_ortho_group
 
 from libtilt.dft_extract_slices import slice_dft
 from libtilt.backprojection import backproject
 from libtilt.transformations import Rx, Ry, Rz, S
-from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_grid_coordinates, add_implied_coordinate_from_dimension
+from libtilt.coordinates import generate_rotated_slice_coordinates, get_grid_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 
@@ -20,7 +19,7 @@ tilt_image_center = volume_center[:2]
 
 s0 = S(-volume_center)
 r0 = Rx(0)
-r1 = Ry(torch.linspace(-60, 60, steps=41))
+r1 = Ry(torch.linspace(-90, 90, steps=100))
 r2 = Rz(0)
 s1 = S([0, 0])
 s2 = S(tilt_image_center)

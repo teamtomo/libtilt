@@ -7,23 +7,47 @@ from torch.nn import functional as F
 
 
 def get_grid_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
+    """Get a dense grid of array coordinates from grid dimensions.
+
+    e.g. for an input array shape of (d, h, w), produce a (d, h, w, 3)
+    array of indices into a (d, h, w) array. Ordering of the coordinates matches the order of
+    dimensions in the input array shape.
+    """
     indices = torch.tensor(np.indices(grid_dimensions)).float()  # (coordinates, *grid_dimensions)
     return einops.rearrange(indices, 'coordinates ... -> ... coordinates')
 
 
-def promote_2d_to_3d(shifts: torch.Tensor) -> torch.Tensor:
-    """Promote 2D coordinates to 3D with zeros in the last dimension.
+def promote_2d_to_3d(vectors: torch.Tensor) -> torch.Tensor:
+    """Promote arrays of 2D vectors to 3D with zeros in the last column.
 
     Last dimension of array should be of length 2.
+
+    Parameters
+    ----------
+    vectors: torch.Tensor
+        (..., 2) array of 2D vectors
+
+    Returns
+    -------
+    output: torch.Tensor
+        (..., 3) array of 3D vectors with 0 in the last column.
     """
-    shifts = F.pad(torch.tensor(shifts), pad=(0, 1), mode='constant', value=0)
-    return torch.squeeze(shifts)
+    vectors = F.pad(torch.tensor(vectors), pad=(0, 1), mode='constant', value=0)
+    return torch.squeeze(vectors)
 
 
 def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
-    """3D coordinates to 4D homogenous coordinates with ones in the last dimension.
+    """3D coordinates to 4D homogenous coordinates with ones in the last column.
 
-    Last dimension of array should be of length 3.
+    Parameters
+    ----------
+    coords: torch.Tensor
+        (..., 3) array of 3D coordinates
+
+    Returns
+    -------
+    output: torch.Tensor
+        (..., 4) array of homogenous coordinates
     """
     return F.pad(torch.Tensor(coords), pad=(0, 1), mode='constant', value=1)
 

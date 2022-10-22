@@ -9,7 +9,7 @@ from napari.types import ImageData
 from libtilt.dft_extract_slices import slice_dft
 from libtilt.backprojection import backproject
 from libtilt.transformations import Ry, S
-from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_grid_coordinates
+from libtilt.coordinates import generate_rotated_slice_coordinates, get_grid_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 
@@ -70,4 +70,6 @@ def simulate_tomogram(max_angle: float, num_images: int) -> ImageData:
 viewer = napari.Viewer(ndisplay=3)
 volume_layer = viewer.add_image(np.array(volume), name='original 3D volume')
 viewer.window.add_dock_widget(simulate_tomogram, name='WBP simulator')
+for i in range(5):
+    viewer.window.add_dock_widget(simulate_tomogram)
 napari.run()

@@ -1,7 +1,7 @@
 import torch
 import einops
 
-from .utils.coordinates import promote_2d_to_3d
+from libtilt.coordinates import promote_2d_to_3d
 
 
 def Rx(angles_degrees: torch.Tensor) -> torch.Tensor:

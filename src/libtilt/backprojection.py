@@ -4,7 +4,7 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from .utils.coordinates import get_grid_coordinates, homogenise_coordinates, \
+from libtilt.coordinates import get_grid_coordinates, homogenise_coordinates, \
     add_implied_coordinate_from_dimension, array_coordinates_to_grid_sample_coordinates
 
 
@@ -17,7 +17,6 @@ def backproject(
     grid_coordinates = torch.flip(grid_coordinates, dims=(-1, ))  # (d, h, w, xyz)
     grid_coordinates = homogenise_coordinates(grid_coordinates)  # (d, h, w, xyzw)
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w 1 xyzw 1')
-    # projection_matrices = einops.rearrange(projection_matrices, 'img i j -> 1 img i j')[..., :2, :]
     projected_coordinates = projection_matrices[..., :2, :] @ grid_coordinates  # only xy coords needed
     projected_coordinates = einops.rearrange(
         projected_coordinates, 'd h w img xy 1 -> d h w img xy'
