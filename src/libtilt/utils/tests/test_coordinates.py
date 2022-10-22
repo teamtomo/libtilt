@@ -2,7 +2,7 @@ import einops
 import torch
 import numpy as np
 
-from libtilt.coordinates import array_coordinates_to_grid_sample_coordinates, \
+from libtilt.coordinate_utils import array_coordinates_to_grid_sample_coordinates, \
     _array_coordinates_to_grid_sample_coordinates_1d, grid_sample_coordinates_to_array_coordinates, \
     _grid_sample_coordinates_to_array_coordinates_1d, stacked_2d_coordinates_to_3d_coordinates
 

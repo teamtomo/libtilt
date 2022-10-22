@@ -9,7 +9,7 @@ from napari.types import ImageData
 from libtilt.dft_extract_slices import slice_dft
 from libtilt.backprojection import backproject
 from libtilt.transformations import Ry, S
-from libtilt.coordinates import generate_rotated_slice_coordinates, get_grid_coordinates
+from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_grid_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 
