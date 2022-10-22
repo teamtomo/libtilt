@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import einops
 
-from libtilt.coordinate_utils import array_coordinates_to_grid_sample_coordinates
+from .coordinate_utils import array_coordinates_to_grid_sample_coordinates
 
 
 def slice_dft(
