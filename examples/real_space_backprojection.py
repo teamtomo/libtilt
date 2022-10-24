@@ -59,7 +59,7 @@ projections = torch.real(projections)
 
 
 reconstruction = backproject(
-    image_stack=projections,
+    images=projections,
     projection_matrices=projection_matrices,
     output_dimensions=volume_shape,
 )

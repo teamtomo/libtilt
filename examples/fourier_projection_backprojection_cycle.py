@@ -10,7 +10,7 @@ from libtilt.phase_shift_2d import fourier_shift_dfts_2d, phase_shift_images_2d
 from libtilt.dft_insert_slices import reconstruct_from_images
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
-N_IMAGES = 1000
+N_IMAGES = 5000
 
 volume = torch.tensor(mrcfile.read(VOLUME_FILE))
 
