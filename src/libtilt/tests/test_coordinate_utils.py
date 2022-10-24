@@ -8,7 +8,9 @@ from libtilt.coordinate_utils import (
     grid_sample_coordinates_to_array_coordinates,
     _grid_sample_coordinates_to_array_coordinates_1d,
     add_implied_coordinate_from_dimension,
-    get_array_coordinates
+    get_array_coordinates,
+    generate_rotated_slice_coordinates,
+    homogenise_coordinates,
 )
 
 
@@ -91,3 +93,14 @@ def test_get_grid_coordinates():
           [2., 1.]]]
     )
     assert torch.allclose(coords, expected)
+
+
+def test_homogenise_coordinates():
+    coords = torch.rand(size=(2, 3))
+    homogenised = homogenise_coordinates(coords)
+    assert torch.all(homogenised[..., :3] == coords)
+    assert torch.all(homogenised[..., 3] == 1)
+
+
+def test_generate_rotated_slice_coordinates():
+    pass
