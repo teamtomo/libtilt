@@ -9,7 +9,7 @@ from napari.types import ImageData
 from libtilt.dft_extract_slices import slice_dft
 from libtilt.real_space_backprojection import backproject
 from libtilt.transformations import Ry, S
-from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_grid_coordinates
+from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_array_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 
@@ -36,7 +36,7 @@ def simulate_single_axis_tilt_series(start_angle: float, end_angle: float,
     image_center = torch.tensor(image_shape) // 2
     r_max = volume_shape[0] // 2
     ramp_filter = torch.linalg.norm(
-        get_grid_coordinates(image_shape) - image_center, dim=-1
+        get_array_coordinates(image_shape) - image_center, dim=-1
     ) / r_max
     slices *= ramp_filter
     projections = torch.fft.ifftshift(slices, dim=(1, 2))
@@ -70,6 +70,4 @@ def simulate_tomogram(max_angle: float, num_images: int) -> ImageData:
 viewer = napari.Viewer(ndisplay=3)
 volume_layer = viewer.add_image(np.array(volume), name='original 3D volume')
 viewer.window.add_dock_widget(simulate_tomogram, name='WBP simulator')
-for i in range(5):
-    viewer.window.add_dock_widget(simulate_tomogram)
 napari.run()

@@ -2,9 +2,14 @@ import einops
 import torch
 import numpy as np
 
-from libtilt.coordinate_utils import array_coordinates_to_grid_sample_coordinates, \
-    _array_coordinates_to_grid_sample_coordinates_1d, grid_sample_coordinates_to_array_coordinates, \
-    _grid_sample_coordinates_to_array_coordinates_1d, add_implied_coordinate_from_dimension
+from libtilt.coordinate_utils import (
+    array_coordinates_to_grid_sample_coordinates,
+    _array_coordinates_to_grid_sample_coordinates_1d,
+    grid_sample_coordinates_to_array_coordinates,
+    _grid_sample_coordinates_to_array_coordinates_1d,
+    add_implied_coordinate_from_dimension,
+    get_array_coordinates
+)
 
 
 def test_array_coordinates_to_grid_sample_coordinates_1d():
@@ -65,7 +70,24 @@ def test_add_implied_coordinate_from_dimension():
 
 def test_add_implied_coordinate_from_dimension_prepend():
     batch_of_stacked_2d_coords = torch.zeros(size=(1, 5, 2))  # (b, stack, 2)
-    result = add_implied_coordinate_from_dimension(batch_of_stacked_2d_coords, dim=1, prepend_new_coordinate=True)
+    result = add_implied_coordinate_from_dimension(batch_of_stacked_2d_coords, dim=1,
+                                                   prepend_new_coordinate=True)
     expected = torch.zeros(size=(1, 5, 3))
     expected[0, :, 0] = torch.arange(5)
     assert torch.allclose(result, expected)
+
+
+def test_get_grid_coordinates():
+    coords = get_array_coordinates(grid_dimensions=(3, 2))
+    assert coords.shape == (3, 2, 2)
+    expected = torch.tensor(
+        [[[0., 0.],
+          [0., 1.]],
+
+         [[1., 0.],
+          [1., 1.]],
+
+         [[2., 0.],
+          [2., 1.]]]
+    )
+    assert torch.allclose(coords, expected)

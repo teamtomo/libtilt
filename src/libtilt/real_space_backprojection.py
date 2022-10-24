@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 
 from .coordinate_utils import (
-    get_grid_coordinates,
+    get_array_coordinates,
     homogenise_coordinates,
     add_implied_coordinate_from_dimension,
     array_coordinates_to_grid_sample_coordinates,
@@ -17,7 +17,7 @@ def backproject(
         projection_matrices: torch.Tensor,  # (b, 4, 4)
         output_dimensions: Tuple[int, int, int]
 ) -> torch.Tensor:
-    grid_coordinates = get_grid_coordinates(output_dimensions)  # (d, h, w, zyx)
+    grid_coordinates = get_array_coordinates(output_dimensions)  # (d, h, w, zyx)
     grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, xyz)
     grid_coordinates = homogenise_coordinates(grid_coordinates)  # (d, h, w, xyzw)
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w 1 xyzw 1')

@@ -6,7 +6,7 @@ import torch
 from torch.nn import functional as F
 
 
-def get_grid_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
+def get_array_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
     """Get a dense grid of array coordinates from grid dimensions.
 
     e.g. for an input array shape of (d, h, w), produce a (d, h, w, 3)

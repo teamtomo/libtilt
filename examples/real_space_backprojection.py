@@ -7,7 +7,7 @@ import torch
 from libtilt.dft_extract_slices import slice_dft
 from libtilt.real_space_backprojection import backproject
 from libtilt.transformations import Rx, Ry, Rz, S
-from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_grid_coordinates
+from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_array_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 
@@ -44,7 +44,7 @@ slices = slice_dft(dft, slice_coordinates)
 image_shape = slices.shape[-2:]
 image_center = torch.tensor(image_shape) // 2
 r_max = volume_shape[0] // 2
-ramp_filter = torch.linalg.norm(get_grid_coordinates(image_shape) - image_center, dim=-1) / r_max
+ramp_filter = torch.linalg.norm(get_array_coordinates(image_shape) - image_center, dim=-1) / r_max
 slices *= ramp_filter
 projections = torch.fft.ifftshift(slices, dim=(1, 2))
 projections = torch.fft.ifftn(projections, dim=(1, 2))
