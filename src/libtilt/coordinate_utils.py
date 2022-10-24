@@ -17,23 +17,28 @@ def get_array_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
     return einops.rearrange(indices, 'coordinates ... -> ... coordinates')
 
 
-def promote_2d_to_3d(vectors: torch.Tensor) -> torch.Tensor:
-    """Promote arrays of 2D vectors to 3D with zeros in the last column.
+def promote_2d_shifts_to_3d(shifts: torch.Tensor) -> torch.Tensor:
+    """Promote arrays of 2D shifts to 3D with zeros in the last column.
 
     Last dimension of array should be of length 2.
 
     Parameters
     ----------
-    vectors: torch.Tensor
-        (..., 2) array of 2D vectors
+    shifts: torch.Tensor
+        (..., 2) array of 2D shifts
 
     Returns
     -------
     output: torch.Tensor
-        (..., 3) array of 3D vectors with 0 in the last column.
+        (..., 3) array of 3D shifts with 0 in the last column.
     """
-    vectors = F.pad(torch.tensor(vectors), pad=(0, 1), mode='constant', value=0)
-    return torch.squeeze(vectors)
+    shifts = torch.as_tensor(shifts)
+    if shifts.ndim == 1:
+        shifts = einops.rearrange(shifts, 's -> 1 s')
+    if shifts.shape[-1] != 2:
+        raise ValueError('last dimension must have length 2.')
+    shifts = F.pad(shifts, pad=(0, 1), mode='constant', value=0)
+    return torch.squeeze(shifts)
 
 
 def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
@@ -49,7 +54,7 @@ def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
     output: torch.Tensor
         (..., 4) array of homogenous coordinates
     """
-    return F.pad(torch.Tensor(coords), pad=(0, 1), mode='constant', value=1)
+    return F.pad(torch.as_tensor(coords), pad=(0, 1), mode='constant', value=1)
 
 
 def generate_rotated_slice_coordinates(rotations: torch.Tensor, sidelength: int) -> torch.Tensor:

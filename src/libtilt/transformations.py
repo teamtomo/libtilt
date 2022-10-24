@@ -1,7 +1,7 @@
 import torch
 import einops
 
-from .coordinate_utils import promote_2d_to_3d
+from .coordinate_utils import promote_2d_shifts_to_3d
 
 
 def Rx(angles_degrees: torch.Tensor) -> torch.Tensor:
@@ -52,7 +52,7 @@ def S(shifts: torch.Tensor) -> torch.Tensor:
     """
     shifts = torch.tensor(shifts)
     if shifts.shape[-1] == 2:
-        shifts = promote_2d_to_3d(shifts)
+        shifts = promote_2d_shifts_to_3d(shifts)
     shifts = shifts.reshape((-1, 3))
     matrices = einops.repeat(torch.eye(4), 'i j -> n i j', n=shifts.shape[0]).clone()
     matrices[:, 0:3, 3] = shifts

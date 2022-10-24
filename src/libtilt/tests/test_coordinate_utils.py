@@ -11,6 +11,7 @@ from libtilt.coordinate_utils import (
     get_array_coordinates,
     generate_rotated_slice_coordinates,
     homogenise_coordinates,
+    promote_2d_shifts_to_3d,
 )
 
 
@@ -121,3 +122,10 @@ def test_generate_rotated_slice_coordinates():
 
     # x coordinates should be 0-3 repeated across rows
     assert torch.all(slice_coordinates[..., 2] == torch.tensor([[0, 1, 2, 3]]))
+
+
+def test_promote_2d_shifts_to_3d():
+    shifts_2d = torch.tensor([1, 1])
+    shifts_3d = promote_2d_shifts_to_3d(shifts_2d)
+    assert torch.all(shifts_3d[..., :2] == shifts_2d)
+    assert torch.all(shifts_3d[..., 2] == 0)
