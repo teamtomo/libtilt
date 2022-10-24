@@ -1,0 +1,22 @@
+site_name: libtilt docs
+repo_name: teamtomo/libtilt
+repo_url: https://github.com/teamtomo/libtilt
+theme:
+  name: material
+  icon:
+    logo: material/cube-scan
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+      # Palette toggle for dark mode
+    - scheme: slate
+      primary: pink
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+extra_css:
+  - stylesheets/extra.css
