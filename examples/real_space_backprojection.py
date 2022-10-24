@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from libtilt.dft_extract_slices import slice_dft
-from libtilt.real_space_backprojection import backproject
+from libtilt.real_space_backprojection import backproject, backproject_reduce
 from libtilt.transformations import Rx, Ry, Rz, S
 from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_array_coordinates
 
@@ -36,7 +36,8 @@ projection_matrices = s2 @ s1 @ r2 @ r1 @ r0 @ s0
 rotation_matrices = einops.rearrange(projection_matrices[:, :3, :3], 'b i j -> b j i')
 print(projection_matrices.shape, rotation_matrices.shape)
 
-slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices, sidelength=volume_shape[0])
+slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices,
+                                                       sidelength=volume_shape[0])
 dft = torch.fft.fftshift(volume, dim=(0, 1, 2))
 dft = torch.fft.fftn(dft, dim=(0, 1, 2))
 dft = torch.fft.fftshift(dft, dim=(0, 1, 2))
@@ -59,13 +60,19 @@ projections = torch.real(projections)
 
 
 reconstruction = backproject(
-    images=projections,
+    projection_images=projections,
     projection_matrices=projection_matrices,
     output_dimensions=volume_shape,
+)
+reconstruction2 = backproject_reduce(
+    images=projections,
+    projection_matrices=projection_matrices,
+    output_dimensions=volume_shape
 )
 
 viewer = napari.Viewer()
 volume_layer = viewer.add_image(np.array(volume), name='original 3D volume')
 projection_layer = viewer.add_image(np.array(projections), name='projection images')
 reconstruction_layer = viewer.add_image(np.array(reconstruction), name='3D reconstruction (WBP)')
+reconstruction_layer2 = viewer.add_image(np.array(reconstruction2))
 napari.run()

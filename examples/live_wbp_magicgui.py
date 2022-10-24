@@ -58,7 +58,7 @@ def simulate_tomogram(max_angle: float, num_images: int) -> ImageData:
     projection_matrices = s2 @ r1 @ s0
     tilt_series = simulate_single_axis_tilt_series(-max_angle, max_angle, num_images)
     reconstruction = backproject(
-        images=torch.tensor(tilt_series),
+        projection_images=torch.tensor(tilt_series),
         projection_matrices=projection_matrices,
         output_dimensions=volume_shape,
     )
