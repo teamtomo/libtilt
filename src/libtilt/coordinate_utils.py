@@ -72,6 +72,8 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch
     coordinates: torch.Tensor
         (batch, n, n, zyx) array of coordinates.
     """
+    if rotations.ndim == 2:
+        rotations = einops.rearrange(rotations, 'i j -> 1 i j')
     # generate [x, y, z] coordinates for a central slice
     # the slice spans the XY plane with origin on DFT center
     x = y = torch.arange(n) - (n // 2)
