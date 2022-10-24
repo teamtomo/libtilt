@@ -13,8 +13,8 @@ from .coordinate_utils import (
 
 
 def backproject(
-        image_stack: torch.Tensor,  # (b, h, w)
-        projection_matrices: torch.Tensor,  # (b, 4, 4)
+        images: torch.Tensor,  # (batch, h, w)
+        projection_matrices: torch.Tensor,  # (batch, 4, 4)
         output_dimensions: Tuple[int, int, int]
 ) -> torch.Tensor:
     grid_coordinates = get_array_coordinates(output_dimensions)  # (d, h, w, zyx)
@@ -32,13 +32,13 @@ def backproject(
     )
     image_stack_coordinates = torch.flip(image_stack_coordinates, dims=(-1,))  # xyz -> zyx
     image_stack_coordinates = array_coordinates_to_grid_sample_coordinates(
-        image_stack_coordinates, array_shape=image_stack.shape
+        image_stack_coordinates, array_shape=images.shape
     )
     n_images = image_stack_coordinates.shape[0]
-    image_stack = einops.repeat(image_stack, 'b h w -> img 1 b h w',
-                                img=n_images)  # (b, c, d, h, w) for sampling
+    images = einops.repeat(images, 'b h w -> img 1 b h w',
+                           img=n_images)  # (b, c, d, h, w) for sampling
     samples = F.grid_sample(
-        input=image_stack,
+        input=images,
         grid=image_stack_coordinates,
         mode='bilinear',  # this is trilinear when input is volumetric
         padding_mode='zeros',
