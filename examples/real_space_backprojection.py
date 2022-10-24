@@ -4,10 +4,10 @@ import napari
 import numpy as np
 import torch
 
-from libtilt.dft_extract_slices import slice_dft
-from libtilt.real_space_backprojection import backproject, backproject_reduce
-from libtilt.transformations import Rx, Ry, Rz, S
-from libtilt.coordinate_utils import generate_rotated_slice_coordinates, get_array_coordinates
+from libtilt.fourier_space.projection import extract_slices
+from libtilt.real_space.backprojection import backproject, backproject_reduce
+from libtilt.utils.transformations import Rx, Ry, Rz, S
+from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_array_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 
@@ -41,7 +41,7 @@ slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices,
 dft = torch.fft.fftshift(volume, dim=(0, 1, 2))
 dft = torch.fft.fftn(dft, dim=(0, 1, 2))
 dft = torch.fft.fftshift(dft, dim=(0, 1, 2))
-slices = slice_dft(dft, slice_coordinates)
+slices = extract_slices(dft, slice_coordinates)
 image_shape = slices.shape[-2:]
 image_center = torch.tensor(image_shape) // 2
 r_max = volume_shape[0] // 2

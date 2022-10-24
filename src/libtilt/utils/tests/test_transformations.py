@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.transformations import Rx, Ry, Rz, S
+from libtilt.utils.transformations import Rx, Ry, Rz
 
 
 def test_rotation_around_x():

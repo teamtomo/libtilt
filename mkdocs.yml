@@ -1,6 +1,7 @@
-site_name: libtilt docs
+site_name: libtilt
 repo_name: teamtomo/libtilt
 repo_url: https://github.com/teamtomo/libtilt
+copyright: Copyright &copy; 2022 - 2022 Alister Burt
 theme:
   name: material
   icon:
@@ -18,5 +19,53 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  features:
+    - navigation.instant
+    - search.highlight
+    - search.suggest
+    - content.tabs.link
+plugins:
+  - mkdocstrings:
+        watch:
+          - src/libtilt
+        handlers:
+          python:
+            import:
+              - https://docs.python.org/3/objects.inv
+            selection:
+              docstring_style: numpy
+              filters: ["!^_"]
+            rendering:
+              show_root_heading: true
+              show_root_toc_entry: true
+              show_root_full_path: true
+              show_object_full_path: false
+              # show_root_members_full_path: false
+              # show_category_heading: false
+              show_if_no_docstring: false
+              # show_signature: true
+              show_signature_annotations: true
+              show_source: true
+              # show_bases: true
+              # group_by_category: true
+              # heading_level: 2
+              members_order: source  # alphabetical/source
+
+              ## experimental
+              docstring_section_style: spacy  # or table/list/spacy
+nav:
+  - index.md
+  - Examples:
+      - examples/real_space.md
+      - examples/fourier_space.md
+  - API:
+      - API/real_space.md
+      - API/fourier_space.md
+      - API/transformations.md
+      - API/coordinates.md
+#  - Section:
+#    - section/index.md
+#    - Page 1: section/page-1.md
+#    - Page n: section/page-n.md
 extra_css:
   - stylesheets/extra.css

@@ -13,7 +13,7 @@ def get_phase_shifts_2d(shifts: torch.Tensor, image_shape: Tuple[int, int]):
         (n, 2) array of xy shifts where xy coordinates index into
         dims 1 and 0 of 2D images respectively.
     image_shape: Tuple[int, int]
-        shape of 2D image(s) onto which phase shifts will be applied.
+        shape of 2D image(s) on which phase shifts will be applied.
     """
     x = torch.fft.fftshift(torch.fft.fftfreq(image_shape[1]))
     y = torch.fft.fftshift(torch.fft.fftfreq(image_shape[0]))

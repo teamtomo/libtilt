@@ -2,14 +2,39 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from .coordinate_utils import (
+from libtilt.utils.coordinates import (
     get_array_coordinates,
-    array_coordinates_to_grid_sample_coordinates,
+    array_to_grid_sample,
 )
 
 
 def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
-    """Make 2D projections of a 3D volume in specific orientations."""
+    """Make 2D projections of a 3D volume in specific orientations.
+
+    Projections are made by
+
+    1. generating a grid of coordinates sufficient to cover the volume in any orientation.
+
+    2. left-multiplying `rotation matrices` and coordinate grids to produce rotated coordinates.
+
+    3. sampling `volume` at rotated coordinates.
+
+    4. summing samples along depth dimension of a `(d, h, w)` volume.
+
+    The rotation center of `volume` is taken to be `torch.tensor(volume.shape) // 2`.
+
+    Parameters
+    ----------
+    volume: torch.Tensor
+        `(d, h, w)` volume from which projections will be made.
+    rotation_matrices: torch.Tensor
+        `(batch, 3, 3)` array of rotation matrices
+
+    Returns
+    -------
+    projection_images: torch.Tensor
+        `(batch, h, w)` array of 2D projection images sampled from `volume`.
+    """
     volume_shape = torch.tensor(volume.shape)
     ps = padded_sidelength = int(3 ** 0.5 * torch.max(volume_shape))
     shape_difference = torch.abs(padded_sidelength - volume_shape)
@@ -30,7 +55,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
         rotated_coordinates += padded_sidelength // 2
         rotated_coordinates = einops.rearrange(rotated_coordinates, 'd h w xyz 1 -> 1 d h w xyz')
         rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # xyz -> zyx
-        rotated_coordinates = array_coordinates_to_grid_sample_coordinates(
+        rotated_coordinates = array_to_grid_sample(
             rotated_coordinates, array_shape=padded_volume_shape
         )
         samples = F.grid_sample(

@@ -2,10 +2,10 @@ import einops
 import torch
 import numpy as np
 
-from libtilt.coordinate_utils import (
-    array_coordinates_to_grid_sample_coordinates,
+from libtilt.utils.coordinates import (
+    array_to_grid_sample,
     _array_coordinates_to_grid_sample_coordinates_1d,
-    grid_sample_coordinates_to_array_coordinates,
+    grid_sample_to_array,
     _grid_sample_coordinates_to_array_coordinates_1d,
     add_implied_coordinate_from_dimension,
     get_array_coordinates,
@@ -28,8 +28,8 @@ def test_array_coordinates_to_grid_sample_coordinates_nd():
     array_shape = z, y, x = (4, 8, 12)
     array_coordinates = einops.rearrange(torch.tensor(np.indices(array_shape)),
                                          'zyx d h w -> d h w zyx')
-    grid_sample_coordinates = array_coordinates_to_grid_sample_coordinates(array_coordinates,
-                                                                           array_shape=array_shape)
+    grid_sample_coordinates = array_to_grid_sample(array_coordinates,
+                                                   array_shape=array_shape)
 
     expected_x = torch.linspace(-1, 1, x)
     expected_y = torch.linspace(-1, 1, y)
@@ -54,10 +54,10 @@ def test_grid_sample_coordinates_to_array_coordinates_nd():
     expected_array_coordinates = einops.rearrange(
         torch.tensor(np.indices(array_shape)), 'zyx d h w -> d h w zyx'
     ).float()
-    grid_sample_coordinates = array_coordinates_to_grid_sample_coordinates(
+    grid_sample_coordinates = array_to_grid_sample(
         expected_array_coordinates, array_shape=array_shape
     )
-    array_coordinates = grid_sample_coordinates_to_array_coordinates(
+    array_coordinates = grid_sample_to_array(
         grid_sample_coordinates, array_shape=array_shape
     )
     assert torch.allclose(array_coordinates, expected_array_coordinates)

@@ -54,6 +54,7 @@ dev = [
     "pytest",
     "rich",
     "mkdocs-material",
+    "mkdocstrings-python",
 ]
 
 [project.urls]

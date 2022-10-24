@@ -3,8 +3,7 @@ import napari
 import numpy as np
 import torch
 
-from libtilt.real_space_projection import project
-from libtilt.transformations import Ry
+from libtilt.real_space.projection import project
 from scipy.spatial.transform import Rotation as R
 
 VOLUME_FILE = 'ribo-16Apx.mrc'

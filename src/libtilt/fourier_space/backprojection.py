@@ -5,12 +5,30 @@ import numpy as np
 import torch
 
 
-def insert_slices_dft(
-        dft: torch.Tensor,  # (d, d, d)
-        weights: torch.Tensor,  # (d, d, d)
+def insert_slices(
         slices: torch.Tensor,  # (batch, h, w)
         slice_coordinates: torch.Tensor,  # (batch, h, w, 3) ordered zyx
+        dft: torch.Tensor,  # (d, d, d)
+        weights: torch.Tensor,  # (d, d, d)
 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Insert 2D slices into a 3D discrete Fourier transform with trilinear interpolation.
+
+    Parameters
+    ----------
+    slices: torch.Tensor
+        `(batch, h, w)` array of 2D images.
+    slice_coordinates: torch.Tensor
+        `(batch, h, w, 3)` array of 3D coordinates for data in `slices`.
+    dft: torch.Tensor
+        `(d, d, d)` volume containing the discrete Fourier transform into which data will be inserted.
+    weights: torch.Tensor
+        `(d, d, d)` volume containing the weights associated with each voxel of `dft`
+
+    Returns
+    -------
+    dft, weights: Tuple[torch.Tensor]
+        The dft and weights after updating with data from `slices` at `slice_coordinates`.
+    """
     slices = einops.rearrange(slices, 'b h w -> (b h w)')
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> (b h w) zyx').float()
     in_volume_idx = (slice_coordinates >= 0) & (slice_coordinates <= torch.tensor(dft.shape) - 1)
@@ -42,7 +60,7 @@ def insert_slices_dft(
     return dft, weights
 
 
-def grid_sinc2(shape: Tuple[int, int, int]):
+def _grid_sinc2(shape: Tuple[int, int, int]):
     d = torch.tensor(np.stack(np.indices(tuple(shape)), axis=-1)).float()
     d -= torch.tensor(tuple(shape)) // 2
     d = torch.linalg.norm(d, dim=-1)
@@ -52,29 +70,47 @@ def grid_sinc2(shape: Tuple[int, int, int]):
 
 
 def reconstruct_from_images(
-        data: torch.Tensor,  # (b, h, w)
-        coordinates: torch.Tensor,  # (b, h, w, zyx)
+        images: torch.Tensor,  # (b, h, w)
+        slice_coordinates: torch.Tensor,  # (b, h, w, zyx)
         do_gridding_correction: bool = True,
 ):
-    """"""
-    b, h, w = data.shape
+    """Perform a 3D reconstruction from a set of 2D projection images.
+
+    Parameters
+    ----------
+    images: torch.Tensor
+        `(batch, h, w)` array of 2D projection images.
+    slice_coordinates: torch.Tensor
+        `(batch, h, w, zyx)` array of coordinates for pixels in `images`.
+        Coordinates are array coordinates.
+    do_gridding_correction: bool
+        Each 2D image pixel contributes to the nearest eight voxels in 3D and weights are set
+        according to a linear interpolation kernel. The effects of this trilinear interpolation in
+        Fourier space can be 'undone' through division by a sinc^2 function in real space.
+
+    Returns
+    -------
+    reconstruction: torch.Tensor
+        `(d, h, w)` cubic volume containing the 3D reconstruction from `images`.
+    """
+    b, h, w = images.shape
     assert h == w
     volume_shape = (w, w, w)
 
     output = torch.zeros(size=volume_shape, dtype=torch.complex64)
     weights = torch.zeros_like(output, dtype=torch.float32)
 
-    data = torch.fft.fftshift(data, dim=(-2, -1))
-    data = torch.fft.fftn(data, dim=(-2, -1))
-    data = torch.fft.fftshift(data, dim=(-2, -1))
-    output, weights = insert_slices_dft(output, weights, data, coordinates)
+    images = torch.fft.fftshift(images, dim=(-2, -1))
+    images = torch.fft.fftn(images, dim=(-2, -1))
+    images = torch.fft.fftshift(images, dim=(-2, -1))
+    output, weights = insert_slices(output, weights, images, slice_coordinates)
     valid_weights = weights > 1e-3
     output[valid_weights] /= weights[valid_weights]
     output = torch.fft.ifftshift(output, dim=(-3, -2, -1))
     output = torch.fft.ifftn(output, dim=(-3, -2, -1))
     output = torch.fft.ifftshift(output, dim=(-3, -2, -1))
     if do_gridding_correction is True:
-        output /= grid_sinc2(volume_shape)
+        output /= _grid_sinc2(volume_shape)
     return torch.real(output)
 
 

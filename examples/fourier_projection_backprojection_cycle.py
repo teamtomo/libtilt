@@ -4,10 +4,10 @@ import torch
 import numpy as np
 from scipy.stats import special_ortho_group
 
-from libtilt.coordinate_utils import generate_rotated_slice_coordinates
-from libtilt.dft_extract_slices import slice_dft
-from libtilt.phase_shift_2d import fourier_shift_dfts_2d, phase_shift_images_2d
-from libtilt.dft_insert_slices import reconstruct_from_images
+from libtilt.utils.coordinates import generate_rotated_slice_coordinates
+from libtilt.fourier_space.projection import extract_slices
+from libtilt.fourier_space.phase_shift import fourier_shift_dfts_2d, phase_shift_images_2d
+from libtilt.fourier_space.backprojection import reconstruct_from_images
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 N_IMAGES = 5000
@@ -20,7 +20,7 @@ slice_coordinates = generate_rotated_slice_coordinates(rotations, sidelength=vol
 dft = torch.fft.fftshift(volume, dim=(0, 1, 2))
 dft = torch.fft.fftn(dft, dim=(0, 1, 2))
 dft = torch.fft.fftshift(dft, dim=(0, 1, 2))
-dft_slices = slice_dft(dft, slice_coordinates)  # (b, h, w)
+dft_slices = extract_slices(dft, slice_coordinates)  # (b, h, w)
 shifts = torch.normal(mean=0, std=5, size=(N_IMAGES, 2))
 shifted_slices = fourier_shift_dfts_2d(dft_slices, shifts=shifts)
 projections = torch.fft.ifftshift(shifted_slices, dim=(1, 2))
@@ -33,7 +33,7 @@ projections = torch.real(projections)
 recentered_projections = phase_shift_images_2d(projections, shifts=-shifts)
 
 # 3D reconstruction from projection data
-reconstruction = reconstruct_from_images(data=recentered_projections, coordinates=slice_coordinates)
+reconstruction = reconstruct_from_images(images=recentered_projections, slice_coordinates=slice_coordinates)
 
 viewer = napari.Viewer()
 viewer.add_image(np.array(volume), name='input volume')

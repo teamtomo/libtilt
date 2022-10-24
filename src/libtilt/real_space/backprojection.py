@@ -5,31 +5,31 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from .coordinate_utils import (
+from libtilt.utils.coordinates import (
     get_array_coordinates,
     homogenise_coordinates,
-    array_coordinates_to_grid_sample_coordinates,
+    array_to_grid_sample,
 )
 
 
 def backproject(
-        projection_images: torch.Tensor,  # (batch, h, w)
-        projection_matrices: torch.Tensor,  # (batch, 4, 4)
+        projection_images: torch.Tensor,
+        projection_matrices: torch.Tensor,
         output_dimensions: Tuple[int, int, int]
 ) -> torch.Tensor:
     """3D reconstruction from 2D images by real space backprojection.
 
     Coordinates for voxels in the output volume are projected down into 2D by left-multiplication
-    with a projection matrix. The image is sampled with bicubic interpolation to yield the values
-    for each voxel. The final value for a voxel is the sum of contributions from each projection
-    image.
+    with a projection matrix. Projection images is sampled with bicubic interpolation at the 2D
+    coordinates to yield values for each voxel. The final value of a voxel is the sum of
+    contributions to it from each projection image.
 
     Parameters
     ----------
     projection_images: torch.Tensor
-        (batch, h, w) array of 2D projection images.
+        `(batch, h, w)` array of 2D projection images.
     projection_matrices: torch.Tensor
-        (batch, 4, 4) array of projection matrices which relate homogenous coordinates (xyzw)
+        `(batch, 4, 4)` array of projection matrices which relate homogenous coordinates (xyzw)
         in the output volume to coordinates in the projection images.
     output_dimensions: Tuple[int, int, int]
         dimensions of the output volume.
@@ -37,7 +37,7 @@ def backproject(
     Returns
     -------
     reconstruction: torch.Tensor
-        (d, h, w) array containing the reconstructed 3D volume.
+        `(d, h, w)` array containing the reconstructed 3D volume.
     """
     grid_coordinates = get_array_coordinates(output_dimensions)  # (d, h, w, zyx)
     grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, xyz)
@@ -48,7 +48,7 @@ def backproject(
         coords_2d = projection_matrix[:2, :] @ grid_coordinates  # (d, h, w, xy, 1)
         coords_2d = einops.rearrange(coords_2d, 'd h w xy 1 -> d h w xy')
         coords_2d = torch.flip(coords_2d, dims=(-1,))  # xy -> yx
-        coords_2d = array_coordinates_to_grid_sample_coordinates(
+        coords_2d = array_to_grid_sample(
             coords_2d, array_shape=image.shape
         )
         image = einops.rearrange(image, 'h w -> 1 1 h w')

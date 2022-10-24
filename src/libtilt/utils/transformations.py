@@ -1,12 +1,12 @@
-"""Functions for generating 4x4 transformation matrices for rotations and translations.
+"""Generate 4x4 matrices for rotations and translations.
 
-All functions in this module generate matrices which left-multiply column vectors containing
-xyzw coordinates.
+Functions in this module generate matrices which left-multiply column vectors containing
+xyzw homogenous coordinates.
 """
 import torch
 import einops
 
-from .coordinate_utils import promote_2d_shifts_to_3d as _promote_2d_shifts_to_3d
+from libtilt.utils.coordinates import promote_2d_shifts_to_3d as _promote_2d_shifts_to_3d
 
 
 def Rx(angles_degrees: torch.Tensor) -> torch.Tensor:
