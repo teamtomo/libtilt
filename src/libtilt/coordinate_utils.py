@@ -52,7 +52,7 @@ def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
     return F.pad(torch.Tensor(coords), pad=(0, 1), mode='constant', value=1)
 
 
-def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch.Tensor:
+def generate_rotated_slice_coordinates(rotations: torch.Tensor, sidelength: int) -> torch.Tensor:
     """Generate an array of rotated central slice coordinates for sampling a 3D image.
 
     Notes
@@ -64,22 +64,22 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch
     ----------
     rotations: torch.Tensor
         (batch, 3, 3) array of rotation matrices which rotate xyz coordinates.
-    n: int
-        sidelength of cubic grid for which coordinates are generated.
+    sidelength: int
+        sidelength of cubic volume for which coordinates are generated.
 
     Returns
     -------
     coordinates: torch.Tensor
-        (batch, n, n, zyx) array of coordinates.
+        (batch, n, n, zyx) array of coordinates where n == sidelength.
     """
     if rotations.ndim == 2:
         rotations = einops.rearrange(rotations, 'i j -> 1 i j')
     # generate [x, y, z] coordinates for a central slice
     # the slice spans the XY plane with origin on DFT center
-    x = y = torch.arange(n) - (n // 2)
-    xx = einops.repeat(x, 'w -> h w', h=n)
-    yy = einops.repeat(y, 'h -> h w', w=n)
-    zz = torch.zeros(size=(n, n))
+    x = y = torch.arange(sidelength) - (sidelength // 2)
+    xx = einops.repeat(x, 'w -> h w', h=sidelength)
+    yy = einops.repeat(y, 'h -> h w', w=sidelength)
+    zz = torch.zeros(size=(sidelength, sidelength))
     xyz = einops.rearrange([xx, yy, zz], 'xyz h w -> 1 h w xyz 1')
 
     # rotate coordinates
@@ -87,7 +87,7 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, n: int) -> torch
     xyz = einops.rearrange(rotations @ xyz, 'b h w xyz 1 -> b h w xyz')
 
     # recenter slice on DFT center and flip to zyx
-    xyz += n // 2
+    xyz += sidelength // 2
     zyx = torch.flip(xyz, dims=(-1,))
     return zyx
 

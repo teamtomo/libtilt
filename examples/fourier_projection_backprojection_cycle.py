@@ -16,7 +16,7 @@ volume = torch.tensor(mrcfile.read(VOLUME_FILE))
 
 # forward model, make n projections
 rotations = torch.tensor(special_ortho_group.rvs(dim=3, size=N_IMAGES)).float()
-slice_coordinates = generate_rotated_slice_coordinates(rotations, n=volume.shape[0])
+slice_coordinates = generate_rotated_slice_coordinates(rotations, sidelength=volume.shape[0])
 dft = torch.fft.fftshift(volume, dim=(0, 1, 2))
 dft = torch.fft.fftn(dft, dim=(0, 1, 2))
 dft = torch.fft.fftshift(dft, dim=(0, 1, 2))

@@ -27,7 +27,7 @@ def simulate_single_axis_tilt_series(start_angle: float, end_angle: float,
     s2 = S(tilt_image_center)
     projection_matrices = s2 @ r1 @ s0
     rotation_matrices = einops.rearrange(projection_matrices[:, :3, :3], 'b i j -> b j i')
-    slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices, n=volume_shape[0])
+    slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices, sidelength=volume_shape[0])
     dft = torch.fft.fftshift(volume, dim=(0, 1, 2))
     dft = torch.fft.fftn(dft, dim=(0, 1, 2))
     dft = torch.fft.fftshift(dft, dim=(0, 1, 2))
