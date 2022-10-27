@@ -28,12 +28,10 @@ def get_phase_shifts_2d(
         of images with `image_shape`. Outputs are compatible with the DFT without
         fftshift applied if `rfft=False`.
     """
-    frequency_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
+    fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
     shifts = einops.rearrange(shifts, 'b shift -> b 1 1 shift')
     factors = einops.reduce(
-        -2 * torch.pi * (frequency_grid * shifts),
-        'b h w 2 -> b h w',
-        reduction='sum'
+        -2 * torch.pi * (fftfreq_grid * shifts), 'b h w 2 -> b h w', reduction='sum'
     )
     return torch.complex(real=torch.cos(factors), imag=torch.sin(factors))
 
