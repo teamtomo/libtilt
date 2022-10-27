@@ -11,8 +11,8 @@ def _rfft_shape_from_input_shape(input_shape: Sequence[int]) -> List[int]:
     return rfft_shape
 
 
-def get_frequency_grid(image_shape: Sequence[int], rfft: bool) -> torch.Tensor:
-    """Get a grid of DFT frequencies in for a 2D image.
+def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.Tensor:
+    """Construct a grid of DFT sample frequencies for a 2D image.
 
     Parameters
     ----------

@@ -3,7 +3,7 @@ from typing import Tuple, Sequence
 import einops
 import torch
 
-from ..utils.fft import get_frequency_grid
+from ..utils.fft import construct_fftfreq_grid_2d
 
 
 def get_phase_shifts_2d(
@@ -28,7 +28,7 @@ def get_phase_shifts_2d(
         of images with `image_shape`. Outputs are compatible with the DFT without
         fftshift applied if `rfft=False`.
     """
-    frequency_grid = get_frequency_grid(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
+    frequency_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
     shifts = einops.rearrange(shifts, 'b shift -> b 1 1 shift')
     factors = einops.reduce(
         -2 * torch.pi * (frequency_grid * shifts),
