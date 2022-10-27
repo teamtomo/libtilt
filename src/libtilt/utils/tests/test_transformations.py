@@ -1,10 +1,10 @@
 import torch
 
-from libtilt.utils.transformations import Rx, Ry, Rz
+from libtilt.utils.transformations import R0, R1, R2
 
 
 def test_rotation_around_x():
-    R = Rx(90)
+    R = R0(90)
     v = torch.tensor(
         [[0],
          [1],
@@ -21,7 +21,7 @@ def test_rotation_around_x():
 
 
 def test_rotation_around_y():
-    R = Ry(90)
+    R = R1(90)
     v = torch.tensor(
         [[0],
          [0],
@@ -38,7 +38,7 @@ def test_rotation_around_y():
 
 
 def test_rotation_around_z():
-    R = Rz(90)
+    R = R2(90)
     v = torch.tensor(
         [[1],
          [0],

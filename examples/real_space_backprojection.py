@@ -6,7 +6,7 @@ import torch
 
 from libtilt.projection.fourier import extract_slices
 from libtilt.backprojection.real import backproject, backproject_reduce
-from libtilt.utils.transformations import Rx, Ry, Rz, S
+from libtilt.utils.transformations import R0, R1, R2, S
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_array_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
@@ -18,9 +18,9 @@ volume_center = volume_shape // 2
 tilt_image_center = volume_center[:2]
 
 s0 = S(-volume_center)
-r0 = Rx(0)
-r1 = Ry(torch.linspace(-90, 90, steps=100))
-r2 = Rz(0)
+r0 = R0(0)
+r1 = R1(torch.linspace(-90, 90, steps=100))
+r2 = R2(0)
 s1 = S([0, 0])
 s2 = S(tilt_image_center)
 
