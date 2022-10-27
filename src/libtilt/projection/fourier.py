@@ -17,15 +17,15 @@ def extract_slices(
 
             volume -> fftshift(volume) -> fft3(volume) -> fftshift(volume)
 
-    Coordinates should be ordered zyx, matching image array dimensions.
+    Coordinates should be ordered zyx, aligned with image dimensions.
     Coordinates should be array coordinates, spanning `[0, N-1]` for a dimension of length N.
 
 
     Parameters
     ----------
     dft: torch.Tensor
-        (d, h, w) complex valued cubic volume (d == h == w) containing the discrete Fourier transform
-        of a cubic volume.
+        (d, h, w) complex valued cubic volume (d == h == w) containing
+        the discrete Fourier transform of a cubic volume.
     slice_coordinates: torch.Tensor
         (batch, h, w, zyx) array of coordinates at which `dft` should be sampled.
 
