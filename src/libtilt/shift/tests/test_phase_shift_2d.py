@@ -26,18 +26,18 @@ def test_phase_shift_images_2d():
     expected[3, 3] = 1
     assert torch.allclose(shifted, expected, atol=1e-5)
 
-    # +1px in x
+    # +1px in y
     shifts = torch.zeros((1, 2))
     shifts[0, 0] = 1
     shifted = phase_shift_images_2d(image, shifts)
     expected = torch.zeros((4, 4))
-    expected[2, 3] = 1
+    expected[3, 2] = 1
     assert torch.allclose(shifted, expected, atol=1e-5)
 
-    # +1px in y
+    # +1px in x
     shifts = torch.zeros((1, 2))
     shifts[0, 1] = 1
     shifted = phase_shift_images_2d(image, shifts)
     expected = torch.zeros((4, 4))
-    expected[3, 2] = 1
+    expected[2, 3] = 1
     assert torch.allclose(shifted, expected, atol=1e-5)
