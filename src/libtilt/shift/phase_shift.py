@@ -3,6 +3,8 @@ from typing import Tuple, Sequence
 import einops
 import torch
 
+from ..utils.fft import get_frequency_grid
+
 
 def get_phase_shifts_2d(
         shifts: torch.Tensor, image_shape: Tuple[int, int], rfft: bool = False
@@ -22,19 +24,18 @@ def get_phase_shifts_2d(
     Returns
     -------
     phase_shifts: torch.Tensor
-        `(b, h, w)` array of phase shifts for the fft or rfft of images with `image_shape`.
-        Outputs are compatible with the DFT without fftshift applied if `rfft=False`.
+        `(b, h, w)` complex valued array of phase shifts for the fft or rfft
+        of images with `image_shape`. Outputs are compatible with the DFT without
+        fftshift applied if `rfft=False`.
     """
-    last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
-    dft_shape = _rfft_shape_from_input_shape(image_shape) if rfft is True else image_shape
-    x = last_axis_frequency_func(image_shape[-1])
-    y = torch.fft.fftfreq(image_shape[-2])
-    xx = einops.repeat(x, 'w -> h w', h=dft_shape[-2])
-    yy = einops.repeat(y, 'h -> h w', w=dft_shape[-1])
-    x_shifts = einops.rearrange(shifts[:, 1], 'b -> b 1 1')
-    y_shifts = einops.rearrange(shifts[:, 0], 'b -> b 1 1')
-    factors = -2 * torch.pi * (x_shifts * xx + y_shifts * yy)
-    return torch.cos(factors) + 1j * torch.sin(factors)
+    frequency_grid = get_frequency_grid(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
+    shifts = einops.rearrange(shifts, 'b shift -> b 1 1 shift')
+    factors = einops.reduce(
+        -2 * torch.pi * (frequency_grid * shifts),
+        'b h w 2 -> b h w',
+        reduction='sum'
+    )
+    return torch.complex(real=torch.cos(factors), imag=torch.sin(factors))
 
 
 def fourier_shift_dfts_2d(
@@ -45,7 +46,7 @@ def fourier_shift_dfts_2d(
         spectrum_is_fftshifted: bool = False,
 ):
     if rfft is True and spectrum_is_fftshifted is True:
-        raise ValueError('rfft cannot be fftshifted.')
+        raise ValueError('Bad arguments: rfft cannot be fftshifted.')
     phase_shifts = get_phase_shifts_2d(shifts=shifts, image_shape=image_shape, rfft=rfft)
     if spectrum_is_fftshifted:
         phase_shifts = torch.fft.fftshift(phase_shifts, dim=(-2, -1))
@@ -66,8 +67,3 @@ def phase_shift_images_2d(images: torch.Tensor, shifts: torch.Tensor):
     return torch.real(images)
 
 
-def _rfft_shape_from_input_shape(input_shape: Sequence[int]) -> Tuple[int]:
-    """Get the output shape of an rfft on an input with input_shape."""
-    rfft_shape = list(input_shape)
-    rfft_shape[-1] = int((rfft_shape[-1] / 2) + 1)
-    return rfft_shape
