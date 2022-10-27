@@ -5,9 +5,9 @@ import numpy as np
 from scipy.stats import special_ortho_group
 
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates
-from libtilt.fourier_space.projection import extract_slices
-from libtilt.fourier_space.phase_shift import fourier_shift_dfts_2d, phase_shift_images_2d
-from libtilt.fourier_space.backprojection import reconstruct_from_images
+from libtilt.projection.fourier import extract_slices
+from libtilt.shift.phase_shift import fourier_shift_dfts_2d, phase_shift_images_2d
+from libtilt.backprojection.fourier import reconstruct_from_images
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
 N_IMAGES = 5000

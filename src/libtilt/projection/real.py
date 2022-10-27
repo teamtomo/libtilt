@@ -35,6 +35,8 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
     projection_images: torch.Tensor
         `(batch, h, w)` array of 2D projection images sampled from `volume`.
     """
+    volume = torch.as_tensor(volume)
+    rotation_matrices = torch.as_tensor(rotation_matrices, dtype=torch.float)
     volume_shape = torch.tensor(volume.shape)
     ps = padded_sidelength = int(3 ** 0.5 * torch.max(volume_shape))
     shape_difference = torch.abs(padded_sidelength - volume_shape)

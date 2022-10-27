@@ -6,8 +6,8 @@ import torch
 from magicgui import magicgui
 from napari.types import ImageData
 
-from libtilt.fourier_space.projection import extract_slices
-from libtilt.real_space.backprojection import backproject
+from libtilt.projection.fourier import extract_slices
+from libtilt.backprojection.real import backproject
 from libtilt.utils.transformations import Ry, S
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_array_coordinates
 
@@ -70,4 +70,5 @@ def simulate_tomogram(max_angle: float, num_images: int) -> ImageData:
 viewer = napari.Viewer(ndisplay=3)
 volume_layer = viewer.add_image(np.array(volume), name='original 3D volume')
 viewer.window.add_dock_widget(simulate_tomogram, name='WBP simulator')
+viewer.add_image(np.array(simulate_single_axis_tilt_series(-60, 60, 41)))
 napari.run()

@@ -4,8 +4,8 @@ import napari
 import numpy as np
 import torch
 
-from libtilt.fourier_space.projection import extract_slices
-from libtilt.real_space.backprojection import backproject, backproject_reduce
+from libtilt.projection.fourier import extract_slices
+from libtilt.backprojection.real import backproject, backproject_reduce
 from libtilt.utils.transformations import Rx, Ry, Rz, S
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_array_coordinates
 
