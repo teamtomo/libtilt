@@ -37,7 +37,7 @@ def insert_slices(
     cz, cy, cx = einops.rearrange(torch.ceil(slice_coordinates), 'n c -> c n').long()
     fz, fy, fx = einops.rearrange(torch.floor(slice_coordinates), 'n c -> c n').long()
 
-    def add_for_corner(z, y, x):
+    def add_data_at_corner(z, y, x):
         # calculate weighting
         difference = einops.rearrange([z, y, x], 'zyx n -> n zyx') - slice_coordinates
         distance = einops.reduce(difference ** 2, 'n zyx -> n', reduction='sum') ** 0.5
@@ -48,14 +48,14 @@ def insert_slices(
         dft.index_put_(indices=(z, y, x), values=corner_weights * slices, accumulate=True)
         weights.index_put_(indices=(z, y, x), values=corner_weights, accumulate=True)
 
-    add_for_corner(fz, fy, fx)
-    add_for_corner(fz, fy, cx)
-    add_for_corner(fz, cy, fx)
-    add_for_corner(fz, cy, cx)
-    add_for_corner(cz, fy, fx)
-    add_for_corner(cz, fy, cx)
-    add_for_corner(cz, cy, fx)
-    add_for_corner(cz, cy, cx)
+    add_data_at_corner(fz, fy, fx)
+    add_data_at_corner(fz, fy, cx)
+    add_data_at_corner(fz, cy, fx)
+    add_data_at_corner(fz, cy, cx)
+    add_data_at_corner(cz, fy, fx)
+    add_data_at_corner(cz, fy, cx)
+    add_data_at_corner(cz, cy, fx)
+    add_data_at_corner(cz, cy, cx)
 
     return dft, weights
 
