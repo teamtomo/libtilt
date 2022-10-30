@@ -1,65 +1,12 @@
-import math
 from typing import Tuple
 
 import einops
 import numpy as np
 import scipy.constants as C
 import torch
-from pydantic import BaseModel
 
-from libtilt.utils.fft import construct_fftfreq_grid_2d
-
-
-class MicroscopeParametersSI(BaseModel):
-    voltage: float
-    spherical_aberration: float
-    amplitude_contrast: float
-
-    @classmethod
-    def from_standard_units(
-            cls,
-            voltage: float,
-            spherical_aberration: float,
-            amplitude_contrast: float
-    ):
-        voltage *= 1e3
-        spherical_aberration *= 1e7
-        return cls(
-            voltage=voltage,
-            spherical_aberration=spherical_aberration,
-            amplitude_contrast=amplitude_contrast
-        )
-
-
-def calculate_relativistic_electron_wavelength(energy: float):
-    """Calculate the relativistic electron wavelength in SI units.
-
-    For derivation see:
-    1.  Kirkland, E. J. Advanced Computing in Electron Microscopy.
-        (Springer International Publishing, 2020). doi:10.1007/978-3-030-33260-0.
-
-    2.  https://en.wikipedia.org/wiki/Electron_diffraction#Relativistic_theory
-
-    Parameters
-    ----------
-    energy: float
-        acceleration potential in volts.
-
-    Returns
-    -------
-    wavelength: float
-        relativistic wavelength of the electron in meters.
-    """
-    h = C.Planck
-    c = C.speed_of_light
-    m0 = C.electron_mass
-    e = C.elementary_charge
-    V = energy
-    eV = e * V
-
-    numerator = h * c
-    denominator = math.sqrt(eV * (2 * m0 * c ** 2 + eV))
-    return numerator / denominator
+from ..utils.ctf import calculate_relativistic_electron_wavelength
+from ..utils.fft import construct_fftfreq_grid_2d
 
 
 def ctf2d(
@@ -140,23 +87,38 @@ def ctf2d(
     # construct 2D frequency grids and rescale cycles / px -> cycles / Å
     fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
     fftfreq_grid = fftfreq_grid / einops.rearrange(pixel_size, 'b -> b 1 1 1')
-    yy, xx = einops.rearrange(fftfreq_grid ** 2, 'b h w freq -> freq b h w')
-    xy = einops.reduce(fftfreq_grid, 'b h w freq -> b h w', reduction='prod')
-    n4 = einops.reduce(fftfreq_grid ** 2, 'b h w freq -> b h w', reduction='sum') ** 2
+    fftfreq_grid_squared = fftfreq_grid ** 2
+
+    # Astigmatism
+    #         Q = [[ sin, cos]
+    #              [-sin, cos]]
+    #         D = [[   u,   0]
+    #              [   0,   v]]
+    #         A = Q^T.D.Q = [[ Axx, Axy]
+    #                        [ Ayx, Ayy]]
+    #         Axx = cos^2 * u + sin^2 * v
+    #         Ayy = sin^2 * u + cos^2 * v
+    #         Axy = Ayx = cos * sin * (u - v)
+    #         defocus = A.k.k^2 = Axx*x^2 + 2*Axy*x*y + Ayy*y^2
 
     c = torch.cos(astigmatism_angle)
     c2 = c ** 2
     s = torch.sin(astigmatism_angle)
     s2 = s ** 2
 
-    xx_factor = c2 * defocus_u + s2 * defocus_v
-    xx_ = einops.rearrange(xx_factor, 'b -> b 1 1') * xx
-    yy_factor = s2 * defocus_u + c2 * defocus_v
-    yy_ = einops.rearrange(yy_factor, 'b -> b 1 1') * yy
-    xy_factor = c * s * (defocus_u - defocus_v)
-    xy_ = einops.rearrange(xy_factor, 'b -> b 1 1') * xy
+    yy2, xx2 = einops.rearrange(fftfreq_grid_squared, 'b h w freq -> freq b h w')
+    xy = einops.reduce(fftfreq_grid, 'b h w freq -> b h w', reduction='prod')
+    n4 = einops.reduce(fftfreq_grid_squared, 'b h w freq -> b h w', reduction='sum') ** 2
 
-    ctf = -torch.sin(k1 * (xx_ + (2 * xy_) + yy_) + k2 * n4 - k3 - k5)
+    Axx = c2 * defocus_u + s2 * defocus_v
+    Axx_x2 = einops.rearrange(Axx, 'b -> b 1 1') * xx2
+    Axy = c * s * (defocus_u - defocus_v)
+    Axy_xy = einops.rearrange(Axy, 'b -> b 1 1') * xy
+    Ayy = s2 * defocus_u + c2 * defocus_v
+    Ayy_y2 = einops.rearrange(Ayy, 'b -> b 1 1') * yy2
+
+    # calculate ctf
+    ctf = -torch.sin(k1 * (Axx_x2 + (2 * Axy_xy) + Ayy_y2) + k2 * n4 - k3 - k5)
     if k4 > 0:
         ctf *= torch.exp(k4 * n4)
     if fftshift is True:
