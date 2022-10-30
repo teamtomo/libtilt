@@ -71,6 +71,7 @@ def ctf2d(
         amplitude_contrast: float,
         b_factor: float,
         phase_shift: float,
+        pixel_size: float,
         image_shape: Tuple[int, int],
         rfft: bool,
         fftshift: bool,
@@ -87,6 +88,8 @@ def ctf2d(
         `(defocus_u - defocus_v) / 2`
     astigmatism_angle: float
         Angle of astigmatism in degrees. 0 places `defocus_u` along the y-axis.
+    pixel_size: float
+        Pixel size in Angströms per pixel (Å px⁻¹).
     voltage: float
         Acceleration voltage in kilovolts (kV).
     spherical_aberration: float
@@ -111,15 +114,18 @@ def ctf2d(
     """
     # to torch.Tensor and unit conversions
     defocus = torch.atleast_1d(torch.as_tensor(defocus, dtype=torch.float))
-    defocus *= 1e5  # micrometers -> angstroms
+    defocus *= 1e4  # micrometers -> angstroms
     astigmatism = torch.atleast_1d(torch.as_tensor(astigmatism, dtype=torch.float))
-    astigmatism *= 1e5  # micrometers -> angstroms
+    astigmatism *= 1e4  # micrometers -> angstroms
     astigmatism_angle = torch.atleast_1d(torch.as_tensor(astigmatism_angle, dtype=torch.float))
     astigmatism_angle *= (C.pi / 180)  # degrees -> radians
+    pixel_size = torch.atleast_1d(torch.as_tensor(pixel_size))
     voltage = torch.atleast_1d(torch.as_tensor(voltage, dtype=torch.float))
     voltage *= 1e3  # kV -> V
-    spherical_aberration = torch.atleast_1d(torch.as_tensor(spherical_aberration, dtype=torch.float))
+    spherical_aberration = torch.atleast_1d(
+        torch.as_tensor(spherical_aberration, dtype=torch.float))
     spherical_aberration *= 1e7  # mm -> angstroms
+    image_shape = torch.as_tensor(image_shape)
 
     # derived quantities used in CTF calculation
     defocus_u = defocus + astigmatism
@@ -131,21 +137,24 @@ def ctf2d(
     k4 = -b_factor / 4
     k5 = np.arctan(amplitude_contrast / np.sqrt(1 - amplitude_contrast ** 2))
 
-    # construct 2D frequency grids
-    fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)
-    yy, xx = einops.rearrange(fftfreq_grid ** 2, 'h w freq -> freq h w')
-    xy = einops.reduce(fftfreq_grid, 'h w freq -> h w', reduction='prod')
-    n4 = einops.reduce(fftfreq_grid**2, 'h w freq -> h w', reduction='sum') ** 2
+    # construct 2D frequency grids and rescale cycles / px -> cycles / Å
+    fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
+    fftfreq_grid = fftfreq_grid / einops.rearrange(pixel_size, 'b -> b 1 1 1')
+    yy, xx = einops.rearrange(fftfreq_grid ** 2, 'b h w freq -> freq b h w')
+    xy = einops.reduce(fftfreq_grid, 'b h w freq -> b h w', reduction='prod')
+    n4 = einops.reduce(fftfreq_grid ** 2, 'b h w freq -> b h w', reduction='sum') ** 2
 
-    c = torch.cos(astigmatism_angle).view(1)
-    s = torch.sin(astigmatism_angle).view(1)
+    c = torch.cos(astigmatism_angle)
+    c2 = c ** 2
+    s = torch.sin(astigmatism_angle)
+    s2 = s ** 2
 
-    xx_factor = torch.tensor(c ** 2 * defocus_u + s ** 2 * defocus_v)
-    xx_ = einops.rearrange(xx_factor, 'f -> f 1 1') * xx
-    yy_factor = torch.tensor(s ** 2 * defocus_u + c ** 2 * defocus_v)
-    yy_ = einops.rearrange(yy_factor, 'f -> f 1 1') * yy
-    xy_factor = torch.tensor(c * s * (defocus_u - defocus_v))
-    xy_ = einops.rearrange(xy_factor, 'f -> f 1 1') * xy
+    xx_factor = c2 * defocus_u + s2 * defocus_v
+    xx_ = einops.rearrange(xx_factor, 'b -> b 1 1') * xx
+    yy_factor = s2 * defocus_u + c2 * defocus_v
+    yy_ = einops.rearrange(yy_factor, 'b -> b 1 1') * yy
+    xy_factor = c * s * (defocus_u - defocus_v)
+    xy_ = einops.rearrange(xy_factor, 'b -> b 1 1') * xy
 
     ctf = -torch.sin(k1 * (xx_ + (2 * xy_) + yy_) + k2 * n4 - k3 - k5)
     if k4 > 0:
@@ -153,24 +162,3 @@ def ctf2d(
     if fftshift is True:
         ctf = torch.fft.fftshift(ctf, dim=(-2, -1))
     return ctf
-
-
-if __name__ == '__main__':
-    ctf = ctf2d(
-        defocus=2,
-        astigmatism=0,
-        astigmatism_angle=0,
-        image_shape=(256, 256),
-        rfft=False,
-        fftshift=True,
-        voltage=300,
-        spherical_aberration=2.7,
-        amplitude_contrast=0.1,
-        b_factor=-10,
-        phase_shift=0
-    )
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-    ax.imshow(ctf.squeeze().numpy())
-    plt.show()
