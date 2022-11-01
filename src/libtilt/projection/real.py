@@ -41,8 +41,8 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
     ps = padded_sidelength = int(3 ** 0.5 * torch.max(volume_shape))
     shape_difference = torch.abs(padded_sidelength - volume_shape)
     padding = torch.empty(size=(3, 2), dtype=torch.int16)
-    padding[:, 0] = shape_difference // 2
-    padding[:, 1] = shape_difference - (shape_difference // 2)
+    padding[:, 0] = torch.div(shape_difference, 2, rounding_mode='floor')
+    padding[:, 1] = shape_difference - padding[:, 0]
     torch_padding = torch.flip(padding, dims=(0,))  # dhw -> whd for torch.nn.functional.pad
     torch_padding = einops.rearrange(torch_padding, 'whd pad -> (whd pad)')
     volume = F.pad(volume, pad=tuple(torch_padding), mode='constant', value=0)
@@ -65,7 +65,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
             grid=rotated_coordinates,
             mode='bilinear',  # trilinear for volume
             padding_mode='zeros',
-            align_corners=False,
+            align_corners=True,
         )
         return einops.reduce(samples, '1 1 d h w -> h w', reduction='sum')
 

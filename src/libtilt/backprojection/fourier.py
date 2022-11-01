@@ -103,7 +103,12 @@ def reconstruct_from_images(
     images = torch.fft.fftshift(images, dim=(-2, -1))
     images = torch.fft.fftn(images, dim=(-2, -1))
     images = torch.fft.fftshift(images, dim=(-2, -1))
-    output, weights = insert_slices(output, weights, images, slice_coordinates)
+    output, weights = insert_slices(
+        slices=images,
+        slice_coordinates=slice_coordinates,
+        dft=output,
+        weights=weights
+    )
     valid_weights = weights > 1e-3
     output[valid_weights] /= weights[valid_weights]
     output = torch.fft.ifftshift(output, dim=(-3, -2, -1))

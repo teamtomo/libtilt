@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import napari
 
-from libtilt.shift.phase_shift import phase_shift_images_2d
+from libtilt.shift.phase_shift_2d import phase_shift_images_2d
 
 volume_file = Path(__file__).parent / 'ribo-16Apx.mrc'
 

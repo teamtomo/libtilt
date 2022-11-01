@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.shift.phase_shift import get_phase_shifts_2d, phase_shift_images_2d
+from libtilt.shift.phase_shift_2d import get_phase_shifts_2d, phase_shift_images_2d
 
 
 def test_get_phase_shifts_2d_full_fft():

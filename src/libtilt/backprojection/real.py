@@ -60,7 +60,7 @@ def backproject(
             grid=coords_2d,
             mode='bicubic',
             padding_mode='zeros',
-            align_corners=False,
+            align_corners=True,
         )
         return einops.rearrange(samples, '1 1 (d h) w -> d h w', d=d, h=h)
 
