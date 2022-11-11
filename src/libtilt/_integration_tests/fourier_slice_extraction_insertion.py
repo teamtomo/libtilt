@@ -14,7 +14,7 @@ def test_fourier_slice_extraction_insertion_cycle_no_rotation():
     rotation = torch.eye(3).reshape(1, 3, 3)
     slice_coordinates = generate_rotated_slice_coordinates(rotation, sidelength=sidelength)
     volume_with_slice, weights = insert_slices(
-        slices=input_slice.reshape(1, 64, 64),
+        slice_data=input_slice.reshape(1, 64, 64),
         slice_coordinates=slice_coordinates,
         dft=volume,
         weights=weights
@@ -34,7 +34,7 @@ def test_fourier_slice_extraction_insertion_cycle_with_rotation():
     in_volume_idx = (slice_coordinates >= 0) & (slice_coordinates <= torch.tensor(volume.shape) - 1)
     in_volume_idx = torch.all(in_volume_idx, dim=-1)
     volume_with_slice, weights = insert_slices(
-        slices=input_slice.reshape(1, 64, 64),
+        slice_data=input_slice.reshape(1, 64, 64),
         slice_coordinates=slice_coordinates,
         dft=volume,
         weights=weights

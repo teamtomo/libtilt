@@ -45,23 +45,19 @@ def backproject(
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w xyzw 1')
 
     def _backproject_single_image(image, projection_matrix) -> torch.Tensor:
+        image = einops.rearrange(image, 'h w -> 1 1 h w')
         coords_2d = projection_matrix[:2, :] @ grid_coordinates  # (d, h, w, xy, 1)
         coords_2d = einops.rearrange(coords_2d, 'd h w xy 1 -> d h w xy')
         coords_2d = torch.flip(coords_2d, dims=(-1,))  # xy -> yx
-        coords_2d = array_to_grid_sample(
-            coords_2d, array_shape=image.shape
-        )
-        image = einops.rearrange(image, 'h w -> 1 1 h w')
-        d, h = coords_2d.shape[:2]
-        # (n h w 2) coordinates required for grid sample on 2D images
-        coords_2d = einops.rearrange(coords_2d, 'd h w xy -> 1 (d h) w xy')
+        coords_2d = array_to_grid_sample(coords_2d, array_shape=image.shape[-2:])
         samples = F.grid_sample(
             input=image,
-            grid=coords_2d,
+            grid=einops.rearrange(coords_2d, 'd h w xy -> 1 (d h) w xy'),
             mode='bicubic',
             padding_mode='zeros',
             align_corners=True,
         )
+        d, h = coords_2d.shape[:2]
         return einops.rearrange(samples, '1 1 (d h) w -> d h w', d=d, h=h)
 
     backprojection_volume_generator = (

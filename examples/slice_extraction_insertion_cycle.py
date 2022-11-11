@@ -13,7 +13,7 @@ input_slice = torch.complex(torch.arange(64 * 64).reshape(64, 64).float(),
 rotation = torch.tensor(R.random().as_matrix()).float()
 slice_coordinates = generate_rotated_slice_coordinates(rotation, sidelength=sidelength)
 volume_with_slice, weights = insert_slices(
-    slices=input_slice.reshape(1, 64, 64),
+    slice_data=input_slice.reshape(1, 64, 64),
     slice_coordinates=slice_coordinates,
     dft=volume,
     weights=weights

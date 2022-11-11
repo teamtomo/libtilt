@@ -4,7 +4,7 @@ import torch
 from libtilt.ctf import ctf2d
 
 ctf_images = ctf2d(
-    defocus=torch.linspace(0.5, 5, steps=50),
+    defocus=1,
     astigmatism=0,
     astigmatism_angle=0,
     voltage=300,
@@ -12,7 +12,7 @@ ctf_images = ctf2d(
     amplitude_contrast=0.1,
     b_factor=0,
     phase_shift=0,
-    pixel_size=1.5,
+    pixel_size=torch.linspace(10, 0.5, steps=50),
     image_shape=(512, 512),
     rfft=False,
     fftshift=True

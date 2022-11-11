@@ -37,3 +37,18 @@ def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.T
     freq_xx = einops.repeat(freq_x, 'w -> h w', h=dft_shape[-2])
     return einops.rearrange([freq_yy, freq_xx], 'freq h w -> h w freq')
 
+
+def symmetrise_dft(dft: torch.Tensor, dims: Sequence[int]):
+    """Construct a symmetric DFT by duplicating the Nyquist component.
+
+    Assumes that input is fftshifted and has dimensions with even lengths.
+    """
+    for dim in dims:
+        if dft.shape[dim] % 2 != 0:
+            raise ValueError('Shape must be even in dimensions to be symmetrised.')
+    # Calculate output shape
+    output_shape = torch.as_tensor(dft.shape)
+    output_shape[torch.as_tensor(dims)] += 1
+
+    # allocate new array and place
+    output = torch.empty(output_shape, dtype=torch.complex64)

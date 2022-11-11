@@ -150,7 +150,7 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, sidelength: int)
     return zyx
 
 
-def add_implied_coordinate_from_dimension(
+def add_positional_coordinate_from_dimension(
         coordinates: torch.Tensor, dim: int, prepend_new_coordinate: bool = False
 ) -> torch.Tensor:
     """Make an implicit coordinate in a multidimensional arrays of coordinates explicit.
@@ -181,7 +181,13 @@ def add_implied_coordinate_from_dimension(
     else:  # append
         pad, new_coordinate_index = (0, 1), -1
     output = F.pad(coordinates, pad=pad, mode='constant', value=0)
+    # swapped = False
+    # if len(output.shape) > 3 and dim != output.shape[-2]:
+    #     output = torch.swapaxes(output, dim, -2)
+    #     swapped = True
     output[..., new_coordinate_index] = torch.arange(coordinates.shape[dim])
+    # if swapped: # unswap
+    #     output = torch.swapaxes(output, dim, -2)
     return output
 
 
