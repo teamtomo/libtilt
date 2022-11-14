@@ -38,17 +38,63 @@ def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.T
     return einops.rearrange([freq_yy, freq_xx], 'freq h w -> h w freq')
 
 
-def symmetrise_dft(dft: torch.Tensor, dims: Sequence[int]):
-    """Construct a symmetric DFT by duplicating the Nyquist component.
+def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
+    """Construct a symmetrised discrete Fourier transform from an rfft.
 
-    Assumes that input is fftshifted and has dimensions with even lengths.
+    The symmetrised discrete Fourier transform contains a full FFT with components at
+    the Nyquist frequency repeated on both sides. This yields a spectrum which is
+    symmetric around the DC component of the FFT, useful for some applications.
+
+    This is only valid for rffts of cubic inputs with even sidelength.
+    Input should be the result of calling rfft on input data.
+
+    1D example:
+    - rfftfreq: `[0.0000, 0.1667, 0.3333, 0.5000]`
+    - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
+    - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
     """
-    for dim in dims:
-        if dft.shape[dim] % 2 != 0:
-            raise ValueError('Shape must be even in dimensions to be symmetrised.')
-    # Calculate output shape
-    output_shape = torch.as_tensor(dft.shape)
-    output_shape[torch.as_tensor(dims)] += 1
+    r = rfft.shape[-2]  # original dim length
+    dc = r // 2
+    if rfft.ndim == 2:
+        output = torch.zeros((r + 1, r + 1), dtype=torch.complex64)
+    elif rfft.ndim == 3:
+        b = rfft.shape[0]
+        output = torch.zeros((b, r + 1, r + 1), dtype=torch.complex64)
+    # fftshift full length dims to center DC component
+    rfft = torch.fft.fftshift(rfft, dim=(-2,))
+    output[..., :-1, dc:] = rfft  # place rfft in output
+    output[..., -1, dc:] = rfft[..., 0, :]  # replicate components at Nyquist
+    # fill redundant half
+    output[..., :, :dc] = torch.flip(torch.conj(output[..., :, dc + 1:]), dims=(-2, -1))
+    return output
 
-    # allocate new array and place
-    output = torch.empty(output_shape, dtype=torch.complex64)
+
+def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
+    """Construct a symmetrised discrete Fourier transform from an rfft.
+
+    The symmetrised discrete Fourier transform contains a full FFT with components at
+    the Nyquist frequency repeated on both sides. This yields a spectrum which is
+    symmetric around the DC component of the FFT, useful for some applications.
+
+    This is only valid for rffts of cubic inputs with even sidelength.
+    Input should be the result of calling rfft on input data.
+
+    1D example:
+    - rfftfreq: `[0.0000, 0.1667, 0.3333, 0.5000]`
+    - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
+    - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
+    """
+    r = rfft.shape[-3]  # input dim length
+    dc = r // 2  # index for DC component
+    output = torch.zeros((r + 1, r + 1, r + 1), dtype=torch.complex64)
+    # fftshift full length dims (i.e. not -1) to center DC component
+    rfft = torch.fft.fftshift(rfft, dim=(-3, -2))
+    # place rfft in output
+    output[:-1, :-1, dc:] = rfft
+    # replicate components at nyquist (symmetrise)
+    output[:-1, -1, dc:] = rfft[:, 0, :]
+    output[-1, :-1, dc:] = rfft[0, :, :]
+    output[-1, -1, dc:] = rfft[0, 0, :]
+    # fill redundant half-spectrum
+    output[:, :, :dc] = torch.flip(torch.conj(output[:, :, dc + 1:]), dims=(-3, -2, -1))
+    return output
