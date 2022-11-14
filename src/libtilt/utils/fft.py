@@ -30,12 +30,43 @@ def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.T
         of the grid.
     """
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
-    dft_shape = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
-    freq_y = torch.fft.fftfreq(image_shape[-2])
-    freq_x = last_axis_frequency_func(image_shape[-1])
-    freq_yy = einops.repeat(freq_y, 'h -> h w', w=dft_shape[-1])
-    freq_xx = einops.repeat(freq_x, 'w -> h w', h=dft_shape[-2])
+    h, w = image_shape
+    freq_y = torch.fft.fftfreq(h)
+    freq_x = last_axis_frequency_func(w)
+    h, w = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
+    freq_yy = einops.repeat(freq_y, 'h -> h w', w=w)
+    freq_xx = einops.repeat(freq_x, 'w -> h w', h=h)
     return einops.rearrange([freq_yy, freq_xx], 'freq h w -> h w freq')
+
+
+def construct_fftfreq_grid_3d(image_shape: Sequence[int], rfft: bool) -> torch.Tensor:
+    """Construct a grid of DFT sample frequencies for a 3D image.
+
+    Parameters
+    ----------
+    image_shape: Sequence[int]
+        A 3D shape `(d, h, w)` of the input image for which a grid of DFT sample frequencies
+        should be calculated.
+    rfft: bool
+        Controls Whether the frequency grid is for a real fft (rfft).
+
+    Returns
+    -------
+    frequency_grid: torch.Tensor
+        `(h, w, 3)` array of DFT sample frequencies.
+        Order of frequencies in the last dimension corresponds to the order of dimensions
+        of the grid.
+    """
+    last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
+    d, h, w = image_shape
+    freq_z = torch.fft.fftfreq(d)
+    freq_y = torch.fft.fftfreq(h)
+    freq_x = last_axis_frequency_func(w)
+    d, h, w = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
+    freq_zz = einops.repeat(freq_z, 'd -> d h w', h=h, w=w)
+    freq_yy = einops.repeat(freq_y, 'h -> d h w', d=d, w=w)
+    freq_xx = einops.repeat(freq_x, 'w -> d h w', d=d, h=h)
+    return einops.rearrange([freq_zz, freq_yy, freq_xx], 'freq h w -> h w freq')
 
 
 def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
@@ -52,6 +83,17 @@ def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     - rfftfreq: `[0.0000, 0.1667, 0.3333, 0.5000]`
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
     - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
+
+    Parameters
+    ----------
+    rfft: torch.Tensor
+        `(h, w)` or `(b, h, w)` array containing an rfft of square 2D image data
+        with an even sidelength.
+
+    Returns
+    -------
+    output: torch.Tensor
+        `(h, w)` or `(b, h, w)` symmetrised DFT constructed from the input `rfft`.
     """
     r = rfft.shape[-2]  # original dim length
     dc = r // 2
