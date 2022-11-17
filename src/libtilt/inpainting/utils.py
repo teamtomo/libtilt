@@ -55,9 +55,13 @@ def estimate_background_local_mean(
     """
     # get a random set of background pixels for the background fit
     background_sample_idx = np.argwhere(mask == 0)
-    n_samples_for_fit = max(n_samples_for_fit, len(background_sample_idx))
-    selection = np.random.choice(background_sample_idx.shape[0], size=n_samples_for_fit,
-                                 replace=False)
+    if n_background_samples := len(background_sample_idx) < n_samples_for_fit:
+        n_samples_for_fit = n_background_samples
+    selection = np.random.choice(
+        background_sample_idx.shape[0],
+        size=n_samples_for_fit,
+        replace=False
+    )
     background_sample_idx = background_sample_idx[selection]
     y, x = background_sample_idx[:, 0], background_sample_idx[:, 1]
     z = image[(y, x)]
@@ -65,12 +69,14 @@ def estimate_background_local_mean(
     # fit a bivariate spline to the data with the specified background model resolution
     ty = np.linspace(0, image.shape[0], num=background_model_resolution[0])
     tx = np.linspace(0, image.shape[1], num=background_model_resolution[1])
-    background_model = LSQBivariateSpline(x, y, z, tx, ty)
+    background_model = LSQBivariateSpline(y, x, z, tx, ty)
 
     # evaluate the model over a grid covering the whole image
-    y = np.arange(image.shape[0])
-    x = np.arange(image.shape[1])
-    return background_model(y, x, grid=True)
+    x = np.arange(image.shape[-1])
+    y = np.arange(image.shape[-2])
+
+    background = background_model(y, x, grid=True)
+    return background
 
 
 def estimate_background_std(image: np.ndarray, mask: np.ndarray):
