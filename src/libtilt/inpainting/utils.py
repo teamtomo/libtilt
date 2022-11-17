@@ -93,6 +93,6 @@ def estimate_background_std(image: np.ndarray, mask: np.ndarray):
     standard_deviation: float
         estimated standard deviation for the background.
     """
-    image = central_crop_2d(image, percentage=25)
+    image = central_crop_2d(image, percentage=25).astype(np.float64)
     mask = central_crop_2d(mask, percentage=25)
     return np.std(central_crop_2d(image)[central_crop_2d(mask) == 0])
