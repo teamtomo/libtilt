@@ -1,9 +1,9 @@
 import napari
 import torch
 
-from libtilt.ctf import ctf2d
+from libtilt.ctf import calculate_ctf
 
-ctf_images = ctf2d(
+ctf_images = calculate_ctf(
     defocus=1,
     astigmatism=0,
     astigmatism_angle=0,

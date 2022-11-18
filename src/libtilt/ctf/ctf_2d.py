@@ -5,11 +5,11 @@ import numpy as np
 import scipy.constants as C
 import torch
 
-from ..utils.ctf import calculate_relativistic_electron_wavelength
+from libtilt.ctf.relativistic_wavelength import calculate_relativistic_electron_wavelength
 from ..utils.fft import construct_fftfreq_grid_2d
 
 
-def ctf2d(
+def calculate_ctf(
         defocus: float,
         astigmatism: float,
         astigmatism_angle: float,
@@ -54,10 +54,6 @@ def ctf2d(
         Only one of `rfft` and `fftshift` may be `True`.
     fftshift: bool
         Whether to apply fftshift on the resulting CTF images.
-
-    Returns
-    -------
-
     """
     # to torch.Tensor and unit conversions
     defocus = torch.atleast_1d(torch.as_tensor(defocus, dtype=torch.float))

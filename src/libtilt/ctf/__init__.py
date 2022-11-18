@@ -1,1 +1,1 @@
-from .ctf import ctf2d
+from .ctf_2d import calculate_ctf

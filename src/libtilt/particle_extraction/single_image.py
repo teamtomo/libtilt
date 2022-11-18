@@ -17,7 +17,7 @@ def extract_at_integer_coordinates(
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     h, w = image.shape
     b, _ = positions.shape
-    # find integer extraction positions
+    # find integer particle_extraction positions
     extraction_positions = torch.round(positions)
     shifts = positions - extraction_positions
 

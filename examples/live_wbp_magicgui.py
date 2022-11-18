@@ -8,7 +8,7 @@ from napari.types import ImageData
 
 from libtilt.projection.fourier import extract_slices
 from libtilt.backprojection.real import backproject
-from libtilt.utils.transformations import R1, S
+from libtilt.utils.transformations import Ry, S
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates, get_array_coordinates
 
 VOLUME_FILE = 'ribo-16Apx.mrc'
@@ -23,7 +23,7 @@ tilt_image_center = volume_center[:2]
 def simulate_single_axis_tilt_series(start_angle: float, end_angle: float,
                                      num_images: int) -> ImageData:
     s0 = S(-volume_center)
-    r1 = R1(torch.linspace(start_angle, end_angle, steps=num_images))
+    r1 = Ry(torch.linspace(start_angle, end_angle, steps=num_images))
     s2 = S(tilt_image_center)
     projection_matrices = s2 @ r1 @ s0
     rotation_matrices = einops.rearrange(projection_matrices[:, :3, :3], 'b i j -> b j i')
@@ -53,7 +53,7 @@ def simulate_single_axis_tilt_series(start_angle: float, end_angle: float,
 )
 def simulate_tomogram(max_angle: float, num_images: int) -> ImageData:
     s0 = S(-volume_center)
-    r1 = R1(torch.linspace(-max_angle, max_angle, steps=num_images))
+    r1 = Ry(torch.linspace(-max_angle, max_angle, steps=num_images))
     s2 = S(tilt_image_center)
     projection_matrices = s2 @ r1 @ s0
     tilt_series = simulate_single_axis_tilt_series(-max_angle, max_angle, num_images)

@@ -1,4 +1,4 @@
-from libtilt.utils.ctf import calculate_relativistic_electron_wavelength
+from libtilt.ctf.relativistic_wavelength import calculate_relativistic_electron_wavelength
 
 
 def test_calculate_relativistic_electron_wavelength():

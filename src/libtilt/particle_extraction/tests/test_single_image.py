@@ -1,10 +1,10 @@
 import torch
 
-from libtilt.extraction.single_image import extract_at_integer_coordinates
+from libtilt.particle_extraction.single_image import extract_at_integer_coordinates
 
 
 def test_extract_at_integer_coordinates():
-    """Test extraction from single image."""
+    """Test particle_extraction from single image."""
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([14.2, 14.4]).reshape((1, 2))

@@ -9,7 +9,7 @@ import einops
 from libtilt.utils.coordinates import promote_2d_shifts_to_3d as _promote_2d_shifts_to_3d
 
 
-def R0(angles_degrees: torch.Tensor) -> torch.Tensor:
+def Rx(angles_degrees: torch.Tensor) -> torch.Tensor:
     """4x4 matrices for a rotation of homogenous coordinates (xyzw) around the X-axis."""
     angles_degrees = torch.as_tensor(angles_degrees).reshape(-1)
     angles_radians = torch.deg2rad(angles_degrees)
@@ -23,7 +23,7 @@ def R0(angles_degrees: torch.Tensor) -> torch.Tensor:
     return torch.squeeze(matrices)
 
 
-def R1(angles_degrees: torch.Tensor) -> torch.Tensor:
+def Ry(angles_degrees: torch.Tensor) -> torch.Tensor:
     """4x4 matrices for a rotation of homogenous coordinates (xyzw) around the Y-axis."""
     angles_degrees = torch.as_tensor(angles_degrees).reshape(-1)
     angles_radians = torch.deg2rad(angles_degrees)
@@ -37,7 +37,7 @@ def R1(angles_degrees: torch.Tensor) -> torch.Tensor:
     return torch.squeeze(matrices)
 
 
-def R2(angles_degrees: torch.Tensor) -> torch.Tensor:
+def Rz(angles_degrees: torch.Tensor) -> torch.Tensor:
     """4x4 matrices for a rotation of homogenous coordinates (xyzw) around the Z-axis."""
     angles_degrees = torch.as_tensor(angles_degrees).reshape(-1)
     angles_radians = torch.deg2rad(angles_degrees)
