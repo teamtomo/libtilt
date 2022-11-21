@@ -1,8 +1,9 @@
 import numpy as np
+import pytest
 import torch
 
 from libtilt.utils.fft import construct_fftfreq_grid_2d, rfft_shape_from_signal_shape, \
-    rfft_to_symmetrised_dft_2d, rfft_to_symmetrised_dft_3d
+    rfft_to_symmetrised_dft_2d, rfft_to_symmetrised_dft_3d, symmetrised_dft_to_dft_2d
 
 
 def test_rfft_shape_from_signal_shape():
@@ -56,3 +57,29 @@ def test_rfft_to_symmetrised_dft_3d():
     rfft = torch.fft.rfftn(image, dim=(-3, -2, -1))
     symmetrised_dft = rfft_to_symmetrised_dft_3d(rfft)
     assert torch.allclose(fft, symmetrised_dft[:-1, :-1, :-1])
+
+
+@pytest.mark.parametrize(
+    "inplace",
+    [(True,), (False,)]
+)
+def test_symmetrised_dft_to_dft_2d(inplace: bool):
+    image = torch.rand((10, 10))
+    rfft = torch.fft.rfftn(image, dim=(-2, -1))
+    symmetrised_dft = rfft_to_symmetrised_dft_2d(rfft)
+    fft = torch.fft.fftshift(torch.fft.fftn(image, dim=(-2, -1)), dim=(-2, -1))
+    desymmetrised_dft = symmetrised_dft_to_dft_2d(symmetrised_dft, inplace=inplace)
+    assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "inplace",
+    [(True,), (False,)]
+)
+def test_symmetrised_dft_to_dft_2d_batched(inplace: bool):
+    image = torch.rand((2, 10, 10))
+    rfft = torch.fft.rfftn(image, dim=(-2, -1))
+    symmetrised_dft = rfft_to_symmetrised_dft_2d(rfft)
+    fft = torch.fft.fftshift(torch.fft.fftn(image, dim=(-2, -1)), dim=(-2, -1))
+    desymmetrised_dft = symmetrised_dft_to_dft_2d(symmetrised_dft, inplace=inplace)
+    assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
