@@ -169,3 +169,20 @@ def symmetrised_dft_to_dft_2d(dft: torch.Tensor, inplace: bool = True):
     dft[..., :, 0] = (0.5 * dft[..., :, 0]) + (0.5 * dft[..., :, -1])
     dft[..., 0, :] = (0.5 * dft[..., 0, :]) + (0.5 * dft[..., -1, :])
     return dft[..., :-1, :-1]
+
+
+def symmetrised_dft_to_rfft_2d(dft: torch.Tensor, inplace: bool = True):
+    if dft.ndim == 2:
+        dft = einops.rearrange(dft, 'h w -> 1 h w')
+    _, h, w = dft.shape
+    dc = h // 2
+    r = dc + 1  # start of right half-spectrum
+    rfft = dft if inplace is True else torch.clone(dft)
+    # average hermitian symmetric halves
+    rfft[..., :, r:] *= 0.5
+    rfft[..., :, r:] += 0.5 * torch.flip(torch.conj(rfft[..., :, :dc]), dims=(-2, -1))
+    # average leftover redundant nyquist
+    rfft[..., 0, r:] = (0.5 * rfft[..., 0, r:]) + (0.5 * rfft[..., -1, r:])
+    # return without redundant nyquist
+    rfft = rfft[..., :-1, dc:]
+    return torch.fft.ifftshift(rfft, dim=-2)
