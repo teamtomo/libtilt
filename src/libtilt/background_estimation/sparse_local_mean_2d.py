@@ -34,6 +34,7 @@ def estimate_local_mean(
     local_mean: torch.Tensor
         `(h, w)` array containing a local estimate of the local mean.
     """
+    input_dtype = image.dtype
     image = image.numpy()
     mask = np.ones_like(image) if mask is None else mask.numpy()
 
@@ -61,4 +62,4 @@ def estimate_local_mean(
     y = np.arange(image.shape[-2])
 
     local_mean = background_model(y, x, grid=True)
-    return torch.tensor(local_mean)
+    return torch.tensor(local_mean, dtype=input_dtype)

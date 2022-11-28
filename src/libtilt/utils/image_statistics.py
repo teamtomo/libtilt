@@ -38,6 +38,6 @@ def estimate_background_std(image: torch.Tensor, mask: torch.Tensor):
     standard_deviation: float
         estimated standard deviation for the background.
     """
-    image = central_crop_2d(image, percentage=25).astype(np.float64)
+    image = central_crop_2d(image, percentage=25).float()
     mask = central_crop_2d(mask, percentage=25)
-    return np.std(central_crop_2d(image)[central_crop_2d(mask) == 0])
+    return torch.std(image[mask == 0])

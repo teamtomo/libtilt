@@ -49,8 +49,8 @@ def inpaint(
     inpainted = torch.empty_like(image)
     for idx, _image in enumerate(image):
         inpainted[idx] = _inpaint_single_image(
-            image=_image.numpy(),
-            mask=mask[idx].numpy(),
+            image=_image,
+            mask=mask[idx],
             background_model_resolution=background_intensity_model_resolution,
             n_background_samples=background_intensity_model_samples,
         )
@@ -65,7 +65,7 @@ def _inpaint_single_image(
         background_model_resolution: Tuple[int, int] = (5, 5),
         n_background_samples: int = 20000
 ) -> np.ndarray:
-    """Inpaint a single image with gaussian noise.
+    """Inpaint masked regions of an image with gaussian noise.
 
 
     Parameters
@@ -88,16 +88,16 @@ def _inpaint_single_image(
         with gaussian noise matching the local mean and global standard deviation of the image
         for background pixels.
     """
-    inpainted_image = torch.clone(image)
+    inpainted_image = torch.clone(torch.as_tensor(image))
     local_mean = estimate_local_mean(
         image=image,
-        mask=np.logical_not(mask),
+        mask=torch.logical_not(mask),
         resolution=background_model_resolution,
         n_samples_for_fit=n_background_samples
     )
 
     # fill foreground pixels with local mean
-    idx_foreground = np.argwhere(mask == 1)
+    idx_foreground = torch.argwhere(mask.bool() == True)
     idx_foreground = (idx_foreground[:, 0], idx_foreground[:, 1])
     inpainted_image[idx_foreground] = local_mean[idx_foreground]
 
@@ -109,5 +109,5 @@ def _inpaint_single_image(
         scale=background_std,
         size=n_pixels_to_inpaint
     )
-    inpainted_image[idx_foreground] += noise
+    inpainted_image[idx_foreground] += torch.as_tensor(noise)
     return inpainted_image
