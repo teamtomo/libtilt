@@ -6,7 +6,7 @@ from scipy.stats import special_ortho_group
 
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates
 from libtilt.projection.fourier import extract_slices
-from libtilt.shift.phase_shift_2d import fourier_shift_dfts_2d, phase_shift_images_2d
+from libtilt.shift.phase_shift_2d import phase_shift_dfts_2d, phase_shift_images_2d
 from libtilt.backprojection.fourier import reconstruct_from_images, insert_slices
 
 

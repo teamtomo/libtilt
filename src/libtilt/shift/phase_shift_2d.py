@@ -30,13 +30,13 @@ def get_phase_shifts_2d(
     """
     fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
     shifts = einops.rearrange(shifts, 'b shift -> b 1 1 shift')
-    factors = einops.reduce(
-        -2 * torch.pi * (fftfreq_grid * shifts), 'b h w 2 -> b h w', reduction='sum'
-    )
-    return torch.complex(real=torch.cos(factors), imag=torch.sin(factors))
+    angles = einops.reduce(
+        -2 * torch.pi * fftfreq_grid * shifts, 'b h w 2 -> b h w', reduction='sum'
+    )  # radians/cycle, cycles/sample, sample
+    return torch.complex(real=torch.cos(angles), imag=torch.sin(angles))
 
 
-def fourier_shift_dfts_2d(
+def phase_shift_dfts_2d(
         dfts: torch.Tensor,
         image_shape: Tuple[int, int],
         shifts: torch.Tensor,
@@ -54,7 +54,7 @@ def fourier_shift_dfts_2d(
 def phase_shift_images_2d(images: torch.Tensor, shifts: torch.Tensor):
     image_shape = images.shape[-2:]
     images = torch.fft.rfftn(images, dim=(-2, -1))
-    images = fourier_shift_dfts_2d(
+    images = phase_shift_dfts_2d(
         images,
         image_shape=image_shape,
         shifts=shifts,

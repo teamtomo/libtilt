@@ -20,14 +20,14 @@ def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.T
         A 2D shape `(h, w)` of the input image for which a grid of DFT sample frequencies
         should be calculated.
     rfft: bool
-        Controls Whether the frequency grid is for a real fft (rfft).
+        Indicates whether the frequency grid is for a real fft (rfft).
 
     Returns
     -------
     frequency_grid: torch.Tensor
         `(h, w, 2)` array of DFT sample frequencies.
-        Order of frequencies in the last dimension corresponds to the order of dimensions
-        of the grid.
+        Order of frequencies in the last dimension corresponds to the order of
+        the two dimensions of the grid.
     """
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     h, w = image_shape
