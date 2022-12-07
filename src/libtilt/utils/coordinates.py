@@ -5,8 +5,9 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
+
 def array_to_grid_sample(
-        array_coordinates: torch.Tensor, array_shape: Sequence[int]
+    array_coordinates: torch.Tensor, array_shape: Sequence[int]
 ) -> torch.Tensor:
     """Generate coordinates for use with `torch.nn.functional.grid_sample` from array coordinates.
 
@@ -27,7 +28,9 @@ def array_to_grid_sample(
         shape of the array being sampled at `array_coordinates`.
     """
     coords = [
-        _array_coordinates_to_grid_sample_coordinates_1d(array_coordinates[..., idx], dim_length)
+        _array_coordinates_to_grid_sample_coordinates_1d(
+            array_coordinates[..., idx], dim_length
+        )
         for idx, dim_length
         in enumerate(array_shape)
     ]
@@ -35,7 +38,7 @@ def array_to_grid_sample(
 
 
 def grid_sample_to_array(
-        grid_sample_coordinates: torch.Tensor, array_shape: Sequence[int]
+    grid_sample_coordinates: torch.Tensor, array_shape: Sequence[int]
 ) -> torch.Tensor:
     """Generate array coordinates from coordinates used for `torch.nn.functional.grid_sample`.
 
@@ -68,7 +71,8 @@ def get_array_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
     grid_dimensions: Sequence[int]
         the dimensions of the grid for which coordinates should be returned.
     """
-    indices = torch.tensor(np.indices(grid_dimensions)).float()  # (coordinates, *grid_dimensions)
+    indices = torch.tensor(np.indices(grid_dimensions)).float()
+    # (coordinates, *grid_dimensions)
     return einops.rearrange(indices, 'coordinates ... -> ... coordinates')
 
 
@@ -112,7 +116,9 @@ def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
     return F.pad(torch.as_tensor(coords), pad=(0, 1), mode='constant', value=1)
 
 
-def generate_rotated_slice_coordinates(rotations: torch.Tensor, sidelength: int) -> torch.Tensor:
+def generate_rotated_slice_coordinates(
+    rotations: torch.Tensor, sidelength: int
+) -> torch.Tensor:
     """Generate an array of rotated central slice coordinates for sampling a 3D image.
 
     Rotation matrices left multiply `xyz` coordinates in column vectors.
@@ -151,7 +157,7 @@ def generate_rotated_slice_coordinates(rotations: torch.Tensor, sidelength: int)
 
 
 def add_positional_coordinate_from_dimension(
-        coordinates: torch.Tensor, dim: int, prepend_new_coordinate: bool = False
+    coordinates: torch.Tensor, dim: int, prepend_new_coordinate: bool = False
 ) -> torch.Tensor:
     """Make an implicit coordinate in a multidimensional arrays of coordinates explicit.
 
@@ -192,12 +198,12 @@ def add_positional_coordinate_from_dimension(
 
 
 def _array_coordinates_to_grid_sample_coordinates_1d(
-        coordinates: torch.Tensor, dim_length: int
+    coordinates: torch.Tensor, dim_length: int
 ) -> torch.Tensor:
     return (coordinates / (0.5 * dim_length - 0.5)) - 1
 
 
 def _grid_sample_coordinates_to_array_coordinates_1d(
-        coordinates: torch.Tensor, dim_length: int
+    coordinates: torch.Tensor, dim_length: int
 ) -> torch.Tensor:
     return (coordinates + 1) * (0.5 * dim_length - 0.5)
