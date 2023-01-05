@@ -3,6 +3,7 @@ import sys
 import mrcfile
 import napari
 import torch
+import torch.nn.functional as F
 import numpy as np
 from scipy.stats import special_ortho_group
 
@@ -18,9 +19,10 @@ from libtilt.fsc import fsc
 from libtilt.utils.transformations import Ry
 
 N_IMAGES = 5000
-USE_SMALL_VOLUME = False
+USE_SMALL_VOLUME = True
 RECONSTRUCT_SYMMETRISED_DFT = True
 DO_VIS = True
+DO_2X_ZERO_PADDING = True
 
 big_volume_file = '4v6x.mrc'
 small_volume_file = 'ribo-16Apx.mrc'
@@ -31,6 +33,11 @@ volume_file = small_volume_file if USE_SMALL_VOLUME is True else big_volume_file
 volume = torch.tensor(mrcfile.read(volume_file))
 volume -= torch.mean(volume)
 volume /= torch.std(volume)
+
+# zero pad
+if DO_2X_ZERO_PADDING:
+    p = volume.shape[0] // 4
+    volume = F.pad(volume, pad=[p] * 6)
 
 # forward model, gridding correction then make n projections
 rotations = torch.tensor(special_ortho_group.rvs(dim=3, size=N_IMAGES)).float()
@@ -111,6 +118,10 @@ reconstruction /= sinc2
 
 fsc = fsc(reconstruction, volume)
 print(fsc)
+# if DO_2X_ZERO_PADDING:
+#     unpad = reconstruction.shape[0] // 4
+#     reconstruction = reconstruction[unpad:-unpad, unpad:-unpad, unpad:-unpad]
+mrcfile.write('input.mrc', data=volume.numpy().astype(np.float32))
 mrcfile.write('output.mrc', data=reconstruction.numpy().astype(np.float32),
               overwrite=True)
 

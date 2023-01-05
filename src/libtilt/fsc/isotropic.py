@@ -29,7 +29,6 @@ def fsc(a: torch.Tensor, b: torch.Tensor):
     split_points = torch.linspace(
         start=0.5, end=half_transform_length + 0.5, steps=half_transform_length + 1
     )
-    print(split_points)
     split_indices = torch.searchsorted(distances, split_points)
     shell_vector_idx = torch.tensor_split(distances_sorted_idx, split_indices)[:-1]
 
