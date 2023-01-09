@@ -38,12 +38,13 @@ def insert_slices(
     in_volume_idx = torch.all(in_volume_idx, dim=-1)
     slice_data, slice_coordinates = slice_data[in_volume_idx], slice_coordinates[in_volume_idx]
 
-    # only keep within circle? looks noticeably worse
+    # only keep within central sphere? reconstruction looks noticeably worse
     # d = dft.shape[0] // 2
+    # cutoff = d + 1
     # slice_coordinates -= d
-    # in_circle_idx = (torch.sum(slice_coordinates ** 2, dim=-1) ** 0.5) <= d
-    # slice_data, slice_coordinates = slice_data[in_circle_idx], \
-    #                                 slice_coordinates[in_circle_idx]
+    # valid_idx = (torch.sum(slice_coordinates ** 2, dim=-1) ** 0.5) <= cutoff
+    # slice_data, slice_coordinates = slice_data[valid_idx], \
+    #                                 slice_coordinates[valid_idx]
     # slice_coordinates += d
 
     # store floor and ceil of coordinates for each piece of slice data

@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 from scipy.stats import special_ortho_group
 
-from libtilt.mask.mask import _nd_circle
+from libtilt.mask.shapes_nd import circle
 from libtilt.utils.coordinates import generate_rotated_slice_coordinates
 from libtilt.projection.fourier import extract_slices
 from libtilt.shift.phase_shift_2d import phase_shift_dfts_2d, \
@@ -18,11 +18,12 @@ from libtilt.utils.fft import symmetrised_dft_to_dft_3d
 from libtilt.fsc import fsc
 from libtilt.utils.transformations import Ry
 
-N_IMAGES = 5000
-USE_SMALL_VOLUME = True
+N_IMAGES = 1000
+USE_SMALL_VOLUME = False
 RECONSTRUCT_SYMMETRISED_DFT = True
 DO_VIS = True
 DO_2X_ZERO_PADDING = True
+DO_STANDARD_TILT_SERIES = True  # ignores N_IMAGES, -60, 60, 3
 
 big_volume_file = '4v6x.mrc'
 small_volume_file = 'ribo-16Apx.mrc'
@@ -41,7 +42,9 @@ if DO_2X_ZERO_PADDING:
 
 # forward model, gridding correction then make n projections
 rotations = torch.tensor(special_ortho_group.rvs(dim=3, size=N_IMAGES)).float()
-# rotations = Ry(torch.linspace(-60, 60, 41))[:, :3, :3]
+if DO_STANDARD_TILT_SERIES:
+    N_IMAGES = 41
+    rotations = Ry(torch.linspace(-60, 60, N_IMAGES))[:, :3, :3]
 slice_coordinates = generate_rotated_slice_coordinates(rotations,
                                                        sidelength=volume.shape[
                                                            0])
@@ -103,6 +106,7 @@ reconstruction, weights = insert_slices(
 valid_weights = weights > 1e-3
 reconstruction[valid_weights] /= weights[valid_weights]
 
+
 # desymmetrise dft
 if RECONSTRUCT_SYMMETRISED_DFT is True:
     reconstruction = symmetrised_dft_to_dft_3d(reconstruction, inplace=True)
@@ -116,12 +120,11 @@ reconstruction = torch.real(reconstruction)
 # gridding correction
 reconstruction /= sinc2
 
+# fsc
 fsc = fsc(reconstruction, volume)
 print(fsc)
-# if DO_2X_ZERO_PADDING:
-#     unpad = reconstruction.shape[0] // 4
-#     reconstruction = reconstruction[unpad:-unpad, unpad:-unpad, unpad:-unpad]
-mrcfile.write('input.mrc', data=volume.numpy().astype(np.float32))
+mrcfile.write('input.mrc', data=volume.numpy().astype(np.float32),
+              overwrite=True)
 mrcfile.write('output.mrc', data=reconstruction.numpy().astype(np.float32),
               overwrite=True)
 

@@ -1,1 +1,1 @@
-from .isotropic import fsc
+from ._general import fsc
