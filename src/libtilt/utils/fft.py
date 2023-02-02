@@ -1,6 +1,7 @@
 from typing import Sequence, List, Tuple
 
 import einops
+import numpy as np
 import torch
 
 
@@ -9,6 +10,21 @@ def rfft_shape_from_signal_shape(input_shape: Sequence[int]) -> Tuple[int]:
     rfft_shape = list(input_shape)
     rfft_shape[-1] = int((rfft_shape[-1] / 2) + 1)
     return tuple(rfft_shape)
+
+
+def fft_center(
+    grid_shape: Tuple[int, ...], fftshifted: bool, rfft: bool
+) -> torch.Tensor:
+    """Return the indices of the fftshifted DFT center."""
+    fft_center = torch.zeros(size=(len(grid_shape),))
+    grid_shape = torch.as_tensor(grid_shape).float()
+    if rfft is True:
+        grid_shape = torch.tensor(rfft_shape_from_signal_shape(grid_shape))
+    if fftshifted is True:
+        fft_center = torch.divide(grid_shape, 2, rounding_mode='floor')
+    if rfft is True:
+        fft_center[-1] = 0
+    return fft_center
 
 
 def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.Tensor:
@@ -93,7 +109,8 @@ def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     Returns
     -------
     output: torch.Tensor
-        `(h, w)` or `(b, h, w)` symmetrised DFT constructed from the input `rfft`.
+        `(h+1, w+1)` or `(b, h+1, w+1)` symmetrised DFT constructed from the input
+        `rfft`.
     """
     r = rfft.shape[-2]  # lenght of h is unmodified by rfft
     if rfft.ndim == 2:
@@ -143,7 +160,7 @@ def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
     output[..., -1, -1, dc:] = rfft[..., 0, 0, :]
     # fill redundant half-spectrum
     output[..., :, :, :dc] = torch.flip(torch.conj(output[..., :, :, dc + 1:]),
-                                    dims=(-3, -2, -1))
+                                        dims=(-3, -2, -1))
     return output
 
 
@@ -221,3 +238,57 @@ def symmetrised_dft_to_dft_3d(dft: torch.Tensor, inplace: bool = True):
     dft[..., :, 0, :] = (0.5 * dft[..., :, 0, :]) + (0.5 * dft[..., :, -1, :])
     dft[..., 0, :, :] = (0.5 * dft[..., 0, :, :]) + (0.5 * dft[..., -1, :, :])
     return dft[..., :-1, :-1, :-1]
+
+
+def _indices_centered_on_dc_for_shifted_rfft(
+    rfft_shape: Sequence[int]
+) -> torch.Tensor:
+    rfft_shape = torch.tensor(rfft_shape)
+    rfftn_dc_idx = torch.div(rfft_shape, 2, rounding_mode='floor')
+    rfftn_dc_idx[-1] = 0
+    rfft_indices = torch.tensor(np.indices(rfft_shape))  # (c, (d), h, w)
+    rfft_indices = einops.rearrange(rfft_indices, 'c ... -> ... c')
+    return rfft_indices - rfftn_dc_idx
+
+
+def _distance_from_dc_for_shifted_rfft(rfft_shape: Sequence[int]) -> torch.Tensor:
+    centered_indices = _indices_centered_on_dc_for_shifted_rfft(rfft_shape)
+    return einops.reduce(centered_indices ** 2, '... c -> ...') ** 0.5
+
+
+def _indices_centered_on_dc_for_shifted_dft(
+    dft_shape: Sequence[int], rfft: bool
+) -> torch.Tensor:
+    if rfft is True:
+        return _indices_centered_on_dc_for_shifted_rfft(dft_shape)
+    dft_indices = torch.tensor(np.indices(dft_shape)).float()
+    dft_indices = einops.rearrange(dft_indices, 'c ... -> ... c')
+    dc_idx = fft_center(dft_shape, fftshifted=True, rfft=False)
+    return dft_indices - dc_idx
+
+
+def _distance_from_dc_for_shifted_dft(
+    dft_shape: Sequence[int], rfft: bool
+) -> torch.Tensor:
+    idx = _indices_centered_on_dc_for_shifted_dft(dft_shape, rfft=rfft)
+    return einops.reduce(idx ** 2, '... c -> ...', reduction='sum') ** 0.5
+
+
+def indices_centered_on_dc_for_dft(
+    dft_shape: Sequence[int], rfft: bool, fftshifted: bool
+) -> torch.Tensor:
+    dft_indices = _indices_centered_on_dc_for_shifted_dft(dft_shape, rfft=rfft)
+    dft_indices = einops.rearrange(dft_indices, '... c -> c ...')
+    if fftshifted is False:
+        dims_to_shift = tuple(torch.arange(start=-1 * len(dft_shape), end=0, step=1))
+        dims_to_shift = dims_to_shift[:-1] if rfft is True else dims_to_shift
+        dft_indices = torch.fft.ifftshift(dft_indices, dim=dims_to_shift)
+    return einops.rearrange(dft_indices, 'c ... -> ... c')
+
+
+def distance_from_dc_for_dft(
+    dft_shape: Sequence[int], rfft: bool, fftshifted: bool
+) -> torch.Tensor:
+    idx = indices_centered_on_dc_for_dft(dft_shape, rfft=rfft, fftshifted=fftshifted)
+    return einops.reduce(idx**2, '... c -> ...', reduction='sum') ** 0.5
+

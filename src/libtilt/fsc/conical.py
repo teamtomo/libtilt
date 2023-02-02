@@ -2,8 +2,8 @@ from typing import Tuple
 
 import torch
 
-from libtilt.utils.fft import rfft_shape_from_signal_shape
-from ._general import _indices_centered_on_dc_for_shifted_rfft
+from libtilt.utils.fft import rfft_shape_from_signal_shape, \
+    _indices_centered_on_dc_for_shifted_rfft
 from ._general import fsc as _fsc
 
 

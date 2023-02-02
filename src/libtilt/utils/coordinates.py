@@ -59,7 +59,7 @@ def grid_sample_to_array(
     return einops.rearrange(indices[::-1], 'zyx b h w -> b h w zyx')
 
 
-def get_array_coordinates(grid_dimensions: Sequence[int]) -> torch.Tensor:
+def get_array_indices(grid_dimensions: Sequence[int]) -> torch.Tensor:
     """Get a dense grid of array coordinates from grid dimensions.
 
     For input `grid_dimensions` of `(d, h, w)`, produce a `(d, h, w, 3)`
@@ -207,3 +207,11 @@ def _grid_sample_coordinates_to_array_coordinates_1d(
     coordinates: torch.Tensor, dim_length: int
 ) -> torch.Tensor:
     return (coordinates + 1) * (0.5 * dim_length - 0.5)
+
+
+def grid_distance_from_point_2d(
+    grid_dimensions: torch.Tensor, point: torch.Tensor
+) -> torch.Tensor:
+    idx = get_array_indices(grid_dimensions)
+    differences = idx - point
+    return torch.sum(differences ** 2, dim=-1) ** 0.5

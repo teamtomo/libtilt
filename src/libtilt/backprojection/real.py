@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 
 from libtilt.utils.coordinates import (
-    get_array_coordinates,
+    get_array_indices,
     homogenise_coordinates,
     array_to_grid_sample,
 )
@@ -39,7 +39,7 @@ def backproject(
     reconstruction: torch.Tensor
         `(d, h, w)` array containing the reconstructed 3D volume.
     """
-    grid_coordinates = get_array_coordinates(output_dimensions)  # (d, h, w, zyx)
+    grid_coordinates = get_array_indices(output_dimensions)  # (d, h, w, zyx)
     grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, xyz)
     grid_coordinates = homogenise_coordinates(grid_coordinates)  # (d, h, w, xyzw)
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w xyzw 1')

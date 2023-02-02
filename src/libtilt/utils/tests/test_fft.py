@@ -6,7 +6,8 @@ from libtilt.utils.fft import construct_fftfreq_grid_2d, \
     rfft_shape_from_signal_shape, \
     rfft_to_symmetrised_dft_2d, rfft_to_symmetrised_dft_3d, \
     symmetrised_dft_to_dft_2d, \
-    symmetrised_dft_to_rfft_2d, symmetrised_dft_to_dft_3d
+    symmetrised_dft_to_rfft_2d, symmetrised_dft_to_dft_3d, \
+    fft_center
 
 
 def test_rfft_shape_from_signal_shape():
@@ -146,3 +147,20 @@ def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
     desymmetrised_dft = symmetrised_dft_to_dft_3d(symmetrised_dft,
                                                   inplace=inplace)
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
+
+@pytest.mark.parametrize(
+    "fftshifted, rfft, input, expected",
+    [
+        (False, False, (5, 5, 5), torch.tensor([0., 0., 0.])),
+        (False, True,  (5, 5, 5), torch.tensor([0., 0., 0.])),
+        (True, False, (5, 5, 5), torch.tensor([2., 2., 2.])),
+        (True, True, (5, 5, 5), torch.tensor([2., 2., 0.])),
+        (False, False, (4, 4, 4), torch.tensor([0., 0., 0.])),
+        (False, True, (4, 4, 4), torch.tensor([0., 0., 0.])),
+        (True, False, (4, 4, 4), torch.tensor([2., 2., 2.])),
+        (True, True, (4, 4, 4), torch.tensor([2., 2., 0.])),
+    ],
+)
+def test_fft_center(fftshifted, rfft, input, expected):
+    result = fft_center(input, fftshifted=fftshifted, rfft=rfft)
+    assert torch.allclose(result, expected)

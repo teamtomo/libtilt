@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 from libtilt.utils.coordinates import (
-    get_array_coordinates,
+    get_array_indices,
     array_to_grid_sample,
 )
 
@@ -47,7 +47,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
     torch_padding = einops.rearrange(torch_padding, 'whd pad -> (whd pad)')
     volume = F.pad(volume, pad=tuple(torch_padding), mode='constant', value=0)
     padded_volume_shape = (ps, ps, ps)
-    volume_coordinates = get_array_coordinates(grid_dimensions=padded_volume_shape)
+    volume_coordinates = get_array_indices(grid_dimensions=padded_volume_shape)
     volume_coordinates -= padded_sidelength // 2  # (d, h, w, zyx)
     volume_coordinates = torch.flip(volume_coordinates, dims=(-1,))  # (d, h, w, xyz)
     volume_coordinates = einops.rearrange(volume_coordinates, 'd h w xyz -> d h w xyz 1')
