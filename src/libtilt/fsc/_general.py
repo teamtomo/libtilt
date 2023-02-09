@@ -3,7 +3,7 @@ from torch import fft as fft
 
 from libtilt.utils.fft import rfft_shape_from_signal_shape, \
     _distance_from_dc_for_shifted_rfft
-from libtilt.utils.rotational_average import _find_shell_indices_1d
+from libtilt.rotational_average import _find_shell_indices_1d
 
 
 def fsc(

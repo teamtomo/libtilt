@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.utils.rotational_average import _split_into_shells_2d, \
+from libtilt.rotational_average import _split_into_shells_2d, \
     rotational_average_2d, rotational_average_3d
 
 

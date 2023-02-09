@@ -3,7 +3,7 @@ from typing import List
 import einops
 import torch
 
-from .fft import distance_from_dc_for_dft
+from libtilt.utils.fft import distance_from_dc_for_dft
 
 
 def _find_shell_indices_1d(
