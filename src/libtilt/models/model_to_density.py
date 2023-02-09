@@ -34,7 +34,6 @@ def rasterise_xyz_on_cube(
     return image
 
 
-@cli.command(no_args_is_help=True)
 def pdb2mrc(model_file: Path, output_mrc_file: Path, voxel_spacing: float = 10):
     xyz = model_to_xyz(str(model_file))
     xyz /= voxel_spacing
@@ -42,7 +41,3 @@ def pdb2mrc(model_file: Path, output_mrc_file: Path, voxel_spacing: float = 10):
     mrcfile.write(
         output_mrc_file, volume, voxel_size=voxel_spacing, overwrite=True
     )
-
-
-if __name__ == '__main__':
-    cli()
