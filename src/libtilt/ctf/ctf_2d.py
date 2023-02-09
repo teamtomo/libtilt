@@ -66,7 +66,8 @@ def calculate_ctf(
     voltage = torch.atleast_1d(torch.as_tensor(voltage, dtype=torch.float))
     voltage *= 1e3  # kV -> V
     spherical_aberration = torch.atleast_1d(
-        torch.as_tensor(spherical_aberration, dtype=torch.float))
+        torch.as_tensor(spherical_aberration, dtype=torch.float)
+    )
     spherical_aberration *= 1e7  # mm -> angstroms
     image_shape = torch.as_tensor(image_shape)
 
