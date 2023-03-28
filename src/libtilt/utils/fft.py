@@ -1,3 +1,4 @@
+import functools
 from typing import Sequence, List, Tuple
 
 import einops
@@ -27,7 +28,10 @@ def fft_center(
     return fft_center
 
 
-def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.Tensor:
+@functools.lru_cache(maxsize=1)
+def construct_fftfreq_grid_2d(
+    image_shape: Sequence[int], rfft: bool, device: torch.device = None
+) -> torch.Tensor:
     """Construct a grid of DFT sample frequencies for a 2D image.
 
     Parameters
@@ -37,6 +41,8 @@ def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.T
         should be calculated.
     rfft: bool
         Indicates whether the frequency grid is for a real fft (rfft).
+    device: torch.device
+        Torch device for the resulting grid.
 
     Returns
     -------
@@ -47,15 +53,17 @@ def construct_fftfreq_grid_2d(image_shape: Sequence[int], rfft: bool) -> torch.T
     """
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     h, w = image_shape
-    freq_y = torch.fft.fftfreq(h)
-    freq_x = last_axis_frequency_func(w)
+    freq_y = torch.fft.fftfreq(h, device=device)
+    freq_x = last_axis_frequency_func(w, device=device)
     h, w = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
     freq_yy = einops.repeat(freq_y, 'h -> h w', w=w)
     freq_xx = einops.repeat(freq_x, 'w -> h w', h=h)
     return einops.rearrange([freq_yy, freq_xx], 'freq h w -> h w freq')
 
 
-def construct_fftfreq_grid_3d(image_shape: Sequence[int], rfft: bool) -> torch.Tensor:
+def construct_fftfreq_grid_3d(
+    image_shape: Sequence[int], rfft: bool, device: torch.device = None
+) -> torch.Tensor:
     """Construct a grid of DFT sample frequencies for a 3D image.
 
     Parameters
@@ -65,6 +73,8 @@ def construct_fftfreq_grid_3d(image_shape: Sequence[int], rfft: bool) -> torch.T
         should be calculated.
     rfft: bool
         Controls Whether the frequency grid is for a real fft (rfft).
+    device: torch.device
+        Torch device for the resulting grid.
 
     Returns
     -------
@@ -75,9 +85,9 @@ def construct_fftfreq_grid_3d(image_shape: Sequence[int], rfft: bool) -> torch.T
     """
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     d, h, w = image_shape
-    freq_z = torch.fft.fftfreq(d)
-    freq_y = torch.fft.fftfreq(h)
-    freq_x = last_axis_frequency_func(w)
+    freq_z = torch.fft.fftfreq(d, device=device)
+    freq_y = torch.fft.fftfreq(h, device=device)
+    freq_x = last_axis_frequency_func(w, device=device)
     d, h, w = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
     freq_zz = einops.repeat(freq_z, 'd -> d h w', h=h, w=w)
     freq_yy = einops.repeat(freq_y, 'h -> d h w', d=d, w=w)
@@ -253,7 +263,7 @@ def _indices_centered_on_dc_for_shifted_rfft(
 
 def _distance_from_dc_for_shifted_rfft(rfft_shape: Sequence[int]) -> torch.Tensor:
     centered_indices = _indices_centered_on_dc_for_shifted_rfft(rfft_shape)
-    return einops.reduce(centered_indices ** 2, '... c -> ...') ** 0.5
+    return einops.reduce(centered_indices ** 2, '... c -> ...', reduction='sum') ** 0.5
 
 
 def _indices_centered_on_dc_for_shifted_dft(

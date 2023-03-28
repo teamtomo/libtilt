@@ -28,12 +28,13 @@ def get_phase_shifts_2d(
         of images with `image_shape`. Outputs are compatible with the DFT without
         fftshift applied if `rfft=False`.
     """
-    fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape,
-                                             rfft=rfft)  # (h, w, 2)
-    shifts = einops.rearrange(shifts, 'b shift -> b 1 1 shift')
+    fftfreq_grid = construct_fftfreq_grid_2d(
+        image_shape=image_shape, rfft=rfft, device=shifts.device
+    )  # (h, w, 2)
+    shifts = einops.rearrange(shifts, '... shift -> ... 1 1 shift')
     angles = einops.reduce(
-        -2 * torch.pi * fftfreq_grid * shifts, 'b h w 2 -> b h w', reduction='sum'
-    )  # radians/cycle, cycles/sample, sample
+        -2 * torch.pi * fftfreq_grid * shifts, '... h w 2 -> ... h w', reduction='sum'
+    )  # radians/cycle, cycles/sample, samples
     return torch.complex(real=torch.cos(angles), imag=torch.sin(angles))
 
 
@@ -42,13 +43,13 @@ def phase_shift_dfts_2d(
     image_shape: Tuple[int, int],
     shifts: torch.Tensor,
     rfft: bool = False,
-    spectrum_is_fftshifted: bool = False,
+    fftshifted: bool = False,
 ):
-    if rfft is True and spectrum_is_fftshifted is True:
+    if rfft is True and fftshifted is True:
         raise ValueError('Bad arguments: rfft cannot be fftshifted.')
     phase_shifts = get_phase_shifts_2d(shifts=shifts, image_shape=image_shape,
                                        rfft=rfft)
-    if spectrum_is_fftshifted:
+    if fftshifted:
         phase_shifts = torch.fft.fftshift(phase_shifts, dim=(-2, -1))
     return dfts * phase_shifts
 
@@ -61,7 +62,7 @@ def phase_shift_images_2d(images: torch.Tensor, shifts: torch.Tensor):
         image_shape=image_shape,
         shifts=shifts,
         rfft=True,
-        spectrum_is_fftshifted=False
+        fftshifted=False
     )
     images = torch.fft.irfftn(images, dim=(-2, -1))
     return torch.real(images)

@@ -43,11 +43,11 @@ def calculate_ctf(
     """
     # to torch.Tensor and unit conversions
     defocus = torch.atleast_1d(torch.as_tensor(defocus, dtype=torch.float))
-    defocus *= 1e4  # micrometers -> angstroms
+    defocus = defocus * 1e4  # micrometers -> angstroms
     defocus = einops.rearrange(defocus, '... -> ... 1')
     pixel_size = torch.atleast_1d(torch.as_tensor(pixel_size))
     voltage = torch.atleast_1d(torch.as_tensor(voltage, dtype=torch.float))
-    voltage *= 1e3  # kV -> V
+    voltage = voltage * 1e3  # kV -> V
     spherical_aberration = torch.atleast_1d(
         torch.as_tensor(spherical_aberration, dtype=torch.float)
     )

@@ -13,7 +13,7 @@ def test_1d_ctf_single():
         b_factor=0,
         phase_shift=0,
         n_samples=10,
-        oversampling_factor=1
+        oversampling_factor=3
     )
     expected = torch.tensor(
         [

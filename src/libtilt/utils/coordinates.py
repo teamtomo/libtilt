@@ -15,8 +15,8 @@ def array_to_grid_sample(
         - 0 is at the center of the first element
         - N is the length of the dimension
     - grid sample coordinates are from [-1, 1]
-        - if align_corners=True, -1 and 1 are at the edges of array elements 0 and N-1
-        - if align_corners=False, -1 and 1 are at the centers of array elements 0 and N-1
+        - if align_corners=True, -1 and 1 are at the centers of array elements 0 and N-1
+        - if align_corners=False, -1 and 1 are at the edges of array elements 0 and N-1
 
 
     Parameters
