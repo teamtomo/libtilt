@@ -12,7 +12,7 @@ def extract_slices(
     """Sample batches of 2D images from a complex cubic volume at specified coordinates.
 
 
-    `dft` should pre-fftshifted to place the origin in Fourier space at the center of the DFT
+    `dft` should pre-fftshifted to place the origin in Fourier space at the center_grid of the DFT
     i.e. dft should be the result of
 
             volume -> fftshift(volume) -> fft3(volume) -> fftshift(volume)
@@ -64,7 +64,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor, pad=True) -> 
     """Fourier space projection by sampling central slices."""
     if pad is True:
         pad_length = volume.shape[-1] // 2
-        volume = F.pad(volume, pad=[pad_length]*6, mode='constant', value=None)
+        volume = F.pad(volume, pad=[pad_length]*6, mode='constant', value=0)
     dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
     dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))

@@ -55,4 +55,4 @@ repos:
     rev: v0.961
     hooks:
       - id: mypy
-        files: "^src/"
+        files: "^source_spacing/"

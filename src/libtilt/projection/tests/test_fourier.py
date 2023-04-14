@@ -43,7 +43,7 @@ def test_project_with_rotation():
     volume[5, 5, 5] = 1
 
     # with rotation
-    # (5, 5, 5) is rotation center so projection shouldn't change...
+    # (5, 5, 5) is rotation center_grid so projection shouldn't change...
     rotation_matrix = torch.tensor(R.random(num=1).as_matrix()).reshape(1, 3, 3).float()
     projection = project(volume, rotation_matrix)
     expected = torch.sum(volume, dim=0)

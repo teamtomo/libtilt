@@ -22,13 +22,6 @@ def get_patch_indices_2d(
     distribute_patches: bool = True,
     device: torch.device = None
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    centers = _get_patch_centers_2d(
-        image_shape=image_shape,
-        patch_shape=patch_shape,
-        patch_step=patch_step,
-        distribute_patches=distribute_patches,
-        device=device
-    )
     centers = [
         _get_patch_centers_1d(
             dim_length=_dim_length,
@@ -49,6 +42,6 @@ def get_patch_indices_2d(
         for per_dim_centers, window_length
         in zip(centers, patch_shape)
     ]
-    idx_h = einops.rearrange(idx_h, 'n_ph h -> n_ph 1 h 1')
-    idx_w = einops.rearrange(idx_w, 'n_pw w -> 1 n_pw 1 w')
+    idx_h = einops.rearrange(idx_h, 'ph h -> ph 1 h 1')
+    idx_w = einops.rearrange(idx_w, 'pw w -> 1 pw 1 w')
     return idx_h, idx_w

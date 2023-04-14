@@ -13,14 +13,14 @@ def estimate_local_mean(
 ):
     """Estimate local mean of an image with a bivariate cubic spline.
 
-    A mask can be provided to
+    A shapes can be provided to
 
     Parameters
     ----------
     image: torch.Tensor
         `(h, w)` array containing image data.
     mask: Optional[torch.Tensor]
-        `(h, w)` array containing a binary mask specifying foreground
+        `(h, w)` array containing a binary shapes specifying foreground
         and background pixels for the estimation.
     resolution: Tuple[int, int]
         Resolution of the local mean estimate in each dimension.

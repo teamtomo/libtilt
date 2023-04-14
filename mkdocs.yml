@@ -27,7 +27,7 @@ theme:
 plugins:
   - mkdocstrings:
       watch:
-        - src/libtilt
+        - source_spacing/libtilt
       handlers:
         python:
           import:

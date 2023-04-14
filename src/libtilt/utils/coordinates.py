@@ -1,9 +1,10 @@
-from typing import Sequence, Tuple, Literal
+from typing import Sequence
 
 import einops
-import numpy as np
 import torch
 from torch.nn import functional as F
+
+from libtilt.grids.coordinate import coordinate_grid
 
 
 def array_to_grid_sample(
@@ -12,7 +13,7 @@ def array_to_grid_sample(
     """Generate coordinates for use with `torch.nn.functional.grid_sample` from array coordinates.
 
     - array coordinates are from [0, N-1] for N elements in each dimension.
-        - 0 is at the center of the first element
+        - 0 is at the center_grid of the first element
         - N is the length of the dimension
     - grid sample coordinates are from [-1, 1]
         - if align_corners=True, -1 and 1 are at the centers of array elements 0 and N-1
@@ -57,23 +58,6 @@ def grid_sample_to_array(
         in enumerate(array_shape[::-1])
     ]
     return einops.rearrange(indices[::-1], 'zyx b h w -> b h w zyx')
-
-
-def get_array_indices(grid_dimensions: Sequence[int]) -> torch.Tensor:
-    """Get a dense grid of array coordinates from grid dimensions.
-
-    For input `grid_dimensions` of `(d, h, w)`, produce a `(d, h, w, 3)`
-    array of indices into a `(d, h, w)` array. Ordering of the coordinates
-    matches the order of dimensions in `grid_dimensions`.
-
-    Parameters
-    ----------
-    grid_dimensions: Sequence[int]
-        the dimensions of the grid for which coordinates should be returned.
-    """
-    indices = torch.tensor(np.indices(grid_dimensions)).float()
-    # (coordinates, *grid_dimensions)
-    return einops.rearrange(indices, 'coordinates ... -> ... coordinates')
 
 
 def promote_2d_shifts_to_3d(shifts: torch.Tensor) -> torch.Tensor:
@@ -139,7 +123,7 @@ def generate_rotated_slice_coordinates(
     if rotations.ndim == 2:
         rotations = einops.rearrange(rotations, 'i j -> 1 i j')
     # generate [x, y, z] coordinates for a central slice
-    # the slice spans the XY plane with origin on DFT center
+    # the slice spans the XY plane with origin on DFT center_grid
     x = y = torch.arange(sidelength) - (sidelength // 2)
     xx = einops.repeat(x, 'w -> h w', h=sidelength)
     yy = einops.repeat(y, 'h -> h w', w=sidelength)
@@ -150,7 +134,7 @@ def generate_rotated_slice_coordinates(
     rotations = einops.rearrange(rotations, 'b i j -> b 1 1 i j')
     xyz = einops.rearrange(rotations @ xyz, 'b h w xyz 1 -> b h w xyz')
 
-    # recenter slice on DFT center and flip to zyx
+    # recenter slice on DFT center_grid and flip to zyx
     xyz += sidelength // 2
     zyx = torch.flip(xyz, dims=(-1,))
     return zyx
@@ -212,6 +196,6 @@ def _grid_sample_coordinates_to_array_coordinates_1d(
 def grid_distance_from_point_2d(
     grid_dimensions: torch.Tensor, point: torch.Tensor
 ) -> torch.Tensor:
-    idx = get_array_indices(grid_dimensions)
+    idx = coordinate_grid(grid_dimensions)
     differences = idx - point
     return torch.sum(differences ** 2, dim=-1) ** 0.5

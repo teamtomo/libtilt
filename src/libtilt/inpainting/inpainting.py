@@ -22,7 +22,7 @@ def inpaint(
     image: np.ndarray
         `(b, h, w)` or `(h, w)` array containing image data for inpainting.
     mask: np.ndarray
-        `(b, h, w)` or `(h, w)` binary mask separating foreground from background pixels.
+        `(b, h, w)` or `(h, w)` binary shapes separating foreground from background pixels.
         Foreground pixels (1) will be inpainted.
     background_intensity_model_resolution: Tuple[int, int]
         Number of points in each image dimension for the background mean model.
@@ -33,14 +33,14 @@ def inpaint(
     Returns
     -------
     inpainted_image: torch.Tensor
-        `(b, h, w)` or `(h, w)` array containing image data inpainted in the foreground pixels of the mask
+        `(b, h, w)` or `(h, w)` array containing image data inpainted in the foreground pixels of the shapes
         with gaussian noise matching the local mean and global standard deviation of the image
         for background pixels.
     """
     image = torch.as_tensor(image)
     mask = torch.as_tensor(mask, dtype=torch.bool)
     if image.shape != mask.shape:
-        raise ValueError('image shape must match mask shape.')
+        raise ValueError('image shape must match shapes shape.')
     input_is_batched = True
     if image.ndim == 2:
         input_is_batched = False
@@ -73,7 +73,7 @@ def _inpaint_single_image(
     image: torch.Tensor
         `(h, w)` array containing image data for inpainting.
     mask: torch.Tensor
-        `(h, w)` binary mask separating foreground from background pixels.
+        `(h, w)` binary shapes separating foreground from background pixels.
         Foreground pixels (value == 1) will be inpainted.
     background_model_resolution: Tuple[int, int]
         Number of points in each image dimension for the background mean model.
@@ -84,7 +84,7 @@ def _inpaint_single_image(
     Returns
     -------
     inpainted_image: torch.Tensor
-        `(h, w)` array containing image data inpainted in the foreground pixels of the mask
+        `(h, w)` array containing image data inpainted in the foreground pixels of the shapes
         with gaussian noise matching the local mean and global standard deviation of the image
         for background pixels.
     """

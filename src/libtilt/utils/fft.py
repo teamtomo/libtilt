@@ -1,5 +1,6 @@
 import functools
-from typing import Sequence, List, Tuple
+from typing import Sequence, Tuple
+from itertools import combinations, permutations
 
 import einops
 import numpy as np
@@ -13,11 +14,14 @@ def rfft_shape_from_signal_shape(input_shape: Sequence[int]) -> Tuple[int]:
     return tuple(rfft_shape)
 
 
-def fft_center(
-    grid_shape: Tuple[int, ...], fftshifted: bool, rfft: bool
-) -> torch.Tensor:
-    """Return the indices of the fftshifted DFT center."""
-    fft_center = torch.zeros(size=(len(grid_shape),))
+def dft_center(
+    grid_shape: Tuple[int, ...],
+    rfft: bool,
+    fftshifted: bool,
+    device: torch.device | None = None,
+) -> torch.LongTensor:
+    """Return the indices of the DFT center_grid."""
+    fft_center = torch.zeros(size=(len(grid_shape),), device=device)
     grid_shape = torch.as_tensor(grid_shape).float()
     if rfft is True:
         grid_shape = torch.tensor(rfft_shape_from_signal_shape(grid_shape))
@@ -25,74 +29,64 @@ def fft_center(
         fft_center = torch.divide(grid_shape, 2, rounding_mode='floor')
     if rfft is True:
         fft_center[-1] = 0
-    return fft_center
+    return fft_center.long()
+
+
+def fftshift_2d(input: torch.Tensor, rfft: bool):
+    if rfft is False:
+        output = torch.fft.fftshift(input, dim=(-2, -1))
+    else:
+        output = torch.fft.fftshift(input, dim=(-2,))
+    return output
+
+
+def ifftshift_2d(input: torch.Tensor, rfft: bool):
+    if rfft is False:
+        output = torch.fft.ifftshift(input, dim=(-2, -1))
+    else:
+        output = torch.fft.ifftshift(input, dim=(-2,))
+    return output
+
+
+def fftshift_3d(input: torch.Tensor, rfft: bool):
+    if rfft is False:
+        output = torch.fft.fftshift(input, dim=(-3, -2, -1))
+    else:
+        output = torch.fft.fftshift(input, dim=(-3, -2,))
+    return output
+
+
+def ifftshift_3d(input: torch.Tensor, rfft: bool):
+    if rfft is False:
+        output = torch.fft.ifftshift(input, dim=(-3, -2, -1))
+    else:
+        output = torch.fft.ifftshift(input, dim=(-3, -2,))
+    return output
 
 
 @functools.lru_cache(maxsize=1)
-def construct_fftfreq_grid_2d(
-    image_shape: Sequence[int], rfft: bool, device: torch.device = None
-) -> torch.Tensor:
-    """Construct a grid of DFT sample frequencies for a 2D image.
+def fft_sizes(lower_bound: int = 0) -> torch.LongTensor:
+    """FFT input sizes which are factorisable into small primes."""
+    # powers of two
+    powers_of_two = torch.pow(2, torch.arange(2, 33))
 
-    Parameters
-    ----------
-    image_shape: Sequence[int]
-        A 2D shape `(h, w)` of the input image for which a grid of DFT sample frequencies
-        should be calculated.
-    rfft: bool
-        Indicates whether the frequency grid is for a real fft (rfft).
-    device: torch.device
-        Torch device for the resulting grid.
-
-    Returns
-    -------
-    frequency_grid: torch.Tensor
-        `(h, w, 2)` array of DFT sample frequencies.
-        Order of frequencies in the last dimension corresponds to the order of
-        the two dimensions of the grid.
-    """
-    last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
-    h, w = image_shape
-    freq_y = torch.fft.fftfreq(h, device=device)
-    freq_x = last_axis_frequency_func(w, device=device)
-    h, w = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
-    freq_yy = einops.repeat(freq_y, 'h -> h w', w=w)
-    freq_xx = einops.repeat(freq_x, 'w -> h w', h=h)
-    return einops.rearrange([freq_yy, freq_xx], 'freq h w -> h w freq')
-
-
-def construct_fftfreq_grid_3d(
-    image_shape: Sequence[int], rfft: bool, device: torch.device = None
-) -> torch.Tensor:
-    """Construct a grid of DFT sample frequencies for a 3D image.
-
-    Parameters
-    ----------
-    image_shape: Sequence[int]
-        A 3D shape `(d, h, w)` of the input image for which a grid of DFT sample frequencies
-        should be calculated.
-    rfft: bool
-        Controls Whether the frequency grid is for a real fft (rfft).
-    device: torch.device
-        Torch device for the resulting grid.
-
-    Returns
-    -------
-    frequency_grid: torch.Tensor
-        `(h, w, 3)` array of DFT sample frequencies.
-        Order of frequencies in the last dimension corresponds to the order of dimensions
-        of the grid.
-    """
-    last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
-    d, h, w = image_shape
-    freq_z = torch.fft.fftfreq(d, device=device)
-    freq_y = torch.fft.fftfreq(h, device=device)
-    freq_x = last_axis_frequency_func(w, device=device)
-    d, h, w = rfft_shape_from_signal_shape(image_shape) if rfft is True else image_shape
-    freq_zz = einops.repeat(freq_z, 'd -> d h w', h=h, w=w)
-    freq_yy = einops.repeat(freq_y, 'h -> d h w', d=d, w=w)
-    freq_xx = einops.repeat(freq_x, 'w -> d h w', d=d, h=h)
-    return einops.rearrange([freq_zz, freq_yy, freq_xx], 'freq h w -> h w freq')
+    # numbers factorisable into the smallest primes 2, 3, and 5
+    powers = [
+        torch.tensor(list(set(permutations(combination))))
+        for combination
+        in combinations(range(6), 3)
+    ]
+    i, j, k = einops.rearrange(powers, 'b1 b2 powers -> powers (b1 b2)')
+    prime_factors = [
+        torch.pow(2, exponent=i),
+        torch.pow(3, exponent=j),
+        torch.pow(5, exponent=k),
+    ]
+    prime_factors = einops.rearrange(prime_factors, 'f b -> b f')
+    fft_sizes = einops.reduce(prime_factors, 'b f -> b', reduction='prod')
+    fft_sizes = torch.cat([powers_of_two, fft_sizes])
+    fft_sizes, _ = torch.sort(fft_sizes)
+    return fft_sizes[fft_sizes >= lower_bound]
 
 
 def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
@@ -128,7 +122,7 @@ def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     elif rfft.ndim == 3:
         b = rfft.shape[0]
         output = torch.zeros((b, r + 1, r + 1), dtype=torch.complex64)
-    # fftshift full length dims to center DC component
+    # fftshift full length dims to center_grid DC component
     dc = r // 2
     rfft = torch.fft.fftshift(rfft, dim=(-2,))
     output[..., :-1, dc:] = rfft  # place rfft in output
@@ -159,7 +153,7 @@ def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
     elif rfft.ndim == 4:
         b = rfft.shape[0]
         output = torch.zeros((b, r + 1, r + 1, r + 1), dtype=torch.complex64)
-    # fftshift full length dims (i.e. not -1) to center DC component
+    # fftshift full length dims (i.e. not -1) to center_grid DC component
     rfft = torch.fft.fftshift(rfft, dim=(-3, -2))
     # place rfft in output
     dc = r // 2  # index for DC component
@@ -273,7 +267,7 @@ def _indices_centered_on_dc_for_shifted_dft(
         return _indices_centered_on_dc_for_shifted_rfft(dft_shape)
     dft_indices = torch.tensor(np.indices(dft_shape)).float()
     dft_indices = einops.rearrange(dft_indices, 'c ... -> ... c')
-    dc_idx = fft_center(dft_shape, fftshifted=True, rfft=False)
+    dc_idx = dft_center(dft_shape, fftshifted=True, rfft=False)
     return dft_indices - dc_idx
 
 
@@ -300,5 +294,4 @@ def distance_from_dc_for_dft(
     dft_shape: Sequence[int], rfft: bool, fftshifted: bool
 ) -> torch.Tensor:
     idx = indices_centered_on_dc_for_dft(dft_shape, rfft=rfft, fftshifted=fftshifted)
-    return einops.reduce(idx**2, '... c -> ...', reduction='sum') ** 0.5
-
+    return einops.reduce(idx ** 2, '... c -> ...', reduction='sum') ** 0.5

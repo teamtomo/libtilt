@@ -9,10 +9,10 @@ def extract_at_integer_coordinates(
     positions,  # (b2, b1, 2)
     output_image_sidelength: int
 ):
-    b1, h, w = images.shape
-    b2, b1_2, c = positions.shape
+    b1_i, h, w = images.shape
+    b2, b1_p, c = positions.shape
     s = output_image_sidelength
-    if b1 != b1_2:
+    if b1_i != b1_p:
         raise ValueError('batching dimensions do not match along expected axes.')
     elif c != 2:
         raise ValueError('positions must be 2D.')
@@ -25,8 +25,8 @@ def extract_at_integer_coordinates(
         )
         for _image, _positions in zip(images, positions)
     )
-    output_images = torch.empty(size=(b1, b2, s, s))
-    output_shifts = torch.empty(size=(b1, b2, 2), dtype=torch.float32)
+    output_images = torch.empty(size=(b1_i, b2, s, s))
+    output_shifts = torch.empty(size=(b1_i, b2, 2), dtype=torch.float32)
     for idx, (_image, _shifts) in enumerate(output_iterator):
         output_images[idx] = _image
         output_shifts[idx] = _shifts

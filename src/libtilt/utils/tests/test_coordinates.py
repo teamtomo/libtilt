@@ -8,11 +8,11 @@ from libtilt.utils.coordinates import (
     grid_sample_to_array,
     _grid_sample_coordinates_to_array_coordinates_1d,
     add_positional_coordinate_from_dimension,
-    get_array_indices,
     generate_rotated_slice_coordinates,
     homogenise_coordinates,
     promote_2d_shifts_to_3d,
 )
+from libtilt.grids.coordinate import coordinate_grid
 
 
 def test_array_coordinates_to_grid_sample_coordinates_1d():
@@ -81,7 +81,7 @@ def test_add_implied_coordinate_from_dimension_prepend():
 
 
 def test_get_grid_coordinates():
-    coords = get_array_indices(grid_dimensions=(3, 2))
+    coords = coordinate_grid(image_shape=(3, 2))
     assert coords.shape == (3, 2, 2)
     expected = torch.tensor(
         [[[0., 0.],

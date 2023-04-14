@@ -13,6 +13,8 @@ def get_patch_centers_1d(
 ) -> torch.Tensor:
     min = patch_length // 2
     max = dim_length - min - 1
+    if max < min:
+        max = min
     patch_centers = torch.arange(min, max + 1, step=patch_step, device=device)
     if distribute_patches is True:
         delta = max - patch_centers[-1]

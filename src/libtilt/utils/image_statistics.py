@@ -32,7 +32,7 @@ def estimate_background_std(image: torch.Tensor, mask: torch.Tensor):
     image: torch.Tensor
         `(h, w)` array containing data for which background standard deviation will be estimated.
     mask: torch.Tensor of 0 or 1
-        Binary mask separating foreground and background.
+        Binary shapes separating foreground and background.
     Returns
     -------
     standard_deviation: float

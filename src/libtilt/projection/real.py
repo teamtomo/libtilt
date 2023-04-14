@@ -3,9 +3,9 @@ import torch
 import torch.nn.functional as F
 
 from libtilt.utils.coordinates import (
-    get_array_indices,
     array_to_grid_sample,
 )
+from libtilt.grids.coordinate import coordinate_grid
 
 
 def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
@@ -13,7 +13,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
 
     Projections are made by
 
-    1. generating a grid of coordinates sufficient to cover the volume in any orientation.
+    1. generating a grid of coordinates sufficient to cover the volume in any principal_axis.
 
     2. left-multiplying `rotation matrices` and coordinate grids to produce rotated coordinates.
 
@@ -21,7 +21,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
 
     4. summing samples along depth dimension of a `(d, h, w)` volume.
 
-    The rotation center of `volume` is taken to be `torch.tensor(volume.shape) // 2`.
+    The rotation center_grid of `volume` is taken to be `torch.tensor(volume.shape) // 2`.
 
     Parameters
     ----------
@@ -47,7 +47,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
     torch_padding = einops.rearrange(torch_padding, 'whd pad -> (whd pad)')
     volume = F.pad(volume, pad=tuple(torch_padding), mode='constant', value=0)
     padded_volume_shape = (ps, ps, ps)
-    volume_coordinates = get_array_indices(grid_dimensions=padded_volume_shape)
+    volume_coordinates = coordinate_grid(image_shape=padded_volume_shape)
     volume_coordinates -= padded_sidelength // 2  # (d, h, w, zyx)
     volume_coordinates = torch.flip(volume_coordinates, dims=(-1,))  # (d, h, w, xyz)
     volume_coordinates = einops.rearrange(volume_coordinates, 'd h w xyz -> d h w xyz 1')

@@ -6,7 +6,7 @@ import scipy.constants as C
 import torch
 
 from libtilt.ctf.relativistic_wavelength import calculate_relativistic_electron_wavelength
-from ..utils.fft import construct_fftfreq_grid_2d
+from ..grids.fftfreq import _construct_fftfreq_grid_2d
 
 
 def calculate_ctf(
@@ -82,7 +82,7 @@ def calculate_ctf(
     k5 = np.arctan(amplitude_contrast / np.sqrt(1 - amplitude_contrast ** 2))
 
     # construct 2D frequency grids and rescale cycles / px -> cycles / Å
-    fftfreq_grid = construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
+    fftfreq_grid = _construct_fftfreq_grid_2d(image_shape=image_shape, rfft=rfft)  # (h, w, 2)
     fftfreq_grid = fftfreq_grid / einops.rearrange(pixel_size, 'b -> b 1 1 1')
     fftfreq_grid_squared = fftfreq_grid ** 2
 
@@ -108,11 +108,11 @@ def calculate_ctf(
     n4 = einops.reduce(fftfreq_grid_squared, 'b h w freq -> b h w', reduction='sum') ** 2
 
     Axx = c2 * defocus_u + s2 * defocus_v
-    Axx_x2 = einops.rearrange(Axx, 'b -> b 1 1') * xx2
+    Axx_x2 = einops.rearrange(Axx, '... -> ... 1 1') * xx2
     Axy = c * s * (defocus_u - defocus_v)
-    Axy_xy = einops.rearrange(Axy, 'b -> b 1 1') * xy
+    Axy_xy = einops.rearrange(Axy, '... -> ... 1 1') * xy
     Ayy = s2 * defocus_u + c2 * defocus_v
-    Ayy_y2 = einops.rearrange(Ayy, 'b -> b 1 1') * yy2
+    Ayy_y2 = einops.rearrange(Ayy, '... -> ... 1 1') * yy2
 
     # calculate ctf
     ctf = -torch.sin(k1 * (Axx_x2 + (2 * Axy_xy) + Ayy_y2) + k2 * n4 - k3 - k5)
