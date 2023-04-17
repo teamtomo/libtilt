@@ -94,13 +94,13 @@ def generate_rotated_slice_coordinates(
 ) -> torch.Tensor:
     """Generate an array of rotated central slice coordinates for sampling a 3D image.
 
-    Rotation matrices left multiply `xyz` coordinates in column vectors.
+    Rotation matrices left multiply `zyx` coordinates in column vectors.
     Coordinates returned are ordered `zyx` to match volumetric array indices.
 
     Parameters
     ----------
     rotations: torch.Tensor
-        `(batch, 3, 3)` array of rotation matrices which rotate xyz coordinates.
+        `(batch, 3, 3)` array of rotation matrices which rotate zyx coordinates.
     sidelength: int
         sidelength of cubic volume for which coordinates are generated.
 
@@ -117,11 +117,11 @@ def generate_rotated_slice_coordinates(
     xx = einops.repeat(x, 'w -> h w', h=sidelength)
     yy = einops.repeat(y, 'h -> h w', w=sidelength)
     zz = torch.zeros(size=(sidelength, sidelength))
-    xyz = einops.rearrange([xx, yy, zz], 'xyz h w -> 1 h w xyz 1')
+    xyz = einops.rearrange([xx, yy, zz], 'zyx h w -> 1 h w zyx 1')
 
     # rotate coordinates
     rotations = einops.rearrange(rotations, 'b i j -> b 1 1 i j')
-    xyz = einops.rearrange(rotations @ xyz, 'b h w xyz 1 -> b h w xyz')
+    xyz = einops.rearrange(rotations @ xyz, 'b h w zyx 1 -> b h w zyx')
 
     # recenter slice on DFT center_grid and flip to zyx
     xyz += sidelength // 2

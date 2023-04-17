@@ -45,7 +45,7 @@ def extract_slices(
                                              array_shape=dft.shape[-3:])
 
     # sample with reflection to increase sampling fidelity at borders then zero
-    slice_coordinates = einops.rearrange(slice_coordinates, 'b h w xyz -> b 1 h w xyz')
+    slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> b 1 h w zyx')
     inside = torch.logical_or(slice_coordinates > 0, slice_coordinates < 1)
     inside = torch.all(inside, dim=-1)  # (b, d, h, w)
     samples = F.grid_sample(

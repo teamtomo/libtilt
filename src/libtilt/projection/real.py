@@ -49,14 +49,14 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
     padded_volume_shape = (ps, ps, ps)
     volume_coordinates = coordinate_grid(image_shape=padded_volume_shape)
     volume_coordinates -= padded_sidelength // 2  # (d, h, w, zyx)
-    volume_coordinates = torch.flip(volume_coordinates, dims=(-1,))  # (d, h, w, xyz)
-    volume_coordinates = einops.rearrange(volume_coordinates, 'd h w xyz -> d h w xyz 1')
+    volume_coordinates = torch.flip(volume_coordinates, dims=(-1,))  # (d, h, w, zyx)
+    volume_coordinates = einops.rearrange(volume_coordinates, 'd h w zyx -> d h w zyx 1')
 
     def _project_volume(rotation_matrix) -> torch.Tensor:
         rotated_coordinates = rotation_matrix @ volume_coordinates
         rotated_coordinates += padded_sidelength // 2
-        rotated_coordinates = einops.rearrange(rotated_coordinates, 'd h w xyz 1 -> 1 d h w xyz')
-        rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # xyz -> zyx
+        rotated_coordinates = einops.rearrange(rotated_coordinates, 'd h w zyx 1 -> 1 d h w zyx')
+        rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # zyx -> zyx
         rotated_coordinates = array_to_grid_sample(
             rotated_coordinates, array_shape=padded_volume_shape
         )

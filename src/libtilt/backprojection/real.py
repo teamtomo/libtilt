@@ -40,7 +40,7 @@ def backproject(
         `(d, h, w)` array containing the reconstructed 3D volume.
     """
     grid_coordinates = coordinate_grid(output_dimensions)  # (d, h, w, zyx)
-    grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, xyz)
+    grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, zyx)
     grid_coordinates = homogenise_coordinates(grid_coordinates)  # (d, h, w, xyzw)
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w xyzw 1')
 
