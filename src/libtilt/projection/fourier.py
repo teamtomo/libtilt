@@ -2,12 +2,13 @@ import torch
 import torch.nn.functional as F
 import einops
 
-from libtilt.utils.coordinates import array_to_grid_sample, generate_rotated_slice_coordinates
+from libtilt.utils.coordinates import array_to_grid_sample, \
+    generate_rotated_slice_coordinates
 
 
 def extract_slices(
-        dft: torch.Tensor,
-        slice_coordinates: torch.Tensor
+    dft: torch.Tensor,
+    slice_coordinates: torch.Tensor
 ) -> torch.Tensor:
     """Sample batches of 2D images from a complex cubic volume at specified coordinates.
 
@@ -40,7 +41,8 @@ def extract_slices(
     dft = einops.rearrange(torch.view_as_real(dft), 'd h w complex -> complex d h w')
     n_slices = slice_coordinates.shape[0]
     dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_slices)
-    slice_coordinates = array_to_grid_sample(slice_coordinates, array_shape=dft.shape[-3:])
+    slice_coordinates = array_to_grid_sample(slice_coordinates,
+                                             array_shape=dft.shape[-3:])
 
     # sample with reflection to increase sampling fidelity at borders then zero
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w xyz -> b 1 h w xyz')
@@ -60,15 +62,17 @@ def extract_slices(
     return samples  # (b, h, w)
 
 
-def project(volume: torch.Tensor, rotation_matrices: torch.Tensor, pad=True) -> torch.Tensor:
+def project(volume: torch.Tensor, rotation_matrices: torch.Tensor,
+            pad=True) -> torch.Tensor:
     """Fourier space projection by sampling central slices."""
     if pad is True:
         pad_length = volume.shape[-1] // 2
-        volume = F.pad(volume, pad=[pad_length]*6, mode='constant', value=0)
+        volume = F.pad(volume, pad=[pad_length] * 6, mode='constant', value=0)
     dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
     dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
-    slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices, sidelength=dft.shape[-1])
+    slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices,
+                                                           sidelength=dft.shape[-1])
     projections = extract_slices(dft, slice_coordinates)  # (b, h, w)
     projections = torch.fft.ifftshift(projections, dim=(-2, -1))
     projections = torch.fft.ifftn(projections, dim=(-2, -1))

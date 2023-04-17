@@ -4,20 +4,14 @@ import einops
 import torch
 from torch.nn import functional as F
 
-from libtilt.grids.coordinate import coordinate_grid
-
 
 def array_to_grid_sample(
     array_coordinates: torch.Tensor, array_shape: Sequence[int]
 ) -> torch.Tensor:
-    """Generate coordinates for use with `torch.nn.functional.grid_sample` from array coordinates.
+    """Generate grids for `torch.nn.functional.grid_sample` from array coordinates.
 
-    - array coordinates are from [0, N-1] for N elements in each dimension.
-        - 0 is at the center_grid of the first element
-        - N is the length of the dimension
-    - grid sample coordinates are from [-1, 1]
-        - if align_corners=True, -1 and 1 are at the centers of array elements 0 and N-1
-        - if align_corners=False, -1 and 1 are at the edges of array elements 0 and N-1
+    These coordinates should be used with `align_corners=True` in
+    `torch.nn.functional.grid_sample`.
 
 
     Parameters
@@ -28,36 +22,31 @@ def array_to_grid_sample(
     array_shape: Sequence[int]
         shape of the array being sampled at `array_coordinates`.
     """
-    coords = [
-        _array_coordinates_to_grid_sample_coordinates_1d(
-            array_coordinates[..., idx], dim_length
-        )
-        for idx, dim_length
-        in enumerate(array_shape)
-    ]
-    return einops.rearrange(coords[::-1], 'xyz ... -> ... xyz')
+    dtype, device = array_coordinates.dtype, array_coordinates.device
+    array_shape = torch.as_tensor(array_shape, dtype=dtype, device=device)
+    grid_sample_coordinates = (array_coordinates / (0.5 * array_shape - 0.5)) - 1
+    grid_sample_coordinates = torch.flip(grid_sample_coordinates, dims=(-1,))
+    return grid_sample_coordinates
 
 
 def grid_sample_to_array(
     grid_sample_coordinates: torch.Tensor, array_shape: Sequence[int]
 ) -> torch.Tensor:
-    """Generate array coordinates from coordinates used for `torch.nn.functional.grid_sample`.
+    """Generate array coordinates from `torch.nn.functional.grid_sample` grids.
 
     Parameters
     ----------
     grid_sample_coordinates: torch.Tensor
         `(..., d)` array of coordinates to be used with `torch.nn.functional.grid_sample`.
     array_shape: Sequence[int]
-        shape of the array `grid_sample_coordinates` sample.
+        shape of the array `grid_sample_coordinates` are used to sample.
     """
-    indices = [
-        _grid_sample_coordinates_to_array_coordinates_1d(
-            grid_sample_coordinates[..., idx], dim_length
-        )
-        for idx, dim_length
-        in enumerate(array_shape[::-1])
-    ]
-    return einops.rearrange(indices[::-1], 'zyx b h w -> b h w zyx')
+    dtype, device = grid_sample_coordinates.dtype, grid_sample_coordinates.device
+    array_shape = torch.as_tensor(array_shape, dtype=dtype, device=device)
+    array_shape = torch.flip(array_shape, dims=(-1,))
+    array_coordinates = (grid_sample_coordinates + 1) * (0.5 * array_shape - 0.5)
+    array_coordinates = torch.flip(array_coordinates, dims=(-1,))
+    return array_coordinates
 
 
 def promote_2d_shifts_to_3d(shifts: torch.Tensor) -> torch.Tensor:
@@ -140,10 +129,10 @@ def generate_rotated_slice_coordinates(
     return zyx
 
 
-def add_positional_coordinate_from_dimension(
-    coordinates: torch.Tensor, dim: int, prepend_new_coordinate: bool = False
+def add_positional_coordinate(
+    coordinates: torch.Tensor, dim: int, prepend: bool = False
 ) -> torch.Tensor:
-    """Make an implicit coordinate in a multidimensional arrays of coordinates explicit.
+    """Make an implicit coordinate in a multidimensional stack of coordinates explicit.
 
     For an array of coordinates with shape `(n, t, 3)`, this function produces an array of
     shape `(n, t, 4)`.
@@ -158,44 +147,18 @@ def add_positional_coordinate_from_dimension(
         `(..., d)` array of coordinates where d is the dimensionality of coordinates.
     dim: int
         dimension from which the value of the new coordinate will be inferred.
-    prepend_new_coordinate: bool
-        controls whether the new coordinate is prepended or appended to existing coordinates.
+    prepend: bool
+        Whether to prepend (`False`) or append (`True`) to existing dimension `d`.
 
     Returns
     -------
     coordinates: torch.Tensor
         `(..., d+1)`
     """
-    if prepend_new_coordinate is True:
+    if prepend is True:
         pad, new_coordinate_index = (1, 0), 0
     else:  # append
         pad, new_coordinate_index = (0, 1), -1
     output = F.pad(coordinates, pad=pad, mode='constant', value=0)
-    # swapped = False
-    # if len(output.shape) > 3 and dim != output.shape[-2]:
-    #     output = torch.swapaxes(output, dim, -2)
-    #     swapped = True
     output[..., new_coordinate_index] = torch.arange(coordinates.shape[dim])
-    # if swapped: # unswap
-    #     output = torch.swapaxes(output, dim, -2)
     return output
-
-
-def _array_coordinates_to_grid_sample_coordinates_1d(
-    coordinates: torch.Tensor, dim_length: int
-) -> torch.Tensor:
-    return (coordinates / (0.5 * dim_length - 0.5)) - 1
-
-
-def _grid_sample_coordinates_to_array_coordinates_1d(
-    coordinates: torch.Tensor, dim_length: int
-) -> torch.Tensor:
-    return (coordinates + 1) * (0.5 * dim_length - 0.5)
-
-
-def grid_distance_from_point_2d(
-    grid_dimensions: torch.Tensor, point: torch.Tensor
-) -> torch.Tensor:
-    idx = coordinate_grid(grid_dimensions)
-    differences = idx - point
-    return torch.sum(differences ** 2, dim=-1) ** 0.5

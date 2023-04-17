@@ -71,7 +71,7 @@ def _fourier_pad_w(dft: torch.Tensor, image_width: int, target_fftfreq: float):
     return dft, new_nyquist
 
 
-def _rescale_dft_2d(
+def _rescale_rfft_2d(
     dft: torch.Tensor,
     image_shape: tuple[int, int],
     target_fftfreq: tuple[float, float]
@@ -121,11 +121,11 @@ def rescale_2d(
     if source_spacing == target_spacing:
         return image, source_spacing
 
-    # pad to a good fft size in each dimension
+    # pad input to a good fft size in each dimension
+    image_h, image_w = image.shape[-2:]
     target_fftfreq_h, target_fftfreq_w = _target_fftfreq_from_spacing(
         source_spacing=source_spacing, target_spacing=target_spacing
     )
-    image_h, image_w = image.shape[-2:]
     image = _pad_to_best_fft_shape(
         image, target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
     )
@@ -135,7 +135,7 @@ def rescale_2d(
     dft = torch.fft.rfftn(image, dim=(-2, -1))
 
     # Fourier pad/crop
-    dft, (new_nyquist_h, new_nyquist_w) = _rescale_dft_2d(
+    dft, (new_nyquist_h, new_nyquist_w) = _rescale_rfft_2d(
         dft=dft,
         image_shape=(padded_h, padded_w),
         target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
