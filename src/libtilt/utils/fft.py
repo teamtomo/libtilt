@@ -5,6 +5,7 @@ from itertools import combinations, permutations
 import einops
 import numpy as np
 import torch
+from torch.nn import functional as F
 
 
 def rfft_shape_from_signal_shape(input_shape: Sequence[int]) -> Tuple[int]:
@@ -87,6 +88,18 @@ def fft_sizes(lower_bound: int = 0) -> torch.LongTensor:
     fft_sizes = torch.cat([powers_of_two, fft_sizes])
     fft_sizes, _ = torch.sort(fft_sizes)
     return fft_sizes[fft_sizes >= lower_bound]
+
+
+def best_fft_size(
+    lower_bound: int, target_fftfreq: float, maximum_relative_error: float
+) -> int:
+    good_sizes = fft_sizes(lower_bound=lower_bound)
+    for fft_size in good_sizes:
+        delta_fftfreq = 1 / fft_size
+        relative_error = (target_fftfreq % delta_fftfreq) / target_fftfreq
+        if relative_error < maximum_relative_error:
+            return fft_size
+    raise ValueError("No best size found.")
 
 
 def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
@@ -295,3 +308,45 @@ def distance_from_dc_for_dft(
 ) -> torch.Tensor:
     idx = indices_centered_on_dc_for_dft(dft_shape, rfft=rfft, fftshifted=fftshifted)
     return einops.reduce(idx ** 2, '... c -> ...', reduction='sum') ** 0.5
+
+
+def _target_fftfreq_from_spacing(
+    source_spacing: Sequence[float],
+    target_spacing: Sequence[float],
+) -> Sequence[float]:
+    target_fftfreq = [
+        (_src / _target) * 0.5
+        for _src, _target
+        in zip(source_spacing, target_spacing)
+    ]
+    return target_fftfreq
+
+
+def _best_fft_shape(
+    image_shape: Sequence[int],
+    target_fftfreq: Sequence[float],
+    maximum_relative_error: float = 0.0005,
+) -> tuple[int, int]:
+    best_fft_shape = [
+        best_fft_size(
+            lower_bound=dim_length,
+            target_fftfreq=_target_fftfreq,
+            maximum_relative_error=maximum_relative_error
+        )
+        for dim_length, _target_fftfreq
+        in zip(image_shape, target_fftfreq)
+    ]
+    return best_fft_shape
+
+
+def _pad_to_best_fft_shape(
+    image: torch.Tensor,
+    target_fftfreq: tuple[float, float]
+):
+    fft_size_h, fft_size_w = _best_fft_shape(
+        image_shape=image.shape[-2:], target_fftfreq=target_fftfreq
+    )
+    # pad image to best fft size
+    h, w = image.shape[-2:]
+    ph, pw = fft_size_h - h, fft_size_w - w
+    return F.pad(image, pad=(0, pw, 0, ph), mode='reflect')
