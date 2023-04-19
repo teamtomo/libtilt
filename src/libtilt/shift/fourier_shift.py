@@ -6,10 +6,12 @@ from libtilt.utils.fft import fftshift_2d, fftshift_3d
 
 
 def get_phase_shifts_2d(
-    shifts: torch.Tensor, image_shape: tuple[int, int], rfft: bool = False
+    shifts: torch.Tensor,
+    image_shape: tuple[int, int],
+    rfft: bool = False,
+    fftshift: bool = False,
 ):
     """Generate a complex-valued array of phase shifts for 2D images.
-    todo: add fftshift support and make sure that it doesn't break proj/bproj cycle
 
     Parameters
     ----------
@@ -20,7 +22,8 @@ def get_phase_shifts_2d(
     rfft: bool
         If `True` the phase shifts generated will be compatible with
         the non-redundant half DFT outputs of the FFT for real inputs from `rfft`.
-
+    fftshift: bool
+        If `True`, fftshift the output.
     Returns
     -------
     phase_shifts: torch.Tensor
@@ -34,7 +37,10 @@ def get_phase_shifts_2d(
     angles = einops.reduce(
         -2 * torch.pi * fftfreq_grid * shifts, '... h w 2 -> ... h w', reduction='sum'
     )  # radians/cycle, cycles/sample, samples
-    return torch.complex(real=torch.cos(angles), imag=torch.sin(angles))
+    phase_shifts = torch.complex(real=torch.cos(angles), imag=torch.sin(angles))
+    if fftshift is True:
+        phase_shifts = fftshift_2d(phase_shifts, rfft=rfft)
+    return phase_shifts
 
 
 def get_phase_shifts_3d(
@@ -107,10 +113,8 @@ def phase_shift_dft_2d(
         shifts=shifts,
         image_shape=image_shape,
         rfft=rfft,
-        # fftshift=fftshifted,
+        fftshift=fftshifted,
     )
-    if fftshifted is True:
-        phase_shifts = fftshift_2d(phase_shifts, rfft=rfft)
     return dft * phase_shifts
 
 
@@ -147,8 +151,6 @@ def phase_shift_dft_3d(
         rfft=rfft,
         fftshift=fftshifted,
     )
-    if fftshifted is True:
-        phase_shifts = fftshift_3d(phase_shifts, rfft=rfft)
     return dft * phase_shifts
 
 
