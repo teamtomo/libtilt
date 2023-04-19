@@ -47,13 +47,12 @@ def insert_slices(
     #                                 slice_coordinates[valid_idx]
     # slice_coordinates += d
 
-    # store floor and ceil of coordinates for each piece of slice data
-    # corner_coordinates array is (b, 2, zyx) containing the floor and ceil of each zyx coordinate
+    # calculate and cache floor and ceil of coordinates for each piece of slice data
     corner_coordinates = torch.empty(size=(slice_data.shape[0], 2, 3), dtype=torch.long)
     corner_coordinates[:, 0] = torch.floor(slice_coordinates)  # for lower corners
     corner_coordinates[:, 1] = torch.ceil(slice_coordinates)  # for upper corners
 
-    # store interpolation weights for both upper and lower corners in each dimension
+    # cache linear interpolation weights for each data point being inserted
     _weights = torch.empty(size=(slice_data.shape[0], 2, 3))  # (b, 2, zyx)
     _weights[:, 1] = slice_coordinates - corner_coordinates[:, 0]  # upper corner weights
     _weights[:, 0] = 1 - _weights[:, 1]  # lower corner weights

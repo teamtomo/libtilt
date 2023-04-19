@@ -83,8 +83,8 @@ def get_phase_shifts_3d(
     return phase_shifts
 
 
-def phase_shift_dfts_2d(
-    dfts: torch.Tensor,
+def phase_shift_dft_2d(
+    dft: torch.Tensor,
     image_shape: tuple[int, int],
     shifts: torch.Tensor,
     rfft: bool = False,
@@ -94,7 +94,7 @@ def phase_shift_dfts_2d(
 
     Parameters
     ----------
-    dfts: torch.Tensor
+    dft: torch.Tensor
         `(..., h, w)` array containing DFTs.
     image_shape: tuple[int, int]
         `(h, w)` of images prior to DFT computation.
@@ -118,11 +118,11 @@ def phase_shift_dfts_2d(
     )
     if fftshifted is True:
         phase_shifts = fftshift_2d(phase_shifts, rfft=rfft)
-    return dfts * phase_shifts
+    return dft * phase_shifts
 
 
-def phase_shift_dfts_3d(
-    dfts: torch.Tensor,
+def phase_shift_dft_3d(
+    dft: torch.Tensor,
     image_shape: tuple[int, int, int],
     shifts: torch.Tensor,
     rfft: bool = False,
@@ -132,7 +132,7 @@ def phase_shift_dfts_3d(
 
     Parameters
     ----------
-    dfts: torch.Tensor
+    dft: torch.Tensor
         `(..., h, w)` array containing DFTs.
     image_shape: tuple[int, int, int]
         `(h, w)` of images prior to DFT computation.
@@ -156,13 +156,13 @@ def phase_shift_dfts_3d(
     )
     if fftshifted is True:
         phase_shifts = fftshift_3d(phase_shifts, rfft=rfft)
-    return dfts * phase_shifts
+    return dft * phase_shifts
 
 
 def fourier_shift_2d(images: torch.Tensor, shifts: torch.Tensor):
     h, w = images.shape[-2:]
     images = torch.fft.rfftn(images, dim=(-2, -1))
-    images = phase_shift_dfts_2d(
+    images = phase_shift_dft_2d(
         images,
         image_shape=(h, w),
         shifts=shifts,
@@ -176,7 +176,7 @@ def fourier_shift_2d(images: torch.Tensor, shifts: torch.Tensor):
 def fourier_shift_3d(images: torch.Tensor, shifts: torch.Tensor):
     d, h, w = images.shape[-3:]
     images = torch.fft.rfftn(images, dim=(-3, -2, -1))
-    images = phase_shift_dfts_3d(
+    images = phase_shift_dft_3d(
         images,
         image_shape=(d, h, w),
         shifts=shifts,

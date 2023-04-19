@@ -19,10 +19,11 @@ def backproject(
 ) -> torch.Tensor:
     """3D reconstruction from 2D images by real space backprojection.
 
-    Coordinates for voxels in the output volume are projected down into 2D by left-multiplication
-    with a projection matrix. Projection images is sampled with bicubic interpolation at the 2D
-    coordinates to yield values for each voxel. The final value of a voxel is the sum of
-    contributions to it from each projection image.
+    - Coordinates for voxels in the output volume are projected down into 2D
+    by left-multiplication with `projection matrix`.
+    - For each 3D coordinate each image in `projection_images` is sampled
+    with bicubic interpolation at the 2D coordinates `yx`.
+    - The final value of a voxel is the sum of contributions from each projection image.
 
     Parameters
     ----------
@@ -40,7 +41,7 @@ def backproject(
         `(d, h, w)` array containing the reconstructed 3D volume.
     """
     grid_coordinates = coordinate_grid(output_dimensions)  # (d, h, w, zyx)
-    grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, zyx)
+    grid_coordinates = torch.flip(grid_coordinates, dims=(-1,))  # (d, h, w, xyz)
     grid_coordinates = homogenise_coordinates(grid_coordinates)  # (d, h, w, xyzw)
     grid_coordinates = einops.rearrange(grid_coordinates, 'd h w xyzw -> d h w xyzw 1')
 

@@ -43,11 +43,10 @@ def extract_slices(
     dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_slices)
     slice_coordinates = array_to_grid_sample(slice_coordinates,
                                              array_shape=dft.shape[-3:])
-
-    # sample with reflection to increase sampling fidelity at borders then zero
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> b 1 h w zyx')
     inside = torch.logical_or(slice_coordinates > 0, slice_coordinates < 1)
     inside = torch.all(inside, dim=-1)  # (b, d, h, w)
+    # sample with reflection to increase sampling fidelity at borders then zero
     samples = F.grid_sample(
         input=dft,
         grid=slice_coordinates,

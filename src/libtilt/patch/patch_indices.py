@@ -3,7 +3,6 @@ from typing import Sequence, Tuple
 import einops
 import torch
 
-from libtilt.patch.patch_centers import get_patch_centers_2d as _get_patch_centers_2d
 from libtilt.patch.patch_centers import get_patch_centers_1d as _get_patch_centers_1d
 
 

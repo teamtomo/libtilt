@@ -5,27 +5,40 @@ import torch.nn.functional as F
 
 from libtilt.utils.fft import (
     _target_fftfreq_from_spacing,
-    _pad_to_best_fft_shape,
+    _pad_to_best_fft_shape, dft_center,
 )
+from libtilt.shift.fourier_shift import phase_shift_dft_2d
+
+
+def _get_final_shape(
+    original_image_shape: tuple[int, int],
+    original_image_spacing: tuple[float, float],
+    rescaled_image_spacing: tuple[float, float],
+):
+    rescaled_spacing_h, rescaled_spacing_w = rescaled_image_spacing
+    original_h, original_w = original_image_shape
+    original_spacing_h, original_spacing_w = original_image_spacing
+    length_h = (original_h - 1) * (original_spacing_h / rescaled_spacing_h)
+    length_w = (original_w - 1) * (original_spacing_w / rescaled_spacing_w)
+    length_h = ceil(length_h) if ceil(length_h) % 2 == 1 else floor(length_h)
+    length_w = ceil(length_w) if ceil(length_w) % 2 == 1 else floor(length_w)
+    new_h, new_w = length_h + 1, length_w + 1
+    return new_h, new_w
 
 
 def _unpad(
     rescaled_image: torch.Tensor,
     rescaled_image_spacing: tuple[float, float],
-    original_image_shape: torch.Tensor,
+    original_image_shape: tuple[int, int],
     original_image_spacing: tuple[float, float],
 ):
-    rescaled_h, rescaled_w = rescaled_image.shape[-2:]
-    rescaled_spacing_h, rescaled_spacing_w = rescaled_image_spacing
-    original_h, original_w = original_image_shape
-    original_spacing_h, original_spacing_w = original_image_spacing
-    idx_h, idx_w = torch.arange(rescaled_h), torch.arange(rescaled_w)
-    h_max = (original_h - 1) * (original_spacing_h / rescaled_spacing_h)
-    w_max = (original_w - 1) * (original_spacing_w / rescaled_spacing_w)
-    h_max = ceil(h_max) if ceil(h_max) % 2 == 1 else floor(h_max)
-    w_max = ceil(w_max) if ceil(w_max) % 2 == 1 else floor(w_max)
-    rescaled_image = rescaled_image[..., idx_h <= h_max, :]
-    rescaled_image = rescaled_image[..., :, idx_w <= w_max]
+    new_h, new_w = _get_final_shape(
+        original_image_shape=original_image_shape,
+        original_image_spacing=original_image_spacing,
+        rescaled_image_spacing=rescaled_image_spacing,
+    )
+    rescaled_image = rescaled_image[..., :new_h, :]
+    rescaled_image = rescaled_image[..., :, :new_w]
     return rescaled_image
 
 
@@ -89,10 +102,46 @@ def _rescale_rfft_2d(
     return dft, (nyquist_h, nyquist_w)
 
 
+def _align_to_original_dft_center(
+    dft: torch.Tensor,
+    original_image_shape: tuple[int, int],
+    original_image_spacing: tuple[float, float],
+    rescaled_image_spacing: tuple[float, float],
+):
+    h, w = original_image_shape
+    original_spacing_h, original_spacing_w = original_image_spacing
+    rescaled_spacing_h, rescaled_spacing_w = rescaled_image_spacing
+    old_dft_center = dft_center(
+        grid_shape=(h, w), rfft=False, fftshifted=True
+    )
+    final_h, final_w = _get_final_shape(
+        original_image_shape=(h, w),
+        original_image_spacing=(original_spacing_h, original_spacing_w),
+        rescaled_image_spacing=(rescaled_spacing_h, rescaled_spacing_w),
+    )
+    target_center_h, target_center_w = dft_center(
+        grid_shape=(final_h, final_w), rfft=False, fftshifted=True
+    )
+    center_h = old_dft_center[0] * (original_spacing_h / rescaled_spacing_h)
+    center_w = old_dft_center[1] * (original_spacing_w / rescaled_spacing_w)
+    dh, dw = target_center_h - center_h, target_center_w - center_w
+    rescaled_image_h, rescaled_image_w = dft.shape[-2], (dft.shape[-1] - 1) * 2
+    dft = phase_shift_dft_2d(
+        dft=dft,
+        image_shape=(rescaled_image_h, rescaled_image_w),
+        shifts=torch.as_tensor([dh, dw], dtype=torch.float32, device=dft.device),
+        rfft=True,
+        fftshifted=False,
+    )
+    print(center_h, dh, target_center_h, center_h + dh)
+    return dft
+
+
 def rescale_2d(
     image: torch.Tensor,
     source_spacing: float | tuple[float, float],
     target_spacing: float | tuple[float, float],
+    maintain_dft_center: bool = False
 ) -> tuple[torch.Tensor, tuple[float, float]]:
     """Rescale 2D image(s) from `source_spacing` to `target_spacing`.
 
@@ -106,9 +155,12 @@ def rescale_2d(
     image: torch.Tensor
         `(..., h, w)` array of image data
     source_spacing: float | tuple[float, float]
-        pixel spacing in the input image.
+        Pixel spacing in the input image.
     target_spacing: float | tuple[float, float]
-        pixel spacing in the output image.
+        Pixel spacing in the output image.
+    maintain_dft_center: bool
+        Whether to maintain the DFT center of the image (`True`) or the array
+        origin `[0, 0]` (`False`).
 
     Returns
     -------
@@ -122,7 +174,7 @@ def rescale_2d(
         return image, source_spacing
 
     # pad input to a good fft size in each dimension
-    image_h, image_w = image.shape[-2:]
+    h, w = image.shape[-2:]
     target_fftfreq_h, target_fftfreq_w = _target_fftfreq_from_spacing(
         source_spacing=source_spacing, target_spacing=target_spacing
     )
@@ -140,16 +192,29 @@ def rescale_2d(
         image_shape=(padded_h, padded_w),
         target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
     )
-    rescaled_image = torch.fft.irfftn(dft, dim=(-2, -1))
 
-    # calculate new spacings and unpad from rescaled optimal fft size
+    # Calculate new spacing after rescaling
     source_spacing_h, source_spacing_w = source_spacing
     new_spacing_h = 1 / (2 * new_nyquist_h * (1 / source_spacing_h))
     new_spacing_w = 1 / (2 * new_nyquist_w * (1 / source_spacing_w))
+
+    # maintain origin at rotation center if requested
+    if maintain_dft_center is True:
+        dft = _align_to_original_dft_center(
+            dft=dft,
+            original_image_shape=(h, w),
+            original_image_spacing=(source_spacing_h, source_spacing_w),
+            rescaled_image_spacing=(new_spacing_h, new_spacing_w)
+        )
+
+    # transform back to real space
+    rescaled_image = torch.fft.irfftn(dft, dim=(-2, -1))
+
+    # calculate new spacings and unpad from rescaled optimal fft size
     rescaled_image = _unpad(
         rescaled_image=rescaled_image,
         rescaled_image_spacing=(new_spacing_h, new_spacing_w),
-        original_image_shape=(image_h, image_w),
+        original_image_shape=(h, w),
         original_image_spacing=(source_spacing_h, source_spacing_w)
     )
     return rescaled_image, (float(new_spacing_h), float(new_spacing_w))

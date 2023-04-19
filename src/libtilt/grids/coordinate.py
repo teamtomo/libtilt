@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Sequence
 
 import einops
 import numpy as np
@@ -50,7 +50,7 @@ def coordinate_grid_dft(
     fftshift: bool,
     device: torch.device | None = None,
 ) -> torch.LongTensor:
-    """Construct a dense grid of coordinates relative to the DFT center with wraparound.
+    """Construct a dense grid of coordinates relative to the DFT center.
 
     For input `image_shape` of `(d, h, w)`, this function produces a
     `(d, h, w, 3)` grid of 3D coordinates.
@@ -87,7 +87,8 @@ def coordinate_grid_dft(
     grid_center = dft_center(original_image_shape, rfft=rfft, fftshifted=True, device=device)
     grid -= grid_center
 
-    # grid is correct for fftshifted case, undo fftshift if not required.
+    # grid is already correct for fftshifted case at this point
+    # undo fftshift if not required.
     if fftshift is False:
         # ifftshift all except the coordinate dimension
         print(grid.ndim, ' dims ', tuple(torch.arange(grid.ndim - 1)))
