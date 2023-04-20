@@ -4,6 +4,7 @@ import einops
 import torch
 
 from .coordinate import coordinate_grid
+from ..utils.fft import dft_center
 
 
 @functools.lru_cache(maxsize=1)
@@ -31,13 +32,13 @@ def distance_grid(
     distance_grid: torch.Tensor
         `(*image_shape)` array of distances from `center`.
     """
+    if center is None:
+        center = dft_center(image_shape, rfft=False, fftshifted=True)
     coordinates = coordinate_grid(
         image_shape=image_shape,
-        center_grid=True if center is None else False,
+        center=center,
         device=device,
     ).float()
-    if center is not None:
-        coordinates -= torch.as_tensor(center, dtype=torch.float32, device=device)
     distances = einops.reduce(
         coordinates.float() ** 2, '... coords -> ...', reduction='sum'
     ) ** 0.5
