@@ -9,9 +9,9 @@ from libtilt.utils.fft import dft_center, rfft_shape_from_signal_shape
 
 def coordinate_grid(
     image_shape: Sequence[int],
-    center_grid: bool = False,
+    center: torch.Tensor | tuple[float, ...] | None = False,
     device: torch.device | None = None,
-) -> torch.LongTensor:
+) -> torch.FloatTensor:
     """Get a dense grid of array coordinates from grid dimensions.
 
     For input `image_shape` of `(d, h, w)`, this function produces a
@@ -24,7 +24,7 @@ def coordinate_grid(
         Shape of the image for which coordinates should be returned.
     device: torch.device
         PyTorch device on which to put the coordinate grid.
-    center_grid: bool
+    center: torch.Tensor | tuple[float, ...] | None
         Whether the coordinates should be centered on the rotation center of the grid.
 
     Returns
@@ -35,12 +35,19 @@ def coordinate_grid(
     grid = torch.tensor(
         np.indices(image_shape),
         device=device,
-        dtype=torch.int64
+        dtype=torch.float32
     )  # (coordinates, *image_shape)
-    grid = einops.rearrange(grid, 'coordinates ... -> ... coordinates')
-    if center_grid is True:
-        grid_center = dft_center(image_shape, rfft=False, fftshifted=True, device=device)
-        grid -= grid_center
+    grid = einops.rearrange(grid, 'coords ... -> ... coords')
+    ndim = len(image_shape)
+    if center is not None:
+        center = torch.as_tensor(center, dtype=grid.dtype, device=grid.device)
+        center = torch.atleast_1d(center)
+        center, ps = einops.pack([center], pattern='* coords')
+        ones = ' '.join('1' * ndim)
+        axis_ids = ' '.join(_unique_characters(ndim))
+        center = einops.rearrange(center, f"b coords -> b {ones} coords")
+        grid = grid - center
+        [grid] = einops.unpack(grid, packed_shapes=ps, pattern=f'* {axis_ids} coords')
     return grid
 
 
@@ -98,3 +105,8 @@ def coordinate_grid_dft(
             # undo the ifftshift of the last image dimension
             grid = torch.fft.fftshift(grid, dim=-2)
     return grid
+
+
+def _unique_characters(n: int) -> str:
+    chars = "abcdefghijklmnopqrstuvwxyz"
+    return chars[:n]
