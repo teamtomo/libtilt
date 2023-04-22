@@ -1,7 +1,7 @@
 import torch
 from torch import fft as fft
 
-from libtilt.utils.fft import rfft_shape_from_signal_shape, \
+from libtilt.utils.fft import rfft_shape, \
     _distance_from_dc_for_shifted_rfft
 from libtilt.rotational_average import _find_shell_indices_1d
 
@@ -13,7 +13,7 @@ def fsc(
 ) -> torch.Tensor:
     """Fourier ring/shell correlation between two square/cubic images."""
     # input handling
-    rfft_shape = rfft_shape_from_signal_shape(a.shape)
+    rfft_shape = rfft_shape(a.shape)
     if a.ndim not in (2, 3):
         raise ValueError('images must be 2D or 3D.')
     elif a.shape != b.shape:

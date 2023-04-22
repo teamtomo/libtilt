@@ -2,7 +2,7 @@ from typing import Tuple
 
 import torch
 
-from libtilt.utils.fft import rfft_shape_from_signal_shape, \
+from libtilt.utils.fft import rfft_shape, \
     _indices_centered_on_dc_for_shifted_rfft
 from ._general import fsc as _fsc
 
@@ -13,7 +13,7 @@ def fsc_conical(
     cone_direction: Tuple[float, float] | Tuple[float, float, float],
     cone_aperture: float,
 ):
-    rfft_shape = rfft_shape_from_signal_shape(a.shape)
+    rfft_shape = rfft_shape(a.shape)
     vectors = _indices_centered_on_dc_for_shifted_rfft(rfft_shape)  # (..., 3)
     vectors /= torch.linalg.norm(vectors, dim=-1)
     cone_direction = torch.tensor(cone_direction)
