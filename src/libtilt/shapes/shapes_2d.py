@@ -1,10 +1,9 @@
 import einops
 import torch
 
-from libtilt.grids import distance_grid, coordinate_grid
+from libtilt.grids import coordinate_grid
 
-from .soft_edge import _add_soft_edge_single_binary_image as _smooth_binary_image, \
-    add_soft_edge_2d
+from .soft_edge import add_soft_edge_2d
 from .geometry_utils import _angle_between_vectors
 from ..utils.fft import dft_center
 
@@ -18,9 +17,10 @@ def circle(
 ) -> torch.Tensor:
     if isinstance(image_shape, int):
         image_shape = (image_shape, image_shape)
-    distances = distance_grid(
+    distances = coordinate_grid(
         image_shape=image_shape,
         center=center,
+        norm=True,
         device=device,
     )
     mask = torch.zeros_like(distances, dtype=torch.bool)
