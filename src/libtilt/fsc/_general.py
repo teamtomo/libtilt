@@ -1,8 +1,8 @@
+import einops
 import torch
-from torch import fft as fft
 
-from libtilt.utils.fft import rfft_shape, _distance_from_dc_for_shifted_rfft
-from libtilt.rotational_average import _find_shell_indices_1d
+from libtilt.grids import fftfreq_grid
+from libtilt.utils.fft import rfft_shape
 
 
 def fsc(
@@ -12,7 +12,8 @@ def fsc(
 ) -> torch.Tensor:
     """Fourier ring/shell correlation between two square/cubic images."""
     # input handling
-    dft_shape = rfft_shape(a.shape)
+    image_shape = a.shape
+    dft_shape = rfft_shape(image_shape)
     if a.ndim not in (2, 3):
         raise ValueError('images must be 2D or 3D.')
     elif a.shape != b.shape:
@@ -21,15 +22,32 @@ def fsc(
         raise ValueError('valid rfft indices must have same shape as rfft.')
 
     # fsc calculation
-    a, b = fft.rfftn(a), fft.rfftn(b)
+    a, b = torch.fft.rfftn(a), torch.fft.rfftn(b)
     shift_dims = (-3, -2) if a.ndim == 3 else (-2,)
-    a, b = fft.fftshift(a, dim=shift_dims), fft.fftshift(b, dim=shift_dims)
-    distance_from_dc = _distance_from_dc_for_shifted_rfft(a.shape)
-    n_shells = (a.shape[0] // 2) + 1
+    a, b = torch.fft.fftshift(a, dim=shift_dims), torch.fft.fftshift(b, dim=shift_dims)
+    frequency_grid = fftfreq_grid(
+        image_shape=image_shape,
+        rfft=True,
+        fftshift=False,
+        norm=True,
+        device=a.device,
+    )
     if rfft_mask is not None:
-        a, b, distance_from_dc = (arr[rfft_mask] for arr in[a, b, distance_from_dc])
-    a, b, distance_from_dc = (torch.flatten(arg) for arg in [a, b, distance_from_dc])
-    shell_idx = _find_shell_indices_1d(distance_from_dc, n_shells=n_shells)
+        a, b, frequencies = (arr[rfft_mask] for arr in [a, b, frequency_grid])
+    else:
+        a, b, frequencies = (torch.flatten(arg) for arg in [a, b, frequency_grid])
+
+    # split frequencies into frequency bins
+    bin_centers = torch.fft.rfftfreq(image_shape[0])
+    df = 1 / image_shape[0]
+    bin_centers = torch.cat([bin_centers, torch.as_tensor([0.5 + df])])
+    bin_centers = bin_centers.unfold(dimension=0, size=2, step=1)  # (n_shells, 2)
+    split_points = einops.reduce(bin_centers, 'shells high_low -> shells', reduction='mean')
+    sorted, sort_idx = torch.sort(frequencies, descending=False)
+    split_idx = torch.searchsorted(sorted, split_points)
+    shell_idx = torch.tensor_split(sort_idx, split_idx)[:-1]
+
+    # calculate normalised cross correlation in each shell
     fsc = [
         _normalised_cc_complex_1d(a[idx], b[idx])
         for idx in

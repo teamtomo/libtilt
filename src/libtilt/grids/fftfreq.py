@@ -144,8 +144,7 @@ def _construct_fftfreq_grid_3d(
         Order of freqs in the last dimension corresponds to the order of dimensions
         of the grid.
     """
-    dd, dh, dw = spacing if isinstance(spacing, Sequence) else (
-        spacing, spacing, spacing)
+    dd, dh, dw = spacing if isinstance(spacing, Sequence) else (spacing, spacing, spacing)
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     d, h, w = image_shape
     freq_z = torch.fft.fftfreq(d, d=dd, device=device)
@@ -155,4 +154,4 @@ def _construct_fftfreq_grid_3d(
     freq_zz = einops.repeat(freq_z, 'd -> d h w', h=h, w=w)
     freq_yy = einops.repeat(freq_y, 'h -> d h w', d=d, w=w)
     freq_xx = einops.repeat(freq_x, 'w -> d h w', d=d, h=h)
-    return einops.rearrange([freq_zz, freq_yy, freq_xx], 'freq h w -> h w freq')
+    return einops.rearrange([freq_zz, freq_yy, freq_xx], 'freq ... -> ... freq')
