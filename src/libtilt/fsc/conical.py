@@ -22,7 +22,7 @@ def fsc_conical(
     acute_bound = cone_aperture / 2
     obtuse_bound = 180 - acute_bound
     in_cone_idx = torch.logical_or(angles <= acute_bound, angles >= obtuse_bound)
-    return _fsc(a, b, valid_rfft_indices=in_cone_idx)
+    return _fsc(a, b, rfft_mask=in_cone_idx)
 
 
 def _angle_between_vectors(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
