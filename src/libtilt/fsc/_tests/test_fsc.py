@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.fsc._general import fsc
+from libtilt.fsc.fsc import fsc
 
 
 def test_fsc_identical_images():

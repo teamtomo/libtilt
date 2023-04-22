@@ -1,1 +1,1 @@
-from ._general import fsc
+from .fsc import fsc
