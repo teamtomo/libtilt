@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from libtilt.utils.fft import rfft_shape_from_signal_shape, \
+from libtilt.utils.fft import rfft_shape, \
     rfft_to_symmetrised_dft_2d, rfft_to_symmetrised_dft_3d, \
     symmetrised_dft_to_dft_2d, \
     symmetrised_dft_to_rfft_2d, symmetrised_dft_to_dft_3d, \
@@ -15,13 +15,13 @@ def test_rfft_shape_from_signal_shape():
     signal_shape = (2, 4, 8, 16)
     signal = np.random.random(signal_shape)
     rfft = np.fft.rfftn(signal)
-    assert rfft.shape == rfft_shape_from_signal_shape(signal_shape)
+    assert rfft.shape == rfft_shape(signal_shape)
 
     # odd
     signal_shape = (3, 9, 27, 81)
     signal = np.random.random(signal_shape)
     rfft = np.fft.rfftn(signal)
-    assert rfft.shape == rfft_shape_from_signal_shape(signal_shape)
+    assert rfft.shape == rfft_shape(signal_shape)
 
 
 def test_construct_fftfreq_grid_2d():
@@ -34,7 +34,7 @@ def test_construct_fftfreq_grid_2d():
 
     # with rfft
     grid = _construct_fftfreq_grid_2d(image_shape=image_shape, rfft=True)
-    assert grid.shape == (*rfft_shape_from_signal_shape(image_shape), 2)
+    assert grid.shape == (*rfft_shape(image_shape), 2)
     assert torch.allclose(grid[:, 0, 0], torch.fft.fftfreq(10))
     assert torch.allclose(grid[0, :, 1], torch.fft.rfftfreq(30))
 

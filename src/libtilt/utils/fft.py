@@ -8,7 +8,7 @@ import torch
 from torch.nn import functional as F
 
 
-def rfft_shape_from_signal_shape(input_shape: Sequence[int]) -> Tuple[int]:
+def rfft_shape(input_shape: Sequence[int]) -> Tuple[int]:
     """Get the output shape of an rfft on an input with input_shape."""
     rfft_shape = list(input_shape)
     rfft_shape[-1] = int((rfft_shape[-1] / 2) + 1)
@@ -25,7 +25,7 @@ def dft_center(
     fft_center = torch.zeros(size=(len(grid_shape),), device=device)
     grid_shape = torch.as_tensor(grid_shape).float()
     if rfft is True:
-        grid_shape = torch.tensor(rfft_shape_from_signal_shape(grid_shape))
+        grid_shape = torch.tensor(rfft_shape(grid_shape))
     if fftshifted is True:
         fft_center = torch.divide(grid_shape, 2, rounding_mode='floor')
     if rfft is True:

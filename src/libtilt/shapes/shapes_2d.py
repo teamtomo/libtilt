@@ -1,9 +1,9 @@
 import einops
 import torch
 
-from libtilt.grids import distance_grid, coordinate_grid
+from libtilt.grids import coordinate_grid
 
-from .soft_edge import _add_soft_edge_single_binary_image as _smooth_binary_image
+from .soft_edge import add_soft_edge_2d
 from .geometry_utils import _angle_between_vectors
 from ..utils.fft import dft_center
 
@@ -17,14 +17,15 @@ def circle(
 ) -> torch.Tensor:
     if isinstance(image_shape, int):
         image_shape = (image_shape, image_shape)
-    distances = distance_grid(
+    distances = coordinate_grid(
         image_shape=image_shape,
         center=center,
+        norm=True,
         device=device,
     )
     mask = torch.zeros_like(distances, dtype=torch.bool)
     mask[distances < radius] = 1
-    return _smooth_single_binary_image(mask, smoothing_radius=smoothing_radius)
+    return add_soft_edge_2d(mask, smoothing_radius=smoothing_radius)
 
 
 def box(
@@ -36,18 +37,18 @@ def box(
 ) -> torch.Tensor:
     if isinstance(image_shape, int):
         image_shape = (image_shape, image_shape)
+    if center is None:
+        center = dft_center(image_shape, rfft=False, fftshifted=True)
     coordinates = coordinate_grid(
         image_shape=image_shape,
-        center_grid=True if center is None else False,
+        center=center,
         device=device,
     )
-    if center is not None:
-        coordinates -= torch.as_tensor(center, dtype=torch.float, device=device)
     dh, dw = dimensions[0] / 2, dimensions[1] / 2
     height_mask = torch.logical_and(coordinates[..., 0] > -dh, coordinates[..., 0] < dh)
     width_mask = torch.logical_and(coordinates[..., 1] > -dw, coordinates[..., 1] < dw)
     mask = torch.logical_and(height_mask, width_mask)
-    return _smooth_single_binary_image(mask, smoothing_radius=smoothing_radius)
+    return add_soft_edge_2d(mask, smoothing_radius=smoothing_radius)
 
 
 def square(
@@ -76,9 +77,12 @@ def wedge(
 ) -> torch.Tensor:
     if isinstance(image_shape, int):
         image_shape = (image_shape, image_shape)
+    center = dft_center(
+        image_shape, rfft=False, fftshifted=True
+    )
     vectors = coordinate_grid(
         image_shape=image_shape,
-        center_grid=True,
+        center=center,
         device=device,
     ).float()
     vectors_norm = einops.reduce(vectors ** 2, '... c -> ... 1', reduction='sum') ** 0.5
@@ -94,4 +98,4 @@ def wedge(
     in_wedge = torch.logical_or(angles <= acute_bound, angles >= obtuse_bound)
     dc_h, dc_w = dft_center(image_shape, rfft=False, fftshifted=True)
     in_wedge[dc_h, dc_w] = True
-    return _smooth_single_binary_image(in_wedge, smoothing_radius=smoothing_radius)
+    return add_soft_edge_2d(in_wedge, smoothing_radius=smoothing_radius)
