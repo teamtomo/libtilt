@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.filters.filters import bandpass_filter
+from libtilt.filters.filters import band_pass_filter
 
 
 def bandpass_2d(
@@ -50,7 +50,7 @@ def bandpass_dft(
     rfft: bool,
     fftshifted: bool = False,
 ):
-    filter = bandpass_filter(
+    filter = band_pass_filter(
         low=low,
         high=high,
         falloff=falloff,

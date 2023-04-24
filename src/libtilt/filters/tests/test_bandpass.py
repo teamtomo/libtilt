@@ -1,10 +1,10 @@
 import torch
 
-from libtilt.filters.filters import bandpass_filter
+from libtilt.filters.filters import band_pass_filter
 
 
 def test_bandpass_filter():
-    filter = bandpass_filter(
+    filter = band_pass_filter(
         low=0.2,
         high=0.4,
         falloff=0.1,
