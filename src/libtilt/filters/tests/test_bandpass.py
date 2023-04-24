@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.filters.bandpass import bandpass_filter
+from libtilt.filters.filters import bandpass_filter
 
 
 def test_bandpass_filter():
