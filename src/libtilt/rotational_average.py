@@ -1,10 +1,50 @@
-from typing import List, Tuple, Sequence, Optional
+from typing import List, Tuple, Optional
 
 import einops
 import torch
 
 from libtilt.grids.coordinate import coordinate_grid
 from libtilt.utils.fft import distance_from_dc_for_dft
+
+
+def rotational_average_2d(
+    image: torch.Tensor,
+    rfft: bool = False,
+    fftshifted: Optional[bool] = None,
+    return_1d_average: bool = True
+) -> torch.Tensor:
+    n_shells = image.shape[-2] // 2
+    shell_data = _split_into_shells_2d(
+        image, n_shells=n_shells, rfft=rfft, fftshifted=fftshifted
+    )
+    shell_means = [
+        einops.reduce(shell, '... shell -> ...', reduction='mean')
+        for shell in shell_data
+    ]
+    average_1d = einops.rearrange(shell_means, 'shells ... -> ... shells')
+    if return_1d_average is True:
+        return average_1d
+    average_2d = _1d_to_rotational_average_2d(
+        data_1d=average_1d,
+        image_shape=image.shape,
+        rfft=rfft,
+        fftshifted=fftshifted,
+    )
+    return average_2d
+
+
+def rotational_average_3d(
+    image: torch.Tensor, rfft: bool = False, fftshifted: bool = True
+) -> torch.Tensor:
+    n_shells = image.shape[-3] // 2
+    shells = _split_into_shells_3d(
+        image, n_shells=n_shells, rfft=rfft, fftshifted=fftshifted
+    )
+    means = [
+        einops.reduce(shell, '... shell -> ...', reduction='mean')
+        for shell in shells
+    ]
+    return einops.rearrange(means, 'shells ... -> ... shells')
 
 
 def _find_shell_indices_1d(
@@ -32,7 +72,8 @@ def _find_shell_indices_2d(
 
 
 def _split_into_shells_2d(
-    image: torch.Tensor, n_shells: int, rfft: bool = False, fftshifted: Optional[bool] = None
+    image: torch.Tensor, n_shells: int, rfft: bool = False,
+    fftshifted: Optional[bool] = None
 ) -> List[torch.Tensor]:
     h, w = image.shape[-2:]
     if fftshifted is None and rfft is False:
@@ -50,32 +91,6 @@ def _split_into_shells_2d(
         for shell_idx in per_shell_indices
     ]
     return shells
-
-
-def rotational_average_2d(
-    image: torch.Tensor,
-    rfft: bool = False,
-    fftshifted: Optional[bool] = None,
-    return_1d_average: bool = True
-) -> torch.Tensor:
-    n_shells = image.shape[-2] // 2
-    shell_data = _split_into_shells_2d(
-        image, n_shells=n_shells, rfft=rfft, fftshifted=fftshifted
-    )
-    shell_means = [
-        einops.reduce(shell, '... shell -> ...', reduction='mean')
-        for shell in shell_data
-    ]
-    average_1d = einops.rearrange(shell_means, 'shells ... -> ... shells')
-    if return_1d_average is True:
-        return average_1d
-    average_2d = _1d_to_rotational_average_2d(
-        data_1d=average_1d,
-        image_shape=image.shape,
-        rfft=rfft,
-        fftshifted=fftshifted,
-    )
-    return average_2d
 
 
 def _1d_to_rotational_average_2d(
@@ -105,24 +120,10 @@ def _split_into_shells_3d(
         dft_shape=(d, h, w), rfft=rfft, fftshifted=fftshifted
     )
     distances = einops.rearrange(distances, 'd h w -> (d h w)')
-    per_shell_indices = _find_shell_indices_1d(distances, n_shells=n_shells)
     image = einops.rearrange(image, '... d h w -> ... (d h w)')
+    per_shell_indices = _find_shell_indices_1d(distances, n_shells=n_shells)
     shells = [
         image[..., shell_idx]
         for shell_idx in per_shell_indices
     ]
     return shells
-
-
-def rotational_average_3d(
-    image: torch.Tensor, rfft: bool = False, fftshifted: bool = True
-) -> torch.Tensor:
-    n_shells = image.shape[-3] // 2
-    shells = _split_into_shells_3d(
-        image, n_shells=n_shells, rfft=rfft, fftshifted=fftshifted
-    )
-    means = [
-        einops.reduce(shell, '... shell -> ...', reduction='mean')
-        for shell in shells
-    ]
-    return einops.rearrange(means, 'shells ... -> ... shells')
