@@ -17,6 +17,8 @@ def circle(
 ) -> torch.Tensor:
     if isinstance(image_shape, int):
         image_shape = (image_shape, image_shape)
+    if center is None:
+        center = dft_center(image_shape, rfft=False, fftshifted=True)
     distances = coordinate_grid(
         image_shape=image_shape,
         center=center,
