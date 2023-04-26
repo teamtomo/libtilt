@@ -36,7 +36,7 @@ def patch_centers(
             device=device,
         )
     else:
-        raise ValueError("only 2D and 3D patches currently supported")
+        raise NotImplementedError("only 2D and 3D patches currently supported")
 
 
 def _patch_centers_1d(

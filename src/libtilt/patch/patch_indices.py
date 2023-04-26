@@ -3,7 +3,34 @@ from typing import Sequence, Tuple
 import einops
 import torch
 
-from libtilt.patch.patch_centers import _patch_centers_1d as _get_patch_centers_1d
+from libtilt.patch.patch_centers import _patch_centers_1d
+
+
+def patch_indices(
+    image_shape: tuple[int, int] | tuple[int, int, int],
+    patch_shape: tuple[int, int] | tuple[int, int, int],
+    patch_step: tuple[int, int] | tuple[int, int, int],
+    distribute_patches: bool = True,
+    device: torch.device = None
+) -> tuple[torch.Tensor, torch.Tensor]:
+    parameters_are_valid = (
+        len(image_shape) == len(patch_shape) and len(image_shape) == len(patch_step)
+    )
+    if parameters_are_valid is False:
+        raise ValueError(
+            "image shape, patch length and patch step are not the same length."
+        )
+    ndim = len(image_shape)
+    if ndim == 2:
+        return _patch_indices_2d(
+            image_shape=image_shape,
+            patch_shape=patch_shape,
+            patch_step=patch_step,
+            distribute_patches=distribute_patches,
+            device=device,
+        )
+    else:
+        raise NotImplementedError("only 2D and 3D patches currently supported")
 
 
 def _patch_centers_to_indices_1d(
@@ -14,7 +41,7 @@ def _patch_centers_to_indices_1d(
     return patch_centers + displacements  # (..., patch_shape)
 
 
-def get_patch_indices_2d(
+def _patch_indices_2d(
     image_shape: Sequence[int],
     patch_shape: Tuple[int, int],
     patch_step: Tuple[int, int],
