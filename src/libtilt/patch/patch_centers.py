@@ -4,7 +4,42 @@ import einops
 import torch
 
 
-def get_patch_centers_1d(
+def patch_centers(
+    image_shape: tuple[int, int] | tuple[int, int, int],
+    patch_shape: tuple[int, int] | tuple[int, int, int],
+    patch_step: tuple[int, int] | tuple[int, int, int],
+    distribute_patches: bool = True,
+    device: torch.device = None,
+) -> torch.Tensor:
+    parameters_are_valid = (
+        len(image_shape) == len(patch_shape) and len(image_shape) == len(patch_step)
+    )
+    if parameters_are_valid is False:
+        raise ValueError(
+            "image shape, patch length and patch step are not the same length."
+        )
+    ndim = len(image_shape)
+    if ndim == 2:
+        return _patch_centers_2d(
+            image_shape=image_shape,
+            patch_shape=patch_shape,
+            patch_step=patch_step,
+            distribute_patches=distribute_patches,
+            device=device,
+        )
+    elif ndim == 3:
+        return _patch_centers_3d(
+            image_shape=image_shape,
+            patch_shape=patch_shape,
+            patch_step=patch_step,
+            distribute_patches=distribute_patches,
+            device=device,
+        )
+    else:
+        raise ValueError("only 2D and 3D patches currently supported")
+
+
+def _patch_centers_1d(
     dim_length: int,
     patch_length: int,
     patch_step: int,
@@ -23,15 +58,15 @@ def get_patch_centers_1d(
     return patch_centers
 
 
-def get_patch_centers_2d(
+def _patch_centers_2d(
     image_shape: Sequence[int],
-    patch_shape: Tuple[int, int],
-    patch_step: Tuple[int, int],
+    patch_shape: tuple[int, int],
+    patch_step: tuple[int, int],
     distribute_patches: bool = True,
     device: torch.device = None,
 ) -> torch.Tensor:
     pc_h, pc_w = [
-        get_patch_centers_1d(
+        _patch_centers_1d(
             dim_length=dim_length,
             patch_length=window_length,
             patch_step=step,
@@ -48,7 +83,7 @@ def get_patch_centers_2d(
     return patch_centers
 
 
-def get_patch_centers_3d(
+def _patch_centers_3d(
     image_shape: Sequence[int],
     patch_shape: Tuple[int, int, int],
     patch_step: Tuple[int, int, int],
@@ -56,7 +91,7 @@ def get_patch_centers_3d(
     device: torch.device = None
 ) -> torch.Tensor:
     pc_d, pc_h, pc_w = [
-        get_patch_centers_1d(
+        _patch_centers_1d(
             dim_length=dim_length,
             patch_length=window_length,
             patch_step=step,

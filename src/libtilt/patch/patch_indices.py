@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 import einops
 import torch
 
-from libtilt.patch.patch_centers import get_patch_centers_1d as _get_patch_centers_1d
+from libtilt.patch.patch_centers import _patch_centers_1d as _get_patch_centers_1d
 
 
 def _patch_centers_to_indices_1d(
@@ -11,7 +11,7 @@ def _patch_centers_to_indices_1d(
 ) -> torch.Tensor:
     displacements = torch.arange(patch_length, device=device) - patch_length // 2
     patch_centers = einops.rearrange(patch_centers, '... -> ... 1')
-    return patch_centers + displacements  # (..., patch_length)
+    return patch_centers + displacements  # (..., patch_shape)
 
 
 def get_patch_indices_2d(
@@ -22,7 +22,7 @@ def get_patch_indices_2d(
     device: torch.device = None
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     centers = [
-        _get_patch_centers_1d(
+        _patch_centers_1d(
             dim_length=_dim_length,
             patch_length=_patch_length,
             patch_step=_patch_step,
