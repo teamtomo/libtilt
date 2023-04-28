@@ -3,7 +3,7 @@ from scipy.spatial.transform import Rotation as R
 
 from libtilt.projection.fourier import extract_slices
 from libtilt.backprojection.fourier import insert_slices
-from libtilt.utils.coordinates import generate_rotated_slice_coordinates
+from libtilt.grids.central_slice import rotated_central_slice
 
 
 def test_fourier_slice_extraction_insertion_cycle_no_rotation():
@@ -12,7 +12,7 @@ def test_fourier_slice_extraction_insertion_cycle_no_rotation():
     weights = torch.zeros_like(volume, dtype=torch.float)
     input_slice = torch.complex(torch.arange(64*64).reshape(64, 64).float(), imag=torch.zeros((64, 64)))
     rotation = torch.eye(3).reshape(1, 3, 3)
-    slice_coordinates = generate_rotated_slice_coordinates(rotation, sidelength=sidelength)
+    slice_coordinates = rotated_central_slice(rotation, sidelength=sidelength)
     volume_with_slice, weights = insert_slices(
         slice_data=input_slice.reshape(1, 64, 64),
         slice_coordinates=slice_coordinates,
@@ -30,7 +30,7 @@ def test_fourier_slice_extraction_insertion_cycle_with_rotation():
     weights = torch.zeros_like(volume, dtype=torch.float)
     input_slice = torch.complex(torch.rand(64*64).reshape(64, 64).float(), imag=torch.zeros((64, 64)))
     rotation = torch.tensor(R.random().as_matrix()).float()
-    slice_coordinates = generate_rotated_slice_coordinates(rotation, sidelength=sidelength)
+    slice_coordinates = rotated_central_slice(rotation, sidelength=sidelength)
     in_volume_idx = (slice_coordinates >= 0) & (slice_coordinates <= torch.tensor(volume.shape) - 1)
     in_volume_idx = torch.all(in_volume_idx, dim=-1)
     volume_with_slice, weights = insert_slices(

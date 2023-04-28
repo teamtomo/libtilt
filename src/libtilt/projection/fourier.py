@@ -2,8 +2,8 @@ import torch
 import torch.nn.functional as F
 import einops
 
-from libtilt.utils.coordinates import array_to_grid_sample, \
-    generate_rotated_slice_coordinates
+from libtilt.utils.coordinates import array_to_grid_sample
+from libtilt.grids.central_slice import rotated_central_slice
 
 
 def extract_slices(
@@ -70,8 +70,8 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor,
     dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
     dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
-    slice_coordinates = generate_rotated_slice_coordinates(rotation_matrices,
-                                                           sidelength=dft.shape[-1])
+    slice_coordinates = rotated_central_slice(rotation_matrices,
+                                              sidelength=dft.shape[-1])
     projections = extract_slices(dft, slice_coordinates)  # (b, h, w)
     projections = torch.fft.ifftshift(projections, dim=(-2, -1))
     projections = torch.fft.ifftn(projections, dim=(-2, -1))
