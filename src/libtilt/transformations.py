@@ -127,3 +127,28 @@ def T(shifts: torch.Tensor) -> torch.Tensor:
     matrices[:, :3, 3] = shifts
     [matrices] = einops.unpack(matrices, packed_shapes=ps, pattern='* i j')
     return matrices
+
+
+def S(scale_factors: torch.Tensor) -> torch.Tensor:
+    """4x4 matrices for scaling.
+
+    Parameters
+    ----------
+    scale_factors: torch.Tensor
+        `(..., 3)` array of scale factors.
+    zyx: bool
+        Whether output should be compatible with `zyxw` (`True`) or `xyzw`
+        (`False`) homogenous coordinates.
+
+    Returns
+    -------
+    matrices: torch.Tensor
+        `(..., 4, 4)` array of 4x4 shift matrices.
+    """
+    scale_factors = torch.atleast_1d(torch.as_tensor(scale_factors))
+    scale_factors, ps = einops.pack([scale_factors], pattern='* coords')  # to 2d
+    n = scale_factors.shape[0]
+    matrices = einops.repeat(torch.eye(4), 'i j -> n i j', n=n).clone()
+    matrices[:, [0, 1, 2], [0, 1, 2]] = scale_factors
+    [matrices] = einops.unpack(matrices, packed_shapes=ps, pattern='* i j')
+    return matrices
