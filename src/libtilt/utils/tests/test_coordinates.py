@@ -5,22 +5,11 @@ import numpy as np
 from libtilt.utils.coordinates import (
     array_to_grid_sample,
     grid_sample_to_array,
-    _grid_sample_to_array_1d,
     add_positional_coordinate,
-    generate_rotated_slice_coordinates,
     homogenise_coordinates,
     promote_2d_shifts_to_3d,
 )
 from libtilt.grids.coordinate import coordinate_grid
-
-
-def test_array_coordinates_to_grid_sample_coordinates_1d():
-    n = 5
-    array_coordinates = torch.arange(n)
-    grid_sample_coordinates = _array_to_grid_sample_1d(array_coordinates,
-                                                       dim_length=n)
-    expected = torch.linspace(-1, 1, n)
-    assert torch.allclose(grid_sample_coordinates, expected)
 
 
 def test_array_coordinates_to_grid_sample_coordinates_nd():
@@ -37,15 +26,6 @@ def test_array_coordinates_to_grid_sample_coordinates_nd():
     assert torch.allclose(grid_sample_coordinates[0, 0, :, 0], expected_x)
     assert torch.allclose(grid_sample_coordinates[0, :, 0, 1], expected_y)
     assert torch.allclose(grid_sample_coordinates[:, 0, 0, 2], expected_z)
-
-
-def test_grid_sample_coordinates_to_array_coordinates_1d():
-    n = 5
-    grid_sample_coordinates = torch.linspace(-1, 1, n)
-    array_coordinates = _grid_sample_to_array_1d(grid_sample_coordinates,
-                                                 dim_length=n)
-    expected = torch.arange(n).float()
-    assert torch.allclose(array_coordinates, expected)
 
 
 def test_grid_sample_coordinates_to_array_coordinates_nd():
@@ -100,27 +80,6 @@ def test_homogenise_coordinates():
     homogenised = homogenise_coordinates(coords)
     assert torch.all(homogenised[..., :3] == coords)
     assert torch.all(homogenised[..., 3] == 1)
-
-
-def test_generate_rotated_slice_coordinates():
-    # generate an unrotated slice for a 4x4x4 volume.
-    rotation = torch.eye(3)
-    slice_coordinates = generate_rotated_slice_coordinates(rotation, sidelength=4)
-
-    assert slice_coordinates.shape == (1, 4, 4, 3)
-    slice_coordinates = einops.rearrange(slice_coordinates, '1 i j zyx -> i j zyx')
-
-    # all z coordinates should be in the middle of the volume, slice is unrotated
-    assert torch.all(slice_coordinates[..., 0] == 2)
-
-    # y coordinates should be 0-3 repeated across columns
-    assert torch.all(slice_coordinates[..., 1] == torch.tensor([[0],
-                                                                [1],
-                                                                [2],
-                                                                [3]]))
-
-    # x coordinates should be 0-3 repeated across rows
-    assert torch.all(slice_coordinates[..., 2] == torch.tensor([[0, 1, 2, 3]]))
 
 
 def test_promote_2d_shifts_to_3d():
