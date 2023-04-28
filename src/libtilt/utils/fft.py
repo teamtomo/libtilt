@@ -339,14 +339,21 @@ def _best_fft_shape(
     return best_fft_shape
 
 
-def _pad_to_best_fft_shape(
+def _pad_to_best_fft_shape_2d(
     image: torch.Tensor,
     target_fftfreq: tuple[float, float]
 ):
     fft_size_h, fft_size_w = _best_fft_shape(
         image_shape=image.shape[-2:], target_fftfreq=target_fftfreq
     )
-    # pad image to best fft size
+    # padding is not supported for arrays with large ndim, pack
+    image, ps = einops.pack([image], pattern='* h w')
+
+    # pad to best fft size
     h, w = image.shape[-2:]
     ph, pw = fft_size_h - h, fft_size_w - w
-    return F.pad(image, pad=(0, pw, 0, ph), mode='reflect')
+    too_much_padding = ph > h or pw > w
+    padding_mode = 'reflect' if too_much_padding is False else 'constant'
+    image = F.pad(image, pad=(0, pw, 0, ph), mode=padding_mode)
+    [image] = einops.unpack(image, pattern='* h w', packed_shapes=ps)
+    return image
