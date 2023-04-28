@@ -111,9 +111,6 @@ def T(shifts: torch.Tensor) -> torch.Tensor:
     ----------
     shifts: torch.Tensor
         `(..., 3)` array of shifts.
-    zyx: bool
-        Whether output should be compatible with `zyxw` (`True`) or `xyzw`
-        (`False`) homogenous coordinates.
 
     Returns
     -------
@@ -136,9 +133,6 @@ def S(scale_factors: torch.Tensor) -> torch.Tensor:
     ----------
     scale_factors: torch.Tensor
         `(..., 3)` array of scale factors.
-    zyx: bool
-        Whether output should be compatible with `zyxw` (`True`) or `xyzw`
-        (`False`) homogenous coordinates.
 
     Returns
     -------
