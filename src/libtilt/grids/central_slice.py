@@ -28,7 +28,7 @@ def rotated_central_slice(
     if rotations.ndim == 2:
         rotations = einops.rearrange(rotations, 'i j -> 1 i j')
     # generate [x, y, z] coordinates for a central slice
-    # the slice spans the XY plane with origin on DFT center_grid
+    # the slice spans the XY plane with origin on DFT center
     x = y = torch.arange(sidelength) - (sidelength // 2)
     zz = torch.zeros(size=(sidelength, sidelength))
     yy = einops.repeat(y, 'h -> h w', w=sidelength)
@@ -41,6 +41,6 @@ def rotated_central_slice(
     rotations = einops.rearrange(rotations, 'b i j -> b 1 1 i j')
     grid = einops.rearrange(rotations @ grid, 'b h w coords 1 -> b h w coords')
 
-    # recenter slice on DFT center_grid and flip to zyx
+    # recenter slice on DFT center
     grid += sidelength // 2
     return grid

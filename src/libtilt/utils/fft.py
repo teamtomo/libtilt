@@ -21,7 +21,7 @@ def dft_center(
     fftshifted: bool,
     device: torch.device | None = None,
 ) -> torch.LongTensor:
-    """Return the indices of the DFT center_grid."""
+    """Return the indices of the DFT center."""
     fft_center = torch.zeros(size=(len(grid_shape),), device=device)
     grid_shape = torch.as_tensor(grid_shape).float()
     if rfft is True:

@@ -39,7 +39,7 @@ def grid_sample_to_array(
     grid_sample_coordinates: torch.Tensor
         `(..., d)` array of coordinates to be used with `torch.nn.functional.grid_sample`.
     array_shape: Sequence[int]
-        shape of the array `grid_sample_coordinates` are used to sample.
+        Shape of the array `grid_sample_coordinates` are used to sample.
     """
     dtype, device = grid_sample_coordinates.dtype, grid_sample_coordinates.device
     array_shape = torch.as_tensor(array_shape, dtype=dtype, device=device)
@@ -47,6 +47,25 @@ def grid_sample_to_array(
     array_coordinates = (grid_sample_coordinates + 1) * (0.5 * array_shape - 0.5)
     array_coordinates = torch.flip(array_coordinates, dims=(-1,))
     return array_coordinates
+
+
+def fftfreq_to_array(
+    frequency_grid: torch.Tensor, array_shape: Sequence[int]
+) -> torch.Tensor:
+    """Generate array coordinates from DFT sample frequencies.
+
+    Parameters
+    ----------
+    frequency_grid: torch.Tensor
+        `(..., d)` grid of DFT sample frequencies.
+    array_shape: Sequence[int]
+
+
+    Returns
+    -------
+
+    """
+    pass
 
 
 def promote_2d_shifts_to_3d(shifts: torch.Tensor) -> torch.Tensor:
