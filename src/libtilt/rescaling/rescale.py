@@ -4,10 +4,92 @@ import torch
 import torch.nn.functional as F
 
 from libtilt.utils.fft import (
-    _target_fftfreq_from_spacing,
-    _pad_to_best_fft_shape, dft_center,
+    _target_fftfreq_from_spacing, _pad_to_best_fft_shape_2d, dft_center,
 )
 from libtilt.shift.fourier_shift import phase_shift_dft_2d
+
+
+def rescale_2d(
+    image: torch.Tensor,
+    source_spacing: float | tuple[float, float],
+    target_spacing: float | tuple[float, float],
+    maintain_dft_center: bool = False
+) -> tuple[torch.Tensor, tuple[float, float]]:
+    """Rescale 2D image(s) from `source_spacing` to `target_spacing`.
+
+    - rescaling is performed in Fourier space by either cropping or padding the
+    discrete Fourier transform (DFT).
+    - the output image(s) will have even sidelengths in both spatial dimensions.
+    - the origin [..., 0, 0] is maintained.
+
+    Parameters
+    ----------
+    image: torch.Tensor
+        `(..., h, w)` array of image data
+    source_spacing: float | tuple[float, float]
+        Pixel spacing in the input image.
+    target_spacing: float | tuple[float, float]
+        Pixel spacing in the output image.
+    maintain_dft_center: bool
+        Whether to maintain the DFT center of the image (`True`) or the array
+        origin `[0, 0]` (`False`).
+
+    Returns
+    -------
+    rescaled_image, (new_spacing_h, new_spacing_w)
+    """
+    if isinstance(source_spacing, int | float):
+        source_spacing = (source_spacing, source_spacing)
+    if isinstance(target_spacing, int | float):
+        target_spacing = (target_spacing, target_spacing)
+    if source_spacing == target_spacing:
+        return image, source_spacing
+
+    # pad input to a good fft size in each dimension
+    h, w = image.shape[-2:]
+    target_fftfreq_h, target_fftfreq_w = _target_fftfreq_from_spacing(
+        source_spacing=source_spacing, target_spacing=target_spacing
+    )
+    image = _pad_to_best_fft_shape_2d(
+        image, target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
+    )
+    padded_h, padded_w = image.shape[-2:]
+
+    # compute DFT
+    dft = torch.fft.rfftn(image, dim=(-2, -1))
+
+    # Fourier pad/crop
+    dft, (new_nyquist_h, new_nyquist_w) = _rescale_rfft_2d(
+        dft=dft,
+        image_shape=(padded_h, padded_w),
+        target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
+    )
+
+    # Calculate new spacing after rescaling
+    source_spacing_h, source_spacing_w = source_spacing
+    new_spacing_h = 1 / (2 * new_nyquist_h * (1 / source_spacing_h))
+    new_spacing_w = 1 / (2 * new_nyquist_w * (1 / source_spacing_w))
+
+    # maintain origin at rotation center if requested
+    if maintain_dft_center is True:
+        dft = _align_to_original_dft_center(
+            dft=dft,
+            original_image_shape=(h, w),
+            original_image_spacing=(source_spacing_h, source_spacing_w),
+            rescaled_image_spacing=(new_spacing_h, new_spacing_w)
+        )
+
+    # transform back to real space
+    rescaled_image = torch.fft.irfftn(dft, dim=(-2, -1))
+
+    # calculate new spacings and unpad from rescaled optimal fft size
+    rescaled_image = _unpad(
+        rescaled_image=rescaled_image,
+        rescaled_image_spacing=(new_spacing_h, new_spacing_w),
+        original_image_shape=(h, w),
+        original_image_spacing=(source_spacing_h, source_spacing_w)
+    )
+    return rescaled_image, (float(new_spacing_h), float(new_spacing_w))
 
 
 def _get_final_shape(
@@ -135,86 +217,3 @@ def _align_to_original_dft_center(
     )
     print(center_h, dh, target_center_h, center_h + dh)
     return dft
-
-
-def rescale_2d(
-    image: torch.Tensor,
-    source_spacing: float | tuple[float, float],
-    target_spacing: float | tuple[float, float],
-    maintain_dft_center: bool = False
-) -> tuple[torch.Tensor, tuple[float, float]]:
-    """Rescale 2D image(s) from `source_spacing` to `target_spacing`.
-
-    - rescaling is performed in Fourier space by either cropping or padding the
-    discrete Fourier transform (DFT).
-    - the output image(s) will have even sidelengths in both spatial dimensions.
-    - the origin [..., 0, 0] is maintained.
-
-    Parameters
-    ----------
-    image: torch.Tensor
-        `(..., h, w)` array of image data
-    source_spacing: float | tuple[float, float]
-        Pixel spacing in the input image.
-    target_spacing: float | tuple[float, float]
-        Pixel spacing in the output image.
-    maintain_dft_center: bool
-        Whether to maintain the DFT center of the image (`True`) or the array
-        origin `[0, 0]` (`False`).
-
-    Returns
-    -------
-    rescaled_image, (new_spacing_h, new_spacing_w)
-    """
-    if isinstance(source_spacing, int | float):
-        source_spacing = (source_spacing, source_spacing)
-    if isinstance(target_spacing, int | float):
-        target_spacing = (target_spacing, target_spacing)
-    if source_spacing == target_spacing:
-        return image, source_spacing
-
-    # pad input to a good fft size in each dimension
-    h, w = image.shape[-2:]
-    target_fftfreq_h, target_fftfreq_w = _target_fftfreq_from_spacing(
-        source_spacing=source_spacing, target_spacing=target_spacing
-    )
-    image = _pad_to_best_fft_shape(
-        image, target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
-    )
-    padded_h, padded_w = image.shape[-2:]
-
-    # compute DFT
-    dft = torch.fft.rfftn(image, dim=(-2, -1))
-
-    # Fourier pad/crop
-    dft, (new_nyquist_h, new_nyquist_w) = _rescale_rfft_2d(
-        dft=dft,
-        image_shape=(padded_h, padded_w),
-        target_fftfreq=(target_fftfreq_h, target_fftfreq_w)
-    )
-
-    # Calculate new spacing after rescaling
-    source_spacing_h, source_spacing_w = source_spacing
-    new_spacing_h = 1 / (2 * new_nyquist_h * (1 / source_spacing_h))
-    new_spacing_w = 1 / (2 * new_nyquist_w * (1 / source_spacing_w))
-
-    # maintain origin at rotation center if requested
-    if maintain_dft_center is True:
-        dft = _align_to_original_dft_center(
-            dft=dft,
-            original_image_shape=(h, w),
-            original_image_spacing=(source_spacing_h, source_spacing_w),
-            rescaled_image_spacing=(new_spacing_h, new_spacing_w)
-        )
-
-    # transform back to real space
-    rescaled_image = torch.fft.irfftn(dft, dim=(-2, -1))
-
-    # calculate new spacings and unpad from rescaled optimal fft size
-    rescaled_image = _unpad(
-        rescaled_image=rescaled_image,
-        rescaled_image_spacing=(new_spacing_h, new_spacing_w),
-        original_image_shape=(h, w),
-        original_image_spacing=(source_spacing_h, source_spacing_w)
-    )
-    return rescaled_image, (float(new_spacing_h), float(new_spacing_w))
