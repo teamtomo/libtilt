@@ -215,5 +215,4 @@ def _align_to_original_dft_center(
         rfft=True,
         fftshifted=False,
     )
-    print(center_h, dh, target_center_h, center_h + dh)
     return dft
