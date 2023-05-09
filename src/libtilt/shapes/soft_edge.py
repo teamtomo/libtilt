@@ -36,3 +36,23 @@ def add_soft_edge_2d(
     results = torch.stack(results, dim=0)
     [results] = einops.unpack(results, pattern='* h w', packed_shapes=ps)
     return results
+
+
+def add_soft_edge_3d(
+    image: torch.Tensor, smoothing_radius: torch.Tensor | float
+) -> torch.Tensor:
+    image_packed, ps = einops.pack([image], '* d h w')
+    b = image_packed.shape[0]
+    if isinstance(smoothing_radius, float | int):
+        smoothing_radius = torch.as_tensor(
+            data=[smoothing_radius], device=image.device, dtype=torch.float32
+        )
+    smoothing_radius = torch.broadcast_to(smoothing_radius, (b,))
+    results = [
+        _add_soft_edge_single_binary_image(_image, smoothing_radius=_smoothing_radius)
+        for _image, _smoothing_radius
+        in zip(image_packed, smoothing_radius)
+    ]
+    results = torch.stack(results, dim=0)
+    [results] = einops.unpack(results, pattern='* d h w', packed_shapes=ps)
+    return results
