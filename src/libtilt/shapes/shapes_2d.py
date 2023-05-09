@@ -30,7 +30,7 @@ def circle(
     return add_soft_edge_2d(mask, smoothing_radius=smoothing_radius)
 
 
-def box(
+def rectangle(
     dimensions: tuple[float, float] | float,
     image_shape: tuple[int, int] | int,
     center: tuple[float, float] | None = None,
@@ -60,7 +60,7 @@ def square(
     smoothing_radius: float = 0,
     device: torch.device | None = None,
 ) -> torch.Tensor:
-    square = box(
+    square = rectangle(
         dimensions=(sidelength, sidelength),
         image_shape=image_shape,
         center=center,

@@ -1,4 +1,4 @@
-from libtilt.shapes.shapes_2d import circle, square, box, wedge
+from libtilt.shapes.shapes_2d import circle, square, rectangle, wedge
 
 
 def _circle():
