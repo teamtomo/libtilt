@@ -2,11 +2,17 @@ import numpy as np
 import pytest
 import torch
 
-from libtilt.utils.fft import rfft_shape, \
-    rfft_to_symmetrised_dft_2d, rfft_to_symmetrised_dft_3d, \
-    symmetrised_dft_to_dft_2d, \
-    symmetrised_dft_to_rfft_2d, symmetrised_dft_to_dft_3d, \
-    dft_center
+from libtilt.utils.fft import (
+    rfft_shape,
+    rfft_to_symmetrised_dft_2d,
+    rfft_to_symmetrised_dft_3d,
+    symmetrised_dft_to_dft_2d,
+    symmetrised_dft_to_rfft_2d,
+    symmetrised_dft_to_dft_3d,
+    dft_center,
+    fftfreq_to_spatial_frequency,
+    spatial_frequency_to_fftfreq,
+)
 from libtilt.grids.fftfreq import _construct_fftfreq_grid_2d
 
 
@@ -105,6 +111,7 @@ def test_symmetrised_dft_to_rfft_2d(inplace: bool):
                                                     inplace=inplace)
     assert torch.allclose(desymmetrised_rfft, rfft, atol=1e-6)
 
+
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
@@ -117,6 +124,7 @@ def test_symmetrised_dft_to_dft_2d_batched(inplace: bool):
     desymmetrised_dft = symmetrised_dft_to_dft_2d(symmetrised_dft,
                                                   inplace=inplace)
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
+
 
 @pytest.mark.parametrize(
     "inplace",
@@ -148,11 +156,12 @@ def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
                                                   inplace=inplace)
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
 
+
 @pytest.mark.parametrize(
     "fftshifted, rfft, input, expected",
     [
         (False, False, (5, 5, 5), torch.tensor([0., 0., 0.])),
-        (False, True,  (5, 5, 5), torch.tensor([0., 0., 0.])),
+        (False, True, (5, 5, 5), torch.tensor([0., 0., 0.])),
         (True, False, (5, 5, 5), torch.tensor([2., 2., 2.])),
         (True, True, (5, 5, 5), torch.tensor([2., 2., 0.])),
         (False, False, (4, 4, 4), torch.tensor([0., 0., 0.])),
@@ -164,3 +173,26 @@ def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
 def test_fft_center(fftshifted, rfft, input, expected):
     result = dft_center(input, fftshifted=fftshifted, rfft=rfft)
     assert torch.allclose(result, expected)
+
+
+def test_fftfreq_to_spatial_frequency():
+    fftfreq = torch.fft.fftfreq(10)
+    k = fftfreq_to_spatial_frequency(fftfreq, spacing=2)
+    expected = torch.fft.fftfreq(10, d=2)
+    assert torch.allclose(k, expected)
+
+    k = fftfreq_to_spatial_frequency(fftfreq, spacing=0.1)
+    expected = torch.fft.fftfreq(10, d=0.1)
+    assert torch.allclose(k, expected)
+
+
+def test_spatial_frequency_to_fftfreq():
+    k = torch.fft.fftfreq(10, d=2)
+    fftfreq = spatial_frequency_to_fftfreq(k, spacing=2)
+    expected = torch.fft.fftfreq(10)
+    assert torch.allclose(fftfreq, expected)
+
+    k = torch.fft.fftfreq(10, d=0.1)
+    fftfreq = spatial_frequency_to_fftfreq(k, spacing=0.1)
+    expected = torch.fft.fftfreq(10)
+    assert torch.allclose(fftfreq, expected)
