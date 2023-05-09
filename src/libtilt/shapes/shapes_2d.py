@@ -54,7 +54,7 @@ def rectangle(
 
 
 def square(
-    sidelength: tuple[float, float] | float,
+    sidelength: float,
     image_shape: tuple[int, int] | int,
     center: tuple[float, float] | None = None,
     smoothing_radius: float = 0,
