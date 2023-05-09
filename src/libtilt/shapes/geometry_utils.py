@@ -10,7 +10,7 @@ def _angle_between_vectors(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     dot_products = einops.einsum(a, b, 'b vec, vec -> b')
     angles = torch.rad2deg(torch.arccos(dot_products))
     [angles] = einops.unpack(angles, packed_shapes=ps, pattern='*')
-    return torch.rad2deg(angles)
+    return angles
 
 
 def _unique_characters(n: int) -> str:
