@@ -2,6 +2,7 @@ import einops
 import torch
 
 from libtilt.grids import coordinate_grid
+from libtilt.shapes.geometry_utils import _angle_between_vectors
 from libtilt.shapes.soft_edge import add_soft_edge_3d
 from libtilt.utils.fft import dft_center
 
@@ -69,3 +70,36 @@ def cube(
         device=device,
     )
     return cube
+
+
+def cone(
+    aperture: float,
+    image_shape: tuple[int, int, int] | int,
+    principal_axis: tuple[float, float, float] = (1, 0, 0),
+    smoothing_radius: float = 0,
+    device: torch.device | None = None,
+) -> torch.Tensor:
+    if isinstance(image_shape, int):
+        image_shape = (image_shape, image_shape, image_shape)
+    center = dft_center(
+        image_shape, rfft=False, fftshifted=True
+    )
+    vectors = coordinate_grid(
+        image_shape=image_shape,
+        center=center,
+        device=device,
+    ).float()
+    vectors_norm = einops.reduce(vectors ** 2, '... c -> ... 1', reduction='sum') ** 0.5
+    vectors /= vectors_norm
+    principal_axis = torch.as_tensor(principal_axis, dtype=vectors.dtype, device=device)
+    principal_axis_norm = einops.reduce(
+        principal_axis ** 2, '... c -> ... 1', reduction='sum'
+    ) ** 0.5
+    principal_axis /= principal_axis_norm
+    angles = _angle_between_vectors(vectors, principal_axis)
+    acute_bound = aperture / 2
+    obtuse_bound = 180 - acute_bound
+    in_cone = torch.logical_or(angles <= acute_bound, angles >= obtuse_bound)
+    dc_d, dc_h, dc_w = dft_center(image_shape, rfft=False, fftshifted=True)
+    in_cone[dc_d, dc_h, dc_w] = True
+    return add_soft_edge_3d(in_cone, smoothing_radius=smoothing_radius)
