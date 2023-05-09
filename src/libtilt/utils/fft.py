@@ -102,6 +102,22 @@ def best_fft_size(
     raise ValueError("No best size found.")
 
 
+def fftfreq_to_spatial_frequency(
+    frequencies: torch.Tensor, spacing: float
+) -> torch.Tensor:
+    """Convert frequencies in cycles per pixel to cycles per unit distance."""
+    # cycles/px * px/distance = cycles/distance
+    return torch.as_tensor(frequencies, dtype=torch.float32) * (1 / spacing)
+
+
+def spatial_frequency_to_fftfreq(
+    frequencies: torch.Tensor, spacing: float
+) -> torch.Tensor:
+    """Convert frequencies in cycles per unit distance to cycles per pixel."""
+    # cycles/distance * distance/px = cycles/px
+    return torch.as_tensor(frequencies, dtype=torch.float32) * spacing
+
+
 def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     """Construct a symmetrised discrete Fourier transform from an rfft.
 
