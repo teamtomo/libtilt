@@ -31,7 +31,7 @@ def circle(
 
 
 def rectangle(
-    dimensions: tuple[float, float] | float,
+    dimensions: tuple[float, float],
     image_shape: tuple[int, int] | int,
     center: tuple[float, float] | None = None,
     smoothing_radius: float = 0,
