@@ -44,18 +44,22 @@ def extract_slices(
     slice_coordinates = array_to_grid_sample(slice_coordinates,
                                              array_shape=dft.shape[-3:])
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> b 1 h w zyx')
-    # inside = torch.logical_or(slice_coordinates > 0, slice_coordinates < 1)
-    # inside = torch.all(inside, dim=-1)  # (b, d, h, w)
-    # sample with reflection to increase sampling fidelity at borders then zero
+
+    # sample with reflection at edges to increase sampling fidelity
     samples = F.grid_sample(
         input=dft,
         grid=slice_coordinates,
         mode='bilinear',  # this is trilinear when input is volumetric
-        padding_mode='zeros',
+        padding_mode='reflection',
         align_corners=True,
     )
-    # inside = einops.repeat(inside, 'b d h w -> b 2 d h w')  # add channel dim
-    # samples[~inside] *= 0
+
+    # zero out samples from outside of cube
+    inside = torch.logical_or(slice_coordinates > 0, slice_coordinates < 1)
+    inside = torch.all(inside, dim=-1)  # (b, d, h, w)
+    inside = einops.repeat(inside, 'b d h w -> b 2 d h w')  # add channel dim
+    samples[~inside] *= 0
+
     samples = einops.rearrange(samples, 'b complex 1 h w -> b h w complex')
     samples = torch.view_as_complex(samples.contiguous())
     return samples  # (b, h, w)
