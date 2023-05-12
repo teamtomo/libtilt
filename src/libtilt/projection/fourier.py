@@ -45,12 +45,12 @@ def extract_slices(
                                              array_shape=dft.shape[-3:])
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> b 1 h w zyx')
 
-    # sample with reflection at edges to increase sampling fidelity
+    # sample with border values at edges to increase sampling fidelity at nyquist
     samples = F.grid_sample(
         input=dft,
         grid=slice_coordinates,
         mode='bilinear',  # this is trilinear when input is volumetric
-        padding_mode='reflection',
+        padding_mode='border',
         align_corners=True,
     )
 
