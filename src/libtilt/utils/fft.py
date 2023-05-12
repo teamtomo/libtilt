@@ -253,7 +253,7 @@ def _indices_centered_on_dc_for_shifted_rfft(
 
 def _distance_from_dc_for_shifted_rfft(rfft_shape: Sequence[int]) -> torch.Tensor:
     centered_indices = _indices_centered_on_dc_for_shifted_rfft(rfft_shape)
-    return einops.reduce(centered_indices ** 2, '... c -> ...') ** 0.5
+    return einops.reduce(centered_indices ** 2, '... c -> ...', reduction='sum') ** 0.5
 
 
 def _indices_centered_on_dc_for_shifted_dft(
