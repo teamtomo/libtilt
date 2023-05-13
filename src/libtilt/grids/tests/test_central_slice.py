@@ -1,26 +1,26 @@
 import torch
-import einops
 
-from libtilt.grids.central_slice import rotated_central_slice
+from libtilt.grids.central_slice import central_slice_grid
 
 
-def test_generate_rotated_slice_coordinates():
-    # generate an unrotated slice for a 4x4x4 volume.
-    rotation = torch.eye(3)
-    slice_coordinates = rotated_central_slice(rotation, sidelength=4)
+def test_central_slice_grid():
+    # generate xyz coordinates for a (4, 4, 4) volume
+    grid_xyz = central_slice_grid(sidelength=4, zyx=False)
 
-    assert slice_coordinates.shape == (1, 4, 4, 3)
-    slice_coordinates = einops.rearrange(slice_coordinates, '1 i j zyx -> i j zyx')
-
-    # all z coordinates should be in the middle of the volume, slice is unrotated
-    assert torch.all(slice_coordinates[..., 2] == 2)
-
-    # y coordinates should be 0-3 repeated across columns
-    assert torch.all(slice_coordinates[..., 1] == torch.tensor([[0],
-                                                                [1],
-                                                                [2],
-                                                                [3]]))
+    assert grid_xyz.shape == (4, 4, 3)
 
     # x coordinates should be 0-3 repeated across rows
-    assert torch.all(slice_coordinates[..., 0] == torch.tensor([[0, 1, 2, 3]]))
+    assert torch.all(grid_xyz[..., 0] == torch.tensor([[-2, -1, 0, 1]]))
 
+    # y coordinates should be -2 to 1 repeated across columns
+    assert torch.all(grid_xyz[..., 1] == torch.tensor([[-2],
+                                                       [-1],
+                                                       [0],
+                                                       [1]]))
+
+    # all z coordinates should be 0
+    assert torch.all(grid_xyz[..., 2] == 0)
+
+    # zyx should be xyz flipped
+    grid_zyx = central_slice_grid(sidelength=4, zyx=True)
+    assert torch.allclose(torch.flip(grid_xyz, dims=(-1,)), grid_zyx)

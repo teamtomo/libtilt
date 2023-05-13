@@ -1,13 +1,14 @@
+import einops
 import torch
 import torch.nn.functional as F
 from scipy.stats import special_ortho_group
 
-from libtilt.grids.central_slice import rotated_central_slice
+from libtilt.grids.central_slice import central_slice_grid
 
 from libtilt.projection.fourier import extract_slices
 from libtilt.shift.fourier_shift import fourier_shift_2d, phase_shift_dft_2d
 from libtilt.backprojection.fourier import insert_slices, _grid_sinc2
-from libtilt.utils.fft import symmetrised_dft_to_dft_3d
+from libtilt.utils.fft import symmetrised_dft_to_dft_3d, dft_center
 from libtilt.fsc import fsc
 
 
@@ -29,17 +30,32 @@ def test_projection_backprojection_cycle():
         p = volume.shape[0] // 4
         volume = F.pad(volume, pad=[p] * 6)
 
-    # forward model, gridding correction then make n projections
+    # rotation matrices for projection (operate on xyz column vectors)
     rotations = torch.tensor(
         special_ortho_group.rvs(dim=3, size=N_IMAGES, random_state=42)).float()
 
-    slice_coordinates = rotated_central_slice(rotations, sidelength=volume.shape[0])
+    # generate grid of coordinates for central XY slice
+    grid = central_slice_grid(sidelength=volume.shape[-1], zyx=False)  # (h, w, 3)
+
+    # rotate coordinate grid and recenter
+    rotation_matrices = einops.rearrange(rotations, 'b i j -> b 1 1 i j')
+    grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
+    grid = rotation_matrices @ grid
+    grid = einops.rearrange(grid, 'b h w coords 1 -> b h w coords')
+    grid = torch.flip(grid, dims=(-1,))
+    grid = grid + dft_center(volume.shape, rfft=False, fftshifted=True)
+
+    # pre-correct for effects of subsequent Fourier space interpolation
     sinc2 = _grid_sinc2(volume.shape)
     volume *= sinc2
+
+    # calculate DFT
     dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
     dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
-    dft_slices = extract_slices(dft, slice_coordinates)  # (b, h, w)
+
+    # take slices
+    dft_slices = extract_slices(dft, grid)  # (b, h, w)
 
     # shift the projections (dft slices) by phase shifting
     std = 3
@@ -76,7 +92,7 @@ def test_projection_backprojection_cycle():
         end = min(end, N_IMAGES - 1)
         reconstruction, weights = insert_slices(
             slice_data=dft_slices[start:end],
-            slice_coordinates=slice_coordinates[start:end],
+            slice_coordinates=grid[start:end],
             dft=reconstruction,
             weights=weights,
         )
