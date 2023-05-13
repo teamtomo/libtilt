@@ -3,7 +3,7 @@ import torch
 
 
 def rotated_central_slice(
-    rotations: torch.Tensor, sidelength: int, zyx: bool = False
+    rotations: torch.Tensor, sidelength: int
 ) -> torch.Tensor:
     """Generate an array of rotated central slice coordinates for sampling a 3D image.
 
@@ -16,9 +16,6 @@ def rotated_central_slice(
         `(batch, 3, 3)` array of rotation matrices which rotate zyx coordinates.
     sidelength: int
         Sidelength of cubic volume for which coordinates are generated.
-    zyx: bool
-        Whether rotations are applied to zyx coordinates (`True`) or xyz
-        coordinates (`False`). This flag defines the order of coordinates in the output.
 
     Returns
     -------
@@ -30,12 +27,10 @@ def rotated_central_slice(
     # generate [x, y, z] coordinates for a central slice
     # the slice spans the XY plane with origin on DFT center_grid
     x = y = torch.arange(sidelength) - (sidelength // 2)
-    zz = torch.zeros(size=(sidelength, sidelength))
-    yy = einops.repeat(y, 'h -> h w', w=sidelength)
     xx = einops.repeat(x, 'w -> h w', h=sidelength)
-    grid = einops.rearrange([zz, yy, xx], 'zyx h w -> 1 h w zyx 1')
-    if zyx is False:
-        grid = torch.flip(grid, dims=(-2,))
+    yy = einops.repeat(y, 'h -> h w', w=sidelength)
+    zz = torch.zeros(size=(sidelength, sidelength))
+    grid = einops.rearrange([xx, yy, zz], 'xyz h w -> 1 h w xyz 1')
 
     # rotate coordinates
     rotations = einops.rearrange(rotations, 'b i j -> b 1 1 i j')
@@ -43,4 +38,5 @@ def rotated_central_slice(
 
     # recenter slice on DFT center_grid and flip to zyx
     grid += sidelength // 2
+    grid = torch.flip(grid, dims=(-1,))
     return grid
