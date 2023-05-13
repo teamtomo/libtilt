@@ -83,9 +83,7 @@ def test_projection_backprojection_cycle():
 
     # reweight data in Fourier space
     valid_weights = weights > 1e-3
-    reconstruction[valid_weights] /= torch.max(weights[valid_weights],
-                                               torch.tensor([1]))
-    # reconstruction[valid_weights] /= weights[valid_weights]
+    reconstruction[valid_weights] /= weights[valid_weights]
 
     # desymmetrise dft
     if RECONSTRUCT_SYMMETRISED_DFT is True:
