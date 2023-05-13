@@ -21,7 +21,7 @@ def dft_center(
     fftshifted: bool,
     device: torch.device | None = None,
 ) -> torch.LongTensor:
-    """Return the indices of the DFT center_grid."""
+    """Return the position of the DFT center for a given input shape."""
     fft_center = torch.zeros(size=(len(grid_shape),), device=device)
     grid_shape = torch.as_tensor(grid_shape).float()
     if rfft is True:
@@ -373,3 +373,31 @@ def _pad_to_best_fft_shape_2d(
     image = F.pad(image, pad=(0, pw, 0, ph), mode=padding_mode)
     [image] = einops.unpack(image, pattern='* h w', packed_shapes=ps)
     return image
+
+
+def fftfreq_to_rfft_coordinatess(
+    frequencies: torch.Tensor, image_shape: tuple[int, ...]
+):
+    """Convert DFT sample frequencies into array coordinates in a fftshifted rfft.
+
+    Parameters
+    ----------
+    frequencies: torch.Tensor
+        `(..., d)` array of multidimensional DFT sample frequencies
+    image_shape: tuple[int, ...]
+        Length `d` array of image dimensions.
+
+    Returns
+    -------
+    rfft_coordinates: torch.Tensor
+        `(..., d)` array of coordinates into a fftshifted rfft.
+    """
+    _rfft_shape = torch.as_tensor(
+        rfft_shape(image_shape), device=frequencies.device, dtype=frequencies.dtype
+    )
+    rfft_coordinates = torch.empty_like(frequencies)
+    rfft_coordinates[..., :-1] = frequencies[..., :-1] * _rfft_shape[:-1]
+    rfft_coordinates[..., -1] = frequencies[..., -1] * 2 * (_rfft_shape[-1] - 1)
+    dc = dft_center(image_shape, rfft=True, fftshifted=True, device=frequencies.device)
+    return rfft_coordinates + dc
+

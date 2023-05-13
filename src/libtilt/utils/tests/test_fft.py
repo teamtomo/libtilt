@@ -12,6 +12,7 @@ from libtilt.utils.fft import (
     dft_center,
     fftfreq_to_spatial_frequency,
     spatial_frequency_to_fftfreq,
+    fftfreq_to_rfft_coordinatess,
 )
 from libtilt.grids.fftfreq import _construct_fftfreq_grid_2d
 
@@ -196,3 +197,11 @@ def test_spatial_frequency_to_fftfreq():
     fftfreq = spatial_frequency_to_fftfreq(k, spacing=0.1)
     expected = torch.fft.fftfreq(10)
     assert torch.allclose(fftfreq, expected)
+
+
+def test_fftfreq_to_rfft_coords():
+    from libtilt.grids import fftfreq_grid, coordinate_grid
+    k = fftfreq_grid(image_shape=(10, 10), rfft=True, fftshift=True)
+    result = fftfreq_to_rfft_coordinatess(frequencies=k, image_shape=(10, 10))
+    expected = coordinate_grid(image_shape=rfft_shape((10, 10)))
+    assert torch.allclose(result, expected)

@@ -42,8 +42,7 @@ def extract_slices(
     dft = einops.rearrange(torch.view_as_real(dft), 'd h w complex -> complex d h w')
     n_slices = slice_coordinates.shape[0]
     dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_slices)
-    slice_coordinates = array_to_grid_sample(slice_coordinates,
-                                             array_shape=dft.shape[-3:])
+    slice_coordinates = array_to_grid_sample(slice_coordinates, array_shape=dft.shape[-3:])
     slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> b 1 h w zyx')
 
     # sample with border values at edges to increase sampling fidelity at nyquist
