@@ -4,7 +4,6 @@ import einops
 
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.grids.central_slice import central_slice_grid
-from libtilt.grids import fftfreq_grid
 from libtilt.utils.fft import dft_center, fftshift_3d, rfft_to_symmetrised_dft_3d, \
     symmetrised_dft_to_dft_3d
 
