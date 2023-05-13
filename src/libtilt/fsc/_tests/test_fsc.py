@@ -17,17 +17,17 @@ def test_fsc_identical_volumes():
 
 def test_fsc_identical_images_with_index_subset():
     a = torch.rand(size=(10, 10))
-    rfft_idx = torch.zeros(size=(10, 6), dtype=torch.bool)
-    rfft_idx[::2, 1::2] = 1  # subset of fourier coefficients
-    rfft_idx[0, 0] = 1  # include dc
-    result = fsc(a, a, rfft_mask=rfft_idx)
+    rfft_mask = torch.zeros(size=(10, 6), dtype=torch.bool)
+    rfft_mask[::2, 1::2] = 1  # subset of fourier coefficients
+    rfft_mask[0, 0] = 1  # include dc
+    result = fsc(a, a, rfft_mask=rfft_mask)
     assert torch.allclose(result, torch.ones(6))
 
 
 def test_fsc_identical_volumes_with_index_subset():
     a = torch.rand(size=(10, 10, 10))
-    rfft_idx = torch.zeros(size=(10, 10, 6), dtype=torch.bool)
-    rfft_idx[::2, 1::2, ::2] = 1  # subset of fourier coefficients
-    rfft_idx[0, 0, 0] = 1  # include dc
-    result = fsc(a, a, rfft_mask=rfft_idx)
+    rfft_mask = torch.zeros(size=(10, 10, 6), dtype=torch.bool)
+    rfft_mask[::2, 1::2, ::2] = 1  # subset of fourier coefficients
+    rfft_mask[0, 0, 0] = 1  # include dc
+    result = fsc(a, a, rfft_mask=rfft_mask)
     assert torch.allclose(result, torch.ones(6))
