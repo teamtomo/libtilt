@@ -3,7 +3,8 @@ import torch.nn.functional as F
 import einops
 
 from libtilt.utils.coordinates import array_to_grid_sample
-from libtilt.grids.central_slice import rotated_central_slice
+from libtilt.grids.central_slice import central_slice_grid
+from libtilt.utils.fft import dft_center
 
 
 def extract_slices(
@@ -65,21 +66,62 @@ def extract_slices(
     return samples  # (b, h, w)
 
 
-def project(volume: torch.Tensor, rotation_matrices: torch.Tensor,
-            pad=True) -> torch.Tensor:
-    """Fourier space projection by sampling central slices."""
+def project(
+    volume: torch.Tensor,
+    rotation_matrices: torch.Tensor,
+    zyx: bool = False,
+    pad: bool = True,
+) -> torch.Tensor:
+    """Project a cubic volume by sampling a central slice through its DFT.
+
+    Parameters
+    ----------
+    volume: torch.Tensor
+        `(d, d, d)` volume.
+    rotation_matrices: torch.Tensor
+        `(b, 3, 3)` which rotate coordinates of central slice to be sampled.
+    zyx: bool
+        Whether rotation matrices apply to zyx (`True`) or xyz (`False`)
+        coordinates.
+    pad: bool
+        Whether to pad the volume with zeros to increase sampling in the DFT.
+
+    Returns
+    -------
+    projections: torch.Tensor
+        `(b, d, d)` array of projection images.
+    """
+    # padding
     if pad is True:
         pad_length = volume.shape[-1] // 2
         volume = F.pad(volume, pad=[pad_length] * 6, mode='constant', value=0)
+
+    # calculate DFT
     dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
     dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
-    slice_coordinates = rotated_central_slice(rotation_matrices,
-                                              sidelength=dft.shape[-1])
-    projections = extract_slices(dft, slice_coordinates)  # (b, h, w)
+
+    # generate grid of coordinates for central XY slice
+    grid = central_slice_grid(
+        sidelength=dft.shape[-1], zyx=zyx, device=volume.device
+    )  # (h, w, 3)
+
+    # rotate coordinate grid and recenter
+    rotation_matrices = einops.rearrange(rotation_matrices, 'b i j -> b 1 1 i j')
+    grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
+    grid = rotation_matrices @ grid
+    grid = einops.rearrange(grid, 'b h w coords 1 -> b h w coords')
+    if zyx is False:
+        grid = torch.flip(grid, dims=(-1, ))
+    grid = grid + dft_center(volume.shape, rfft=False, fftshifted=True)
+
+    # sample slices from DFT
+    projections = extract_slices(dft, grid)  # (b, h, w)
     projections = torch.fft.ifftshift(projections, dim=(-2, -1))
     projections = torch.fft.ifftn(projections, dim=(-2, -1))
     projections = torch.fft.ifftshift(projections, dim=(-2, -1))
+
+    # unpadding
     if pad is True:
         projections = projections[:, pad_length:-pad_length, pad_length:-pad_length]
     return torch.real(projections)

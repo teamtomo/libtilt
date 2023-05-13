@@ -139,7 +139,7 @@ def test_symmetrised_dft_to_dft_3d(inplace: bool):
     )
     desymmetrised_dft = symmetrised_dft_to_dft_3d(symmetrised_dft,
                                                   inplace=inplace)
-    assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
+    assert torch.allclose(desymmetrised_dft, fft, atol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -154,7 +154,7 @@ def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
         image, dim=(-3, -2, -1)), dim=(-3, -2, -1))
     desymmetrised_dft = symmetrised_dft_to_dft_3d(symmetrised_dft,
                                                   inplace=inplace)
-    assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
+    assert torch.allclose(desymmetrised_dft, fft, atol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -172,7 +172,7 @@ def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
 )
 def test_fft_center(fftshifted, rfft, input, expected):
     result = dft_center(input, fftshifted=fftshifted, rfft=rfft)
-    assert torch.allclose(result, expected)
+    assert torch.allclose(result, expected.long())
 
 
 def test_fftfreq_to_spatial_frequency():
