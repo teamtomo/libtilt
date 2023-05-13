@@ -161,7 +161,7 @@ def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     return output
 
 
-def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
+def rfft_to_symmetrised_dft_3d(dft: torch.Tensor) -> torch.Tensor:
     """Construct a symmetrised discrete Fourier transform from an rfft.
 
     The symmetrised discrete Fourier transform contains a full FFT with components at
@@ -176,24 +176,25 @@ def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
     - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
     """
-    r = rfft.shape[-3]  # input dim length
-    if rfft.ndim == 3:
+    r = dft.shape[-3]  # input dim length
+    if dft.ndim == 3:
         output = torch.zeros((r + 1, r + 1, r + 1), dtype=torch.complex64)
-    elif rfft.ndim == 4:
-        b = rfft.shape[0]
+    elif dft.ndim == 4:
+        b = dft.shape[0]
         output = torch.zeros((b, r + 1, r + 1, r + 1), dtype=torch.complex64)
     # fftshift full length dims (i.e. not -1) to center_grid DC component
-    rfft = torch.fft.fftshift(rfft, dim=(-3, -2))
+    dft = torch.fft.fftshift(dft, dim=(-3, -2))
     # place rfft in output
     dc = r // 2  # index for DC component
-    output[..., :-1, :-1, dc:] = rfft
+    output[..., :-1, :-1, dc:] = dft
     # replicate components at nyquist (symmetrise)
-    output[..., :-1, -1, dc:] = rfft[..., :, 0, :]
-    output[..., -1, :-1, dc:] = rfft[..., 0, :, :]
-    output[..., -1, -1, dc:] = rfft[..., 0, 0, :]
+    output[..., :-1, -1, dc:] = dft[..., :, 0, :]
+    output[..., -1, :-1, dc:] = dft[..., 0, :, :]
+    output[..., -1, -1, dc:] = dft[..., 0, 0, :]
     # fill redundant half-spectrum
-    output[..., :, :, :dc] = torch.flip(torch.conj(output[..., :, :, dc + 1:]),
-                                        dims=(-3, -2, -1))
+    output[..., :, :, :dc] = torch.flip(
+        torch.conj(output[..., :, :, dc + 1:]), dims=(-3, -2, -1)
+    )
     return output
 
 
@@ -375,7 +376,7 @@ def _pad_to_best_fft_shape_2d(
     return image
 
 
-def fftfreq_to_rfft_coordinatess(
+def fftfreq_to_rfft_coordinates(
     frequencies: torch.Tensor, image_shape: tuple[int, ...]
 ):
     """Convert DFT sample frequencies into array coordinates in a fftshifted rfft.

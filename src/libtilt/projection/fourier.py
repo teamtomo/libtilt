@@ -4,7 +4,9 @@ import einops
 
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.grids.central_slice import central_slice_grid
-from libtilt.utils.fft import dft_center
+from libtilt.grids import fftfreq_grid
+from libtilt.utils.fft import dft_center, fftshift_3d, rfft_to_symmetrised_dft_3d, \
+    symmetrised_dft_to_dft_3d
 
 
 def extract_slices(
@@ -13,9 +15,7 @@ def extract_slices(
 ) -> torch.Tensor:
     """Sample batches of 2D images from a complex cubic volume at specified coordinates.
 
-
-    `dft` should pre-fftshifted to place the origin in Fourier space at the center_grid of the DFT
-    i.e. dft should be the result of
+    The `dft` should be the result of
 
             volume -> fftshift(volume) -> fft3(volume) -> fftshift(volume)
 
@@ -96,9 +96,11 @@ def project(
         volume = F.pad(volume, pad=[pad_length] * 6, mode='constant', value=0)
 
     # calculate DFT
-    dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
-    dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
-    dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
+    dft = fftshift_3d(volume, rfft=False)
+    dft = torch.fft.rfftn(dft, dim=(-3, -2, -1))
+    dft = fftshift_3d(dft, rfft=True)
+    dft = rfft_to_symmetrised_dft_3d(dft)
+    dft = symmetrised_dft_to_dft_3d(dft)
 
     # generate grid of coordinates for central XY slice
     grid = central_slice_grid(
