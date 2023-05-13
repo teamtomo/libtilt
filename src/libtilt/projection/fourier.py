@@ -4,8 +4,8 @@ import einops
 
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.grids.central_slice import central_slice_grid
-from libtilt.utils.fft import dft_center, fftshift_3d, rfft_to_symmetrised_dft_3d, \
-    symmetrised_dft_to_dft_3d
+from libtilt.utils.fft import dft_center, fftshift_3d, _rfft_to_symmetrised_dft_3d, \
+    _symmetrised_dft_to_dft_3d
 
 
 def extract_slices(
@@ -98,8 +98,8 @@ def project(
     dft = fftshift_3d(volume, rfft=False)
     dft = torch.fft.rfftn(dft, dim=(-3, -2, -1))
     dft = fftshift_3d(dft, rfft=True)
-    dft = rfft_to_symmetrised_dft_3d(dft)
-    dft = symmetrised_dft_to_dft_3d(dft)
+    dft = _rfft_to_symmetrised_dft_3d(dft)
+    dft = _symmetrised_dft_to_dft_3d(dft)
 
     # generate grid of coordinates for central XY slice
     grid = central_slice_grid(

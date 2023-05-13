@@ -8,7 +8,7 @@ from libtilt.grids.central_slice import central_slice_grid
 from libtilt.projection.fourier import extract_slices
 from libtilt.shift.fourier_shift import fourier_shift_2d, phase_shift_dft_2d
 from libtilt.backprojection.fourier import insert_slices, _grid_sinc2
-from libtilt.utils.fft import symmetrised_dft_to_dft_3d, dft_center
+from libtilt.utils.fft import _symmetrised_dft_to_dft_3d, dft_center
 from libtilt.fsc import fsc
 
 
@@ -103,7 +103,7 @@ def test_projection_backprojection_cycle():
 
     # desymmetrise dft
     if RECONSTRUCT_SYMMETRISED_DFT is True:
-        reconstruction = symmetrised_dft_to_dft_3d(reconstruction, inplace=True)
+        reconstruction = _symmetrised_dft_to_dft_3d(reconstruction, inplace=True)
 
     # back to real space
     reconstruction = torch.fft.ifftshift(reconstruction, dim=(-3, -2, -1))
