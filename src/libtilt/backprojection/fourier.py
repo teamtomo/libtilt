@@ -1,8 +1,9 @@
 from typing import Tuple, Literal
 
 import einops
-import numpy as np
 import torch
+
+from libtilt.grids.fftfreq import _grid_sinc2
 
 
 def insert_slices(
@@ -73,15 +74,6 @@ def insert_slices(
     add_data_at_corner(1, 1, 1)
 
     return dft, weights
-
-
-def _grid_sinc2(shape: Tuple[int, int, int]):
-    d = torch.tensor(np.stack(np.indices(tuple(shape)), axis=-1)).float()
-    d -= torch.tensor(tuple(shape)) // 2
-    d = torch.linalg.norm(d, dim=-1)
-    d /= shape[-1]
-    sinc2 = torch.sinc(d) ** 2
-    return sinc2
 
 
 def reconstruct_from_images(

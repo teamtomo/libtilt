@@ -1,7 +1,7 @@
 import torch
 from scipy.spatial.transform import Rotation as R
 
-from libtilt.projection.fourier import extract_slices
+from libtilt.projection.fourier import interpolate_dft_3d
 from libtilt.backprojection.fourier import insert_slices
 from libtilt.grids.central_slice import rotated_central_slice
 
@@ -20,7 +20,7 @@ def test_fourier_slice_extraction_insertion_cycle_no_rotation():
         weights=weights
     )
     volume_with_slice[weights > 1e-3] /= weights[weights > 1e-3]
-    output_slice = extract_slices(volume_with_slice, slice_coordinates=slice_coordinates)
+    output_slice = interpolate_dft_3d(volume_with_slice, coordinates=slice_coordinates)
     assert torch.allclose(input_slice, output_slice)
 
 
@@ -41,7 +41,7 @@ def test_fourier_slice_extraction_insertion_cycle_with_rotation():
     )
     volume_with_slice[weights > 1e-3] /= weights[weights > 1e-3]
 
-    output_slice = extract_slices(volume_with_slice, slice_coordinates=slice_coordinates)
+    output_slice = interpolate_dft_3d(volume_with_slice, coordinates=slice_coordinates)
     input_slice = torch.real(input_slice).unsqueeze(0)
     output_slice = torch.real(output_slice)
     error = torch.mean(torch.abs((input_slice[in_volume_idx] - output_slice[in_volume_idx])))

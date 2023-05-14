@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from scipy.spatial.transform import Rotation as R
 
-from libtilt.projection.fourier import extract_slices, project
+from libtilt.projection.fourier import interpolate_dft_3d, project
 
 
 def test_extract_slices():
@@ -22,7 +22,7 @@ def test_extract_slices():
     slice_coordinates = einops.rearrange([zz, yy, xx],
                                          'zyx h w -> 1 h w zyx')  # add batch dim
 
-    extracted_slice = extract_slices(dft=volume, slice_coordinates=slice_coordinates)
+    extracted_slice = interpolate_dft_3d(dft=volume, coordinates=slice_coordinates)
     error = F.mse_loss(slice, torch.real(extracted_slice.squeeze()))
     assert error < 1e-10
 

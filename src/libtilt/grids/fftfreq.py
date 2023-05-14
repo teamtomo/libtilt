@@ -2,6 +2,7 @@ import functools
 from typing import Sequence, Tuple, Union
 
 import einops
+import numpy as np
 import torch
 
 from libtilt.utils.fft import rfft_shape, fftshift_2d, fftshift_3d
@@ -104,6 +105,33 @@ def fftfreq_central_slice(
     return central_slice
 
 
+def rotated_fftfreq_central_slice(
+    image_shape: tuple[int, int, int],
+    rotation_matrices: torch.Tensor,
+    rotation_matrix_zyx: bool,
+    rfft: bool,
+    fftshift: bool = False,
+    spacing: float | tuple[float, float] | tuple[float, float, float] = 1,
+    device: torch.device | None = None,
+):
+    grid = fftfreq_central_slice(
+        image_shape=image_shape,
+        rfft=rfft,
+        fftshift=fftshift,
+        spacing=spacing,
+        device=device,
+    )  # (h, w, 3)
+    if rotation_matrix_zyx is False:
+        grid = torch.flip(grid, dims=(-1, ))
+    rotation_matrices = einops.rearrange(rotation_matrices, '... i j -> ... 1 1 i j')
+    grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
+    grid = rotation_matrices @ grid
+    grid = einops.rearrange(grid, '... h w coords 1 -> ... h w coords')
+    if rotation_matrix_zyx is False:  # back to zyx if currently xyz
+        grid = torch.flip(grid, dims=(-1, ))
+    return grid
+
+
 def _construct_fftfreq_grid_2d(
     image_shape: Tuple[int, int],
     rfft: bool,
@@ -180,3 +208,12 @@ def _construct_fftfreq_grid_3d(
     freq_yy = einops.repeat(freq_y, 'h -> d h w', d=d, w=w)
     freq_xx = einops.repeat(freq_x, 'w -> d h w', d=d, h=h)
     return einops.rearrange([freq_zz, freq_yy, freq_xx], 'freq ... -> ... freq')
+
+
+def _grid_sinc2(shape: Tuple[int, int, int]):
+    d = torch.tensor(np.stack(np.indices(tuple(shape)), axis=-1)).float()
+    d -= torch.tensor(tuple(shape)) // 2
+    d = torch.linalg.norm(d, dim=-1)
+    d /= shape[-1]
+    sinc2 = torch.sinc(d) ** 2
+    return sinc2
