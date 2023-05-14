@@ -12,40 +12,38 @@ def interpolate_dft_3d(
     dft: torch.Tensor,
     coordinates: torch.Tensor
 ) -> torch.Tensor:
-    """Sample from a complex volume at specified coordinates.
+    """Sample a complex volume with linear interpolation.
 
 
     Parameters
     ----------
     dft: torch.Tensor
-        (d, h, w) complex valued cubic volume (d == h == w) containing
-        the discrete Fourier transform of a cubic volume.
+        `(d, h, w)` complex valued volume.
     coordinates: torch.Tensor
-        (batch, h, w, zyx) array of coordinates at which `dft` should be sampled.
+        `(..., zyx)` array of coordinates at which `dft` should be sampled.
         Coordinates should be ordered zyx, aligned with image dimensions `(d, h, w)`.
         Coordinates should be array coordinates, spanning `[0, N-1]` for a
         dimension of length N.
     Returns
     -------
     samples: torch.Tensor
-        (batch, h, w) array of complex valued images sampled from the `dft`
+        `(..., )` array of complex valued samples from `dft`.
     """
+    coordinates, ps = einops.pack([coordinates], pattern='* zyx')
+    n_samples = coordinates.shape[0]
+
     # cannot sample complex tensors directly with grid_sample
     # c.f. https://github.com/pytorch/pytorch/issues/67634
     # workaround: treat real and imaginary parts as separate channels
     dft = einops.rearrange(torch.view_as_real(dft), 'd h w complex -> complex d h w')
-    coordinates, ps = einops.pack([coordinates], pattern='* zyx')
-    n_samples = coordinates.shape[0]
     dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_samples)
-    coordinates = array_to_grid_sample(coordinates, array_shape=dft.shape[-3:])
     coordinates = einops.rearrange(coordinates, 'b zyx -> b 1 1 1 zyx')  # b d h w zyx
 
-    # sample with border values at edges to increase sampling fidelity at nyquist
     samples = F.grid_sample(
         input=dft,
-        grid=coordinates,
+        grid=array_to_grid_sample(coordinates, array_shape=dft.shape[-3:]),
         mode='bilinear',  # this is trilinear when input is volumetric
-        padding_mode='border',
+        padding_mode='border', # this increases sampling fidelity at nyquist
         align_corners=True,
     )
     samples = einops.rearrange(samples, 'b complex 1 1 1 -> b complex')
@@ -56,8 +54,10 @@ def interpolate_dft_3d(
     inside = torch.logical_or(coordinates > 0, coordinates < 1)
     inside = torch.all(inside, dim=-1)  # (b, d, h, w)
     samples[~inside] *= 0
+
+    # pack data back up and return
     [samples] = einops.unpack(samples, pattern='*', packed_shapes=ps)
-    return samples  # (b, h, w)
+    return samples  # (...)
 
 
 def project(
