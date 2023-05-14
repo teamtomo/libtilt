@@ -118,42 +118,27 @@ def project(
     if zyx is False:  # to zyx if currently xyz
         grid = torch.flip(grid, dims=(-1, ))
 
-    # handle conjugate stuff
-    in_redundant_half_mask = grid[..., 2] < 0
-    in_redundant_half_mask = einops.repeat(in_redundant_half_mask, '... -> ... 3')
-    grid[in_redundant_half_mask] *= -1
+    # flip coordinates in redundant half transform
+    conjugate_mask = grid[..., 2] < 0
+    conjugate_mask = einops.repeat(conjugate_mask, '... -> ... 3')
+    grid[conjugate_mask] *= -1
+    conjugate_mask = conjugate_mask[..., 0]  # un-repeat
 
-
+    # sample slices from DFT
     grid = fftfreq_to_dft_coordinates(
         frequencies=grid,
         image_shape=volume.shape,
         rfft=True
     )
-
-    import napari
-    import numpy as np
-    viewer = napari.Viewer()
-    viewer.add_points(np.array([[0, 0, 0],
-                                [0, 0, 0.5],
-                                [0, 1, 0],
-                                [1, 0, 0],
-                                [0, 1, 0.5],
-                                [1, 0, 0.5],
-                                [1, 1, 0],
-                                [1, 1, 0.5]]) * 20, size=1, face_color='red')
-    viewer.add_points(einops.rearrange(grid, '... c -> (...) c').numpy(), size=1)
-    viewer.add_points([10, 10, 0], face_color='red', size=1)
-    napari.run()
-
-
-
-
-    # sample slices from DFT
     projections = extract_slices(dft, grid)  # (b, h, w)
-    projections[in_redundant_half_mask[..., 0]] = torch.conj(projections[in_redundant_half_mask[..., 0]])
+
+    # take complex conjugate of values from redundant half transform
+    projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
+
+    # back to real space
     projections = torch.fft.ifftshift(projections, dim=(-2, ))
     projections = torch.fft.irfftn(projections, dim=(-2, -1))
-    projections = torch.fft.ifftshift(projections, dim=(-2, ))
+    projections = torch.fft.ifftshift(projections, dim=(-2, -1))
 
     # unpadding
     if pad is True:
