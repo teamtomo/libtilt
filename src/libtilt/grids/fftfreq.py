@@ -96,8 +96,8 @@ def fftfreq_central_slice(
     )  # (h, w, 2)
     if rfft is True:
         h, w = rfft_shape((h, w))
-    slice_d = torch.zeros(size=(h, w, 1), dtype=slice_hw.dtype, device=device)
-    central_slice = torch.concatenate([slice_d, slice_hw], dim=-1)  # (h, w, 3)
+    slice_d = torch.zeros(size=(h, w), dtype=slice_hw.dtype, device=device)
+    central_slice, _ = einops.pack([slice_d, slice_hw], pattern='h w *')  # (h, w, 3)
     if fftshift is True:
         central_slice = einops.rearrange(central_slice, '... freq -> freq ...')
         central_slice = fftshift_2d(central_slice, rfft=rfft)
