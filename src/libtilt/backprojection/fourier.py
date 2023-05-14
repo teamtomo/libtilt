@@ -6,20 +6,20 @@ import torch
 from libtilt.grids.fftfreq import _grid_sinc2
 
 
-def insert_slices(
-        slice_data: torch.Tensor,  # (batch, h, w)
-        slice_coordinates: torch.Tensor,  # (batch, h, w, 3) ordered zyx
-        dft: torch.Tensor,  # (d, d, d)
-        weights: torch.Tensor,  # (d, d, d)
+def insert_into_dft_3d(
+        data: torch.Tensor,
+        coordinates: torch.Tensor,
+        dft: torch.Tensor,
+        weights: torch.Tensor,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Insert 2D slices into a 3D discrete Fourier transform with trilinear interpolation.
+    """Insert values into a 3D DFT with trilinear interpolation (rasterisation).
 
     Parameters
     ----------
-    slice_data: torch.Tensor
-        `(batch, h, w)` array of 2D images.
-    slice_coordinates: torch.Tensor
-        `(batch, h, w, 3)` array of 3D coordinates for data in `slices`.
+    data: torch.Tensor
+        `(...)` array of values to be inserted into the DFT.
+    coordinates: torch.Tensor
+        `(..., 3)` array of 3D coordinates for each value in `data`.
     dft: torch.Tensor
         `(d, d, d)` volume containing the discrete Fourier transform into which data will be inserted.
     weights: torch.Tensor
@@ -27,41 +27,35 @@ def insert_slices(
 
     Returns
     -------
-    dft, weights: Tuple[torch.Tensor]
+    dft, weights: Tuple[torch.Tensor, torch.Tensor]
         The dft and weights after updating with data from `slices` at `slice_coordinates`.
     """
+    if data.shape != coordinates.shape[:-1]:
+        raise ValueError('One coordinate triplet is required for each value in data.')
+
     # linearise data and coordinates
-    slice_data = einops.rearrange(slice_data, 'b h w -> (b h w)')
-    slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> (b h w) zyx').float()
+    data, ps = einops.pack([data], pattern='*')
+    coordinates, _ = einops.pack([coordinates], pattern='* zyx').float()
 
     # only keep data and coordinates inside the volume
-    in_volume_idx = (slice_coordinates >= 0) & (slice_coordinates <= torch.tensor(dft.shape) - 1)
+    in_volume_idx = (coordinates >= 0) & (coordinates <= torch.tensor(dft.shape) - 1)
     in_volume_idx = torch.all(in_volume_idx, dim=-1)
-    slice_data, slice_coordinates = slice_data[in_volume_idx], slice_coordinates[in_volume_idx]
-
-    # only keep within central sphere? reconstruction looks noticeably worse
-    # d = dft.shape[0] // 2
-    # cutoff = d + 1
-    # slice_coordinates -= d
-    # valid_idx = (torch.sum(slice_coordinates ** 2, dim=-1) ** 0.5) <= cutoff
-    # slice_data, slice_coordinates = slice_data[valid_idx], \
-    #                                 slice_coordinates[valid_idx]
-    # slice_coordinates += d
+    data, coordinates = data[in_volume_idx], coordinates[in_volume_idx]
 
     # calculate and cache floor and ceil of coordinates for each piece of slice data
-    corner_coordinates = torch.empty(size=(slice_data.shape[0], 2, 3), dtype=torch.long)
-    corner_coordinates[:, 0] = torch.floor(slice_coordinates)  # for lower corners
-    corner_coordinates[:, 1] = torch.ceil(slice_coordinates)  # for upper corners
+    corner_coordinates = torch.empty(size=(data.shape[0], 2, 3), dtype=torch.long)
+    corner_coordinates[:, 0] = torch.floor(coordinates)  # for lower corners
+    corner_coordinates[:, 1] = torch.ceil(coordinates)  # for upper corners
 
     # cache linear interpolation weights for each data point being inserted
-    _weights = torch.empty(size=(slice_data.shape[0], 2, 3))  # (b, 2, zyx)
-    _weights[:, 1] = slice_coordinates - corner_coordinates[:, 0]  # upper corner weights
+    _weights = torch.empty(size=(data.shape[0], 2, 3))  # (b, 2, zyx)
+    _weights[:, 1] = coordinates - corner_coordinates[:, 0]  # upper corner weights
     _weights[:, 0] = 1 - _weights[:, 1]  # lower corner weights
 
     def add_data_at_corner(z: Literal[0, 1], y: Literal[0, 1], x: Literal[0, 1]):
         w = einops.reduce(_weights[:, [z, y, x], [0, 1, 2]], 'b zyx -> b', reduction='prod')
         zc, yc, xc = einops.rearrange(corner_coordinates[:, [z, y, x], [0, 1, 2]], 'b zyx -> zyx b')
-        dft.index_put_(indices=(zc, yc, xc), values=w * slice_data, accumulate=True)
+        dft.index_put_(indices=(zc, yc, xc), values=w * data, accumulate=True)
         weights.index_put_(indices=(zc, yc, xc), values=w, accumulate=True)
 
     add_data_at_corner(0, 0, 0)
@@ -110,9 +104,9 @@ def reconstruct_from_images(
     images = torch.fft.fftshift(images, dim=(-2, -1))
     images = torch.fft.fftn(images, dim=(-2, -1))
     images = torch.fft.fftshift(images, dim=(-2, -1))
-    output, weights = insert_slices(
-        slice_data=images,
-        slice_coordinates=slice_coordinates,
+    output, weights = insert_into_dft_3d(
+        data=images,
+        coordinates=slice_coordinates,
         dft=output,
         weights=weights
     )

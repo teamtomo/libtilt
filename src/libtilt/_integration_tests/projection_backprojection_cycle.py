@@ -5,9 +5,9 @@ from scipy.stats import special_ortho_group
 
 from libtilt.grids.central_slice import central_slice_grid
 
-from libtilt.projection.fourier import interpolate_dft_3d
+from libtilt.projection.fourier import extract_from_dft_3d
 from libtilt.shift.fourier_shift import fourier_shift_2d, phase_shift_dft_2d
-from libtilt.backprojection.fourier import insert_slices
+from libtilt.backprojection.fourier import insert_into_dft_3d
 from libtilt.grids.fftfreq import _grid_sinc2
 from libtilt.utils.fft import _symmetrised_dft_to_dft_3d, dft_center
 from libtilt.fsc import fsc
@@ -56,7 +56,7 @@ def test_projection_backprojection_cycle():
     dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
 
     # take slices
-    dft_slices = interpolate_dft_3d(dft, grid)  # (b, h, w)
+    dft_slices = extract_from_dft_3d(dft, grid)  # (b, h, w)
 
     # shift the projections (dft slices) by phase shifting
     std = 3
@@ -91,9 +91,9 @@ def test_projection_backprojection_cycle():
     splits = torch.arange(start=0, end=N_IMAGES + BATCH_SIZE, step=BATCH_SIZE)
     for start, end in zip(splits, splits[1:]):
         end = min(end, N_IMAGES - 1)
-        reconstruction, weights = insert_slices(
-            slice_data=dft_slices[start:end],
-            slice_coordinates=grid[start:end],
+        reconstruction, weights = insert_into_dft_3d(
+            data=dft_slices[start:end],
+            coordinates=grid[start:end],
             dft=reconstruction,
             weights=weights,
         )

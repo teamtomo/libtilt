@@ -8,7 +8,7 @@ from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.utils.fft import fftshift_3d, fftfreq_to_dft_coordinates
 
 
-def interpolate_dft_3d(
+def extract_from_dft_3d(
     dft: torch.Tensor,
     coordinates: torch.Tensor
 ) -> torch.Tensor:
@@ -98,9 +98,9 @@ def project(
         volume = volume * sinc2
 
     # calculate DFT
-    dft = fftshift_3d(volume, rfft=False)
+    dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))  # center to origin
     dft = torch.fft.rfftn(dft, dim=(-3, -2, -1))
-    dft = fftshift_3d(dft, rfft=True)
+    dft = torch.fft.fftshift(dft, dim=(-3, -2, ))  # actual fftshift of rfft
 
     # generate grid of DFT sample frequencies for a central slice in the xy-plane
     # these are a coordinate grid for the DFT
@@ -126,7 +126,7 @@ def project(
         image_shape=volume.shape,
         rfft=True
     )
-    projections = interpolate_dft_3d(dft, grid)  # (b, h, w)
+    projections = extract_from_dft_3d(dft, grid)  # (b, h, w)
 
     # take complex conjugate of values from redundant half transform
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
