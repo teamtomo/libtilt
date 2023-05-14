@@ -34,7 +34,7 @@ def insert_into_dft_3d(
         raise ValueError('One coordinate triplet is required for each value in data.')
 
     # linearise data and coordinates
-    data, ps = einops.pack([data], pattern='*')
+    data, _ = einops.pack([data], pattern='*')
     coordinates, _ = einops.pack([coordinates], pattern='* zyx').float()
 
     # only keep data and coordinates inside the volume
