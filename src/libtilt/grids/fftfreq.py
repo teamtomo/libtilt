@@ -79,6 +79,31 @@ def fftfreq_grid(
     return frequency_grid
 
 
+def fftfreq_central_slice(
+    image_shape: tuple[int, int, int],
+    rfft: bool,
+    fftshift: bool = False,
+    spacing: float | tuple[float, float] | tuple[float, float, float] = 1,
+    device: torch.device | None = None,
+) -> torch.Tensor:
+    h, w = image_shape[-2:]
+    slice_hw = _construct_fftfreq_grid_2d(
+        image_shape=(h, w),
+        rfft=rfft,
+        spacing=spacing,
+        device=device
+    )  # (h, w, 2)
+    if rfft is True:
+        h, w = rfft_shape((h, w))
+    slice_d = torch.zeros(size=(h, w, 1), dtype=slice_hw.dtype, device=device)
+    central_slice = torch.concatenate([slice_d, slice_hw], dim=-1)  # (h, w, 3)
+    if fftshift is True:
+        central_slice = einops.rearrange(central_slice, '... freq -> freq ...')
+        central_slice = fftshift_2d(central_slice, rfft=rfft)
+        central_slice = einops.rearrange(central_slice, 'freq ... -> ... freq')
+    return central_slice
+
+
 def _construct_fftfreq_grid_2d(
     image_shape: Tuple[int, int],
     rfft: bool,

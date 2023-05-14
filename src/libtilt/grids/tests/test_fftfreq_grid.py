@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.grids import fftfreq_grid
+from libtilt.grids import fftfreq_grid, fftfreq_central_slice
 
 
 def test_fftfreq_grid_2d():
@@ -52,3 +52,71 @@ def test_fftfreq_grid_2d():
     assert torch.allclose(grid[3, 0], torch.tensor([0.5]))
     assert torch.allclose(grid[0, 3], torch.tensor([0.5]))
     assert torch.allclose(grid[0, 0], torch.tensor([0.5 ** 0.5]))
+
+
+def test_fftfreq_central_slice():
+    input_shape = (6, 6, 6)
+
+    # no rfft, no fftshift
+    central_slice = fftfreq_central_slice(
+        image_shape=input_shape,
+        rfft=False,
+        fftshift=False,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftfreq(6))
+    assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
+
+    # check w dim
+    assert torch.allclose(central_slice[0, :, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[0, :, 1], torch.zeros(6))
+    assert torch.allclose(central_slice[0, :, 2], torch.fft.fftfreq(6))
+
+    # no rfft, with fftshift
+    central_slice = fftfreq_central_slice(
+        image_shape=input_shape,
+        rfft=False,
+        fftshift=True,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 3, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 3, 1], torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[:, 3, 2], torch.zeros(6))
+
+    # check w dim
+    assert torch.allclose(central_slice[3, :, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[3, :, 1], torch.zeros(6))
+    assert torch.allclose(central_slice[3, :, 2], torch.fft.fftshift(torch.fft.fftfreq(6)))
+
+    # with rfft, no fftshift
+    central_slice = fftfreq_central_slice(
+        image_shape=input_shape,
+        rfft=True,
+        fftshift=False,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftfreq(6))
+    assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
+
+    # check w dim
+    assert torch.allclose(central_slice[0, :, 0], torch.zeros(4))
+    assert torch.allclose(central_slice[0, :, 1], torch.zeros(4))
+    assert torch.allclose(central_slice[0, :, 2], torch.fft.rfftfreq(6))
+
+    # with rfft, with fftshift
+    central_slice = fftfreq_central_slice(
+        image_shape=input_shape,
+        rfft=True,
+        fftshift=True,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
+
+    # check w dim
+    assert torch.allclose(central_slice[3, :, 0], torch.zeros(4))
+    assert torch.allclose(central_slice[3, :, 1], torch.zeros(4))
+    assert torch.allclose(central_slice[3, :, 2], torch.fft.rfftfreq(6))
