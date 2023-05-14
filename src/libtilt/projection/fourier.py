@@ -2,10 +2,11 @@ import torch
 import torch.nn.functional as F
 import einops
 
+from libtilt.grids import fftfreq_central_slice
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.grids.central_slice import central_slice_grid
 from libtilt.utils.fft import dft_center, fftshift_3d, _rfft_to_symmetrised_dft_3d, \
-    _symmetrised_dft_to_dft_3d
+    _symmetrised_dft_to_dft_3d, fftfreq_to_dft_coordinates, rfft_to_dft_3d
 
 
 def extract_slices(
@@ -98,28 +99,61 @@ def project(
     dft = fftshift_3d(volume, rfft=False)
     dft = torch.fft.rfftn(dft, dim=(-3, -2, -1))
     dft = fftshift_3d(dft, rfft=True)
-    dft = _rfft_to_symmetrised_dft_3d(dft)
-    dft = _symmetrised_dft_to_dft_3d(dft)
 
-    # generate grid of coordinates for central XY slice
-    grid = central_slice_grid(
-        sidelength=dft.shape[-1], zyx=zyx, device=volume.device
-    )  # (h, w, 3)
+    # generate grid of DFT sample frequencies for central XY slice
+    grid = fftfreq_central_slice(
+        image_shape=volume.shape,
+        rfft=True,
+        fftshift=True,
+        device=dft.device
+    )
+    if zyx is False:
+        grid = torch.flip(grid, dims=(-1, ))
 
     # rotate coordinate grid and recenter
     rotation_matrices = einops.rearrange(rotation_matrices, 'b i j -> b 1 1 i j')
     grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
     grid = rotation_matrices @ grid
     grid = einops.rearrange(grid, 'b h w coords 1 -> b h w coords')
-    if zyx is False:
+    if zyx is False:  # to zyx if currently xyz
         grid = torch.flip(grid, dims=(-1, ))
-    grid = grid + dft_center(volume.shape, rfft=False, fftshifted=True)
+
+    # handle conjugate stuff
+    in_redundant_half_mask = grid[..., 2] < 0
+    in_redundant_half_mask = einops.repeat(in_redundant_half_mask, '... -> ... 3')
+    grid[in_redundant_half_mask] *= -1
+
+
+    grid = fftfreq_to_dft_coordinates(
+        frequencies=grid,
+        image_shape=volume.shape,
+        rfft=True
+    )
+
+    import napari
+    import numpy as np
+    viewer = napari.Viewer()
+    viewer.add_points(np.array([[0, 0, 0],
+                                [0, 0, 0.5],
+                                [0, 1, 0],
+                                [1, 0, 0],
+                                [0, 1, 0.5],
+                                [1, 0, 0.5],
+                                [1, 1, 0],
+                                [1, 1, 0.5]]) * 20, size=1, face_color='red')
+    viewer.add_points(einops.rearrange(grid, '... c -> (...) c').numpy(), size=1)
+    viewer.add_points([10, 10, 0], face_color='red', size=1)
+    napari.run()
+
+
+
 
     # sample slices from DFT
     projections = extract_slices(dft, grid)  # (b, h, w)
-    projections = torch.fft.ifftshift(projections, dim=(-2, -1))
-    projections = torch.fft.ifftn(projections, dim=(-2, -1))
-    projections = torch.fft.ifftshift(projections, dim=(-2, -1))
+    projections[in_redundant_half_mask[..., 0]] = torch.conj(projections[in_redundant_half_mask[..., 0]])
+    projections = torch.fft.ifftshift(projections, dim=(-2, ))
+    projections = torch.fft.irfftn(projections, dim=(-2, -1))
+    projections = torch.fft.ifftshift(projections, dim=(-2, ))
 
     # unpadding
     if pad is True:
