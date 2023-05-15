@@ -122,13 +122,13 @@ def rotated_fftfreq_central_slice(
         device=device,
     )  # (h, w, 3)
     if rotation_matrix_zyx is False:
-        grid = torch.flip(grid, dims=(-1, ))
+        grid = torch.flip(grid, dims=(-1,))
     rotation_matrices = einops.rearrange(rotation_matrices, '... i j -> ... 1 1 i j')
     grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
     grid = rotation_matrices @ grid
     grid = einops.rearrange(grid, '... h w coords 1 -> ... h w coords')
     if rotation_matrix_zyx is False:  # back to zyx if currently xyz
-        grid = torch.flip(grid, dims=(-1, ))
+        grid = torch.flip(grid, dims=(-1,))
     return grid
 
 
@@ -159,7 +159,7 @@ def _construct_fftfreq_grid_2d(
         Order of freqs in the last dimension corresponds to the order of
         the two dimensions of the grid.
     """
-    dh, dw = spacing if isinstance(spacing, Sequence) else (spacing, spacing)
+    dh, dw = spacing if isinstance(spacing, Sequence) else [spacing] * 2
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     h, w = image_shape
     freq_y = torch.fft.fftfreq(h, d=dh, device=device)
@@ -197,7 +197,7 @@ def _construct_fftfreq_grid_3d(
         Order of freqs in the last dimension corresponds to the order of dimensions
         of the grid.
     """
-    dd, dh, dw = spacing if isinstance(spacing, Sequence) else (spacing, spacing, spacing)
+    dd, dh, dw = spacing if isinstance(spacing, Sequence) else [spacing] * 3
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     d, h, w = image_shape
     freq_z = torch.fft.fftfreq(d, d=dd, device=device)
@@ -208,12 +208,3 @@ def _construct_fftfreq_grid_3d(
     freq_yy = einops.repeat(freq_y, 'h -> d h w', d=d, w=w)
     freq_xx = einops.repeat(freq_x, 'w -> d h w', d=d, h=h)
     return einops.rearrange([freq_zz, freq_yy, freq_xx], 'freq ... -> ... freq')
-
-
-def _grid_sinc2(shape: Tuple[int, int, int]):
-    d = torch.tensor(np.stack(np.indices(tuple(shape)), axis=-1)).float()
-    d -= torch.tensor(tuple(shape)) // 2
-    d = torch.linalg.norm(d, dim=-1)
-    d /= shape[-1]
-    sinc2 = torch.sinc(d) ** 2
-    return sinc2

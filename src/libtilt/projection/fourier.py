@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import einops
 
 from libtilt.grids import rotated_fftfreq_central_slice
-from libtilt.grids.fftfreq import _grid_sinc2
+from libtilt.grids.fftfreq import _grid_sinc2, fftfreq_grid
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.utils.fft import fftshift_3d, fftfreq_to_dft_coordinates
 
@@ -94,8 +94,14 @@ def project(
 
     # premultiply by sinc2
     if do_gridding_correction is True:
-        sinc2 = _grid_sinc2(volume.shape)
-        volume = volume * sinc2
+        grid = fftfreq_grid(
+            image_shape=volume.shape,
+            rfft=False,
+            fftshift=True,
+            norm=True,
+            device=volume.device
+        )
+        volume = volume * torch.sinc(grid) ** 2
 
     # calculate DFT
     dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))  # center to origin

@@ -1,6 +1,7 @@
 import torch
 
 from libtilt.grids import fftfreq_grid, fftfreq_central_slice
+from libtilt.grids.fftfreq import _grid_sinc2
 
 
 def test_fftfreq_grid_2d():
@@ -81,13 +82,15 @@ def test_fftfreq_central_slice():
     )
     # check h dim
     assert torch.allclose(central_slice[:, 3, 0], torch.zeros(6))
-    assert torch.allclose(central_slice[:, 3, 1], torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[:, 3, 1],
+                          torch.fft.fftshift(torch.fft.fftfreq(6)))
     assert torch.allclose(central_slice[:, 3, 2], torch.zeros(6))
 
     # check w dim
     assert torch.allclose(central_slice[3, :, 0], torch.zeros(6))
     assert torch.allclose(central_slice[3, :, 1], torch.zeros(6))
-    assert torch.allclose(central_slice[3, :, 2], torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[3, :, 2],
+                          torch.fft.fftshift(torch.fft.fftfreq(6)))
 
     # with rfft, no fftshift
     central_slice = fftfreq_central_slice(
@@ -113,7 +116,8 @@ def test_fftfreq_central_slice():
     )
     # check h dim
     assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
-    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[:, 0, 1],
+                          torch.fft.fftshift(torch.fft.fftfreq(6)))
     assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
 
     # check w dim

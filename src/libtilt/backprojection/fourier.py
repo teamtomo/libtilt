@@ -3,7 +3,7 @@ from typing import Tuple, Literal
 import einops
 import torch
 
-from libtilt.grids.fftfreq import _grid_sinc2
+from libtilt.grids.fftfreq import _grid_sinc2, fftfreq_grid
 
 
 def insert_into_dft_3d(
@@ -116,7 +116,14 @@ def reconstruct_from_images(
     output = torch.fft.ifftn(output, dim=(-3, -2, -1))
     output = torch.fft.ifftshift(output, dim=(-3, -2, -1))
     if do_gridding_correction is True:
-        output /= _grid_sinc2(volume_shape)
+        grid = fftfreq_grid(
+            image_shape=output.shape,
+            rfft=False,
+            fftshift=True,
+            norm=True,
+            device=output.device
+        )
+        output = output * torch.sinc(grid) ** 2
     return torch.real(output)
 
 
