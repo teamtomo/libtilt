@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import einops
 
-from libtilt.grids import rotated_fftfreq_central_slice
+from libtilt.grids import rotated_central_slice_grid
 from libtilt.grids.fftfreq import fftfreq_grid
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.utils.fft import fftfreq_to_dft_coordinates
@@ -110,13 +110,12 @@ def project(
 
     # generate grid of DFT sample frequencies for a central slice in the xy-plane
     # these are a coordinate grid for the DFT
-    grid = rotated_fftfreq_central_slice(
+    grid = rotated_central_slice_grid(
         image_shape=volume.shape,
         rotation_matrices=rotation_matrices,
         rotation_matrix_zyx=rotation_matrix_zyx,
         rfft=True,
         fftshift=True,
-        spacing=1,
         device=dft.device,
     )  # (..., h, w, 3)
 
