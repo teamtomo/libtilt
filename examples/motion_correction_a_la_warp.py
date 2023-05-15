@@ -1,3 +1,6 @@
+"""Toy implementation of a motion correction algorithm similar to the
+one in Warp (https://doi.org/10.1038/s41592-019-0580-y)
+"""
 from datetime import datetime
 
 import torch
