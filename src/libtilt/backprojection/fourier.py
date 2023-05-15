@@ -4,8 +4,7 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from libtilt.grids.fftfreq import fftfreq_grid
-from libtilt.grids import rotated_central_slice_grid
+from libtilt.grids import fftfreq_grid, rotated_central_slice_grid
 from libtilt.fft_utils import rfft_shape, fftfreq_to_dft_coordinates
 
 
@@ -80,7 +79,7 @@ def reconstruct_from_images(
     images: torch.Tensor,  # (b, h, w)
     rotation_matrices: torch.Tensor,  # (b, 3, 3)
     rotation_matrix_zyx: bool = False,
-    do_padding: bool = True,
+    pad: bool = True,
     do_gridding_correction: bool = True,
 ):
     """Perform a 3D reconstruction from a set of 2D projection images.
@@ -92,7 +91,7 @@ def reconstruct_from_images(
     rotation_matrices: torch.Tensor
         `(batch, 3, 3)` array of rotation matrices for insert of `images`.
         Rotation matrices left-multiply column vectors containing coordinates.
-    do_padding: bool
+    pad: bool
         Whether to pad the input images 2x (`True`) or not (`False`).
     do_gridding_correction: bool
         Each 2D image pixel contributes to the nearest eight voxels in 3D and weights are set
@@ -107,7 +106,7 @@ def reconstruct_from_images(
     b, h, w = images.shape
     if h != w:
         raise ValueError('images must be square.')
-    if do_padding is True:
+    if pad is True:
         p = images.shape[-1] // 4
         images = F.pad(images, pad=[p] * 4)
 
@@ -165,6 +164,6 @@ def reconstruct_from_images(
             device=dft.device
         )
         dft = dft * torch.sinc(grid) ** 2
-    if do_padding is True:  # un-pad
+    if pad is True:  # un-pad
         dft = F.pad(dft, pad=[-p] * 6)
     return torch.real(dft)

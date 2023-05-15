@@ -2,8 +2,7 @@ import torch
 import torch.nn.functional as F
 import einops
 
-from libtilt.grids import rotated_central_slice_grid
-from libtilt.grids.fftfreq import fftfreq_grid
+from libtilt.grids import fftfreq_grid, rotated_central_slice_grid
 from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.fft_utils import fftfreq_to_dft_coordinates
 

@@ -1,5 +1,3 @@
-import einops
-import mrcfile
 import torch
 import torch.nn.functional as F
 from scipy.stats import special_ortho_group
