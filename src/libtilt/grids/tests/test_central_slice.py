@@ -1,26 +1,74 @@
 import torch
 
-from libtilt.grids.central_slice import central_slice_grid
+from libtilt.grids import central_slice_grid
 
 
 def test_central_slice_grid():
-    # generate xyz coordinates for a (4, 4, 4) volume
-    grid_xyz = central_slice_grid(sidelength=4, zyx=False)
+    input_shape = (6, 6, 6)
 
-    assert grid_xyz.shape == (4, 4, 3)
+    # no rfft, no fftshift
+    central_slice = central_slice_grid(
+        image_shape=input_shape,
+        rfft=False,
+        fftshift=False,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftfreq(6))
+    assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
 
-    # x coordinates should be 0-3 repeated across rows
-    assert torch.all(grid_xyz[..., 0] == torch.tensor([[-2, -1, 0, 1]]))
+    # check w dim
+    assert torch.allclose(central_slice[0, :, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[0, :, 1], torch.zeros(6))
+    assert torch.allclose(central_slice[0, :, 2], torch.fft.fftfreq(6))
 
-    # y coordinates should be -2 to 1 repeated across columns
-    assert torch.all(grid_xyz[..., 1] == torch.tensor([[-2],
-                                                       [-1],
-                                                       [0],
-                                                       [1]]))
+    # no rfft, with fftshift
+    central_slice = central_slice_grid(
+        image_shape=input_shape,
+        rfft=False,
+        fftshift=True,
+    )
 
-    # all z coordinates should be 0
-    assert torch.all(grid_xyz[..., 2] == 0)
+    # check h dim
+    assert torch.allclose(central_slice[:, 3, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 3, 1],
+                          torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[:, 3, 2], torch.zeros(6))
 
-    # zyx should be xyz flipped
-    grid_zyx = central_slice_grid(sidelength=4, zyx=True)
-    assert torch.allclose(torch.flip(grid_xyz, dims=(-1,)), grid_zyx)
+    # check w dim
+    assert torch.allclose(central_slice[3, :, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[3, :, 1], torch.zeros(6))
+    assert torch.allclose(central_slice[3, :, 2],
+                          torch.fft.fftshift(torch.fft.fftfreq(6)))
+
+    # with rfft, no fftshift
+    central_slice = central_slice_grid(
+        image_shape=input_shape,
+        rfft=True,
+        fftshift=False,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftfreq(6))
+    assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
+
+    # check w dim
+    assert torch.allclose(central_slice[0, :, 0], torch.zeros(4))
+    assert torch.allclose(central_slice[0, :, 1], torch.zeros(4))
+    assert torch.allclose(central_slice[0, :, 2], torch.fft.rfftfreq(6))
+
+    # with rfft, with fftshift
+    central_slice = central_slice_grid(
+        image_shape=input_shape,
+        rfft=True,
+        fftshift=True,
+    )
+    # check h dim
+    assert torch.allclose(central_slice[:, 0, 0], torch.zeros(6))
+    assert torch.allclose(central_slice[:, 0, 1], torch.fft.fftshift(torch.fft.fftfreq(6)))
+    assert torch.allclose(central_slice[:, 0, 2], torch.zeros(6))
+
+    # check w dim
+    assert torch.allclose(central_slice[3, :, 0], torch.zeros(4))
+    assert torch.allclose(central_slice[3, :, 1], torch.zeros(4))
+    assert torch.allclose(central_slice[3, :, 2], torch.fft.rfftfreq(6))

@@ -1,5 +1,5 @@
 import functools
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import einops
 import torch
@@ -106,7 +106,7 @@ def _construct_fftfreq_grid_2d(
         Order of freqs in the last dimension corresponds to the order of
         the two dimensions of the grid.
     """
-    dh, dw = spacing if isinstance(spacing, Sequence) else (spacing, spacing)
+    dh, dw = spacing if isinstance(spacing, Sequence) else [spacing] * 2
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     h, w = image_shape
     freq_y = torch.fft.fftfreq(h, d=dh, device=device)
@@ -144,7 +144,7 @@ def _construct_fftfreq_grid_3d(
         Order of freqs in the last dimension corresponds to the order of dimensions
         of the grid.
     """
-    dd, dh, dw = spacing if isinstance(spacing, Sequence) else (spacing, spacing, spacing)
+    dd, dh, dw = spacing if isinstance(spacing, Sequence) else [spacing] * 3
     last_axis_frequency_func = torch.fft.rfftfreq if rfft is True else torch.fft.fftfreq
     d, h, w = image_shape
     freq_z = torch.fft.fftfreq(d, d=dd, device=device)

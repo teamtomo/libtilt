@@ -2,75 +2,70 @@ import torch
 import torch.nn.functional as F
 import einops
 
+from libtilt.grids import rotated_central_slice_grid
+from libtilt.grids.fftfreq import fftfreq_grid
 from libtilt.utils.coordinates import array_to_grid_sample
-from libtilt.grids.central_slice import central_slice_grid
-from libtilt.utils.fft import dft_center
+from libtilt.utils.fft import fftfreq_to_dft_coordinates
 
 
-def extract_slices(
+def extract_from_dft_3d(
     dft: torch.Tensor,
-    slice_coordinates: torch.Tensor
+    coordinates: torch.Tensor
 ) -> torch.Tensor:
-    """Sample batches of 2D images from a complex cubic volume at specified coordinates.
-
-
-    `dft` should pre-fftshifted to place the origin in Fourier space at the center_grid of the DFT
-    i.e. dft should be the result of
-
-            volume -> fftshift(volume) -> fft3(volume) -> fftshift(volume)
-
-    Coordinates should be ordered zyx, aligned with image dimensions.
-    Coordinates should be array coordinates, spanning `[0, N-1]` for a dimension of length N.
+    """Sample a complex volume with linear interpolation.
 
 
     Parameters
     ----------
     dft: torch.Tensor
-        (d, h, w) complex valued cubic volume (d == h == w) containing
-        the discrete Fourier transform of a cubic volume.
-    slice_coordinates: torch.Tensor
-        (batch, h, w, zyx) array of coordinates at which `dft` should be sampled.
-
+        `(d, h, w)` complex valued volume.
+    coordinates: torch.Tensor
+        `(..., zyx)` array of coordinates at which `dft` should be sampled.
+        Coordinates should be ordered zyx, aligned with image dimensions `(d, h, w)`.
+        Coordinates should be array coordinates, spanning `[0, N-1]` for a
+        dimension of length N.
     Returns
     -------
     samples: torch.Tensor
-        (batch, h, w) array of complex valued images sampled from the `dft`
+        `(..., )` array of complex valued samples from `dft`.
     """
+    coordinates, ps = einops.pack([coordinates], pattern='* zyx')
+    n_samples = coordinates.shape[0]
+
     # cannot sample complex tensors directly with grid_sample
     # c.f. https://github.com/pytorch/pytorch/issues/67634
     # workaround: treat real and imaginary parts as separate channels
     dft = einops.rearrange(torch.view_as_real(dft), 'd h w complex -> complex d h w')
-    n_slices = slice_coordinates.shape[0]
-    dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_slices)
-    slice_coordinates = array_to_grid_sample(slice_coordinates,
-                                             array_shape=dft.shape[-3:])
-    slice_coordinates = einops.rearrange(slice_coordinates, 'b h w zyx -> b 1 h w zyx')
+    dft = einops.repeat(dft, 'complex d h w -> b complex d h w', b=n_samples)
+    coordinates = einops.rearrange(coordinates, 'b zyx -> b 1 1 1 zyx')  # b d h w zyx
 
-    # sample with border values at edges to increase sampling fidelity at nyquist
     samples = F.grid_sample(
         input=dft,
-        grid=slice_coordinates,
+        grid=array_to_grid_sample(coordinates, array_shape=dft.shape[-3:]),
         mode='bilinear',  # this is trilinear when input is volumetric
-        padding_mode='border',
+        padding_mode='border', # this increases sampling fidelity at nyquist
         align_corners=True,
     )
+    samples = einops.rearrange(samples, 'b complex 1 1 1 -> b complex')
 
     # zero out samples from outside of cube
-    inside = torch.logical_or(slice_coordinates > 0, slice_coordinates < 1)
+    samples = torch.view_as_complex(samples.contiguous())
+    coordinates = einops.rearrange(coordinates, 'b 1 1 1 zyx -> b zyx')
+    inside = torch.logical_or(coordinates > 0, coordinates < 1)
     inside = torch.all(inside, dim=-1)  # (b, d, h, w)
-    inside = einops.repeat(inside, 'b d h w -> b 2 d h w')  # add channel dim
     samples[~inside] *= 0
 
-    samples = einops.rearrange(samples, 'b complex 1 h w -> b h w complex')
-    samples = torch.view_as_complex(samples.contiguous())
-    return samples  # (b, h, w)
+    # pack data back up and return
+    [samples] = einops.unpack(samples, pattern='*', packed_shapes=ps)
+    return samples  # (...)
 
 
 def project(
     volume: torch.Tensor,
     rotation_matrices: torch.Tensor,
-    zyx: bool = False,
+    rotation_matrix_zyx: bool = False,
     pad: bool = True,
+    do_gridding_correction: bool = True,
 ) -> torch.Tensor:
     """Project a cubic volume by sampling a central slice through its DFT.
 
@@ -79,8 +74,9 @@ def project(
     volume: torch.Tensor
         `(d, d, d)` volume.
     rotation_matrices: torch.Tensor
-        `(b, 3, 3)` which rotate coordinates of central slice to be sampled.
-    zyx: bool
+        `(..., 3, 3)` array of matrices which rotate coordinates of the
+        central slice to be sampled.
+    rotation_matrix_zyx: bool
         Whether rotation matrices apply to zyx (`True`) or xyz (`False`)
         coordinates.
     pad: bool
@@ -89,37 +85,61 @@ def project(
     Returns
     -------
     projections: torch.Tensor
-        `(b, d, d)` array of projection images.
+        `(..., d, d)` array of projection images.
     """
     # padding
     if pad is True:
         pad_length = volume.shape[-1] // 2
         volume = F.pad(volume, pad=[pad_length] * 6, mode='constant', value=0)
 
+    # premultiply by sinc2
+    if do_gridding_correction is True:
+        grid = fftfreq_grid(
+            image_shape=volume.shape,
+            rfft=False,
+            fftshift=True,
+            norm=True,
+            device=volume.device
+        )
+        volume = volume * torch.sinc(grid) ** 2
+
     # calculate DFT
-    dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))
-    dft = torch.fft.fftn(dft, dim=(-3, -2, -1))
-    dft = torch.fft.fftshift(dft, dim=(-3, -2, -1))
+    dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))  # volume center to origin
+    dft = torch.fft.rfftn(dft, dim=(-3, -2, -1))
+    dft = torch.fft.fftshift(dft, dim=(-3, -2, ))  # actual fftshift of rfft
 
-    # generate grid of coordinates for central XY slice
-    grid = central_slice_grid(
-        sidelength=dft.shape[-1], zyx=zyx, device=volume.device
-    )  # (h, w, 3)
+    # generate grid of DFT sample frequencies for a central slice in the xy-plane
+    # these are a coordinate grid for the DFT
+    grid = rotated_central_slice_grid(
+        image_shape=volume.shape,
+        rotation_matrices=rotation_matrices,
+        rotation_matrix_zyx=rotation_matrix_zyx,
+        rfft=True,
+        fftshift=True,
+        device=dft.device,
+    )  # (..., h, w, 3)
 
-    # rotate coordinate grid and recenter
-    rotation_matrices = einops.rearrange(rotation_matrices, 'b i j -> b 1 1 i j')
-    grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
-    grid = rotation_matrices @ grid
-    grid = einops.rearrange(grid, 'b h w coords 1 -> b h w coords')
-    if zyx is False:
-        grid = torch.flip(grid, dims=(-1, ))
-    grid = grid + dft_center(volume.shape, rfft=False, fftshifted=True)
+    # flip coordinates in redundant half transform
+    conjugate_mask = grid[..., 2] < 0
+    conjugate_mask = einops.repeat(conjugate_mask, '... -> ... 3')
+    grid[conjugate_mask] *= -1
+    conjugate_mask = conjugate_mask[..., 0]  # un-repeat
 
     # sample slices from DFT
-    projections = extract_slices(dft, grid)  # (b, h, w)
-    projections = torch.fft.ifftshift(projections, dim=(-2, -1))
-    projections = torch.fft.ifftn(projections, dim=(-2, -1))
-    projections = torch.fft.ifftshift(projections, dim=(-2, -1))
+    grid = fftfreq_to_dft_coordinates(
+        frequencies=grid,
+        image_shape=volume.shape,
+        rfft=True
+    )
+    projections = extract_from_dft_3d(dft, grid)  # (..., h, w) rfft
+
+    # take complex conjugate of values from redundant half transform
+    projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
+
+    # transform back to real space
+    projections = torch.fft.ifftshift(projections, dim=(-2, ))  # ifftshift of rfft
+    projections = torch.fft.irfftn(projections, dim=(-2, -1))
+    projections = torch.fft.ifftshift(projections, dim=(-2, -1))  # recenter real space
 
     # unpadding
     if pad is True:

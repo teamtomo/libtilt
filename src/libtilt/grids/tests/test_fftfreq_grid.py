@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.grids import fftfreq_grid
+from libtilt.grids import fftfreq_grid, central_slice_grid
 
 
 def test_fftfreq_grid_2d():

@@ -21,7 +21,7 @@ def dft_center(
     fftshifted: bool,
     device: torch.device | None = None,
 ) -> torch.LongTensor:
-    """Return the indices of the DFT center_grid."""
+    """Return the position of the DFT center for a given input shape."""
     fft_center = torch.zeros(size=(len(grid_shape),), device=device)
     grid_shape = torch.as_tensor(grid_shape).float()
     if rfft is True:
@@ -118,7 +118,7 @@ def spatial_frequency_to_fftfreq(
     return torch.as_tensor(frequencies, dtype=torch.float32) * spacing
 
 
-def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
+def _rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     """Construct a symmetrised discrete Fourier transform from an rfft.
 
     The symmetrised discrete Fourier transform contains a full FFT with components at
@@ -161,7 +161,7 @@ def rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     return output
 
 
-def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
+def _rfft_to_symmetrised_dft_3d(dft: torch.Tensor) -> torch.Tensor:
     """Construct a symmetrised discrete Fourier transform from an rfft.
 
     The symmetrised discrete Fourier transform contains a full FFT with components at
@@ -176,28 +176,29 @@ def rfft_to_symmetrised_dft_3d(rfft: torch.Tensor) -> torch.Tensor:
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
     - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
     """
-    r = rfft.shape[-3]  # input dim length
-    if rfft.ndim == 3:
+    r = dft.shape[-3]  # input dim length
+    if dft.ndim == 3:
         output = torch.zeros((r + 1, r + 1, r + 1), dtype=torch.complex64)
-    elif rfft.ndim == 4:
-        b = rfft.shape[0]
+    elif dft.ndim == 4:
+        b = dft.shape[0]
         output = torch.zeros((b, r + 1, r + 1, r + 1), dtype=torch.complex64)
     # fftshift full length dims (i.e. not -1) to center_grid DC component
-    rfft = torch.fft.fftshift(rfft, dim=(-3, -2))
+    dft = torch.fft.fftshift(dft, dim=(-3, -2))
     # place rfft in output
     dc = r // 2  # index for DC component
-    output[..., :-1, :-1, dc:] = rfft
+    output[..., :-1, :-1, dc:] = dft
     # replicate components at nyquist (symmetrise)
-    output[..., :-1, -1, dc:] = rfft[..., :, 0, :]
-    output[..., -1, :-1, dc:] = rfft[..., 0, :, :]
-    output[..., -1, -1, dc:] = rfft[..., 0, 0, :]
+    output[..., :-1, -1, dc:] = dft[..., :, 0, :]
+    output[..., -1, :-1, dc:] = dft[..., 0, :, :]
+    output[..., -1, -1, dc:] = dft[..., 0, 0, :]
     # fill redundant half-spectrum
-    output[..., :, :, :dc] = torch.flip(torch.conj(output[..., :, :, dc + 1:]),
-                                        dims=(-3, -2, -1))
+    output[..., :, :, :dc] = torch.flip(
+        torch.conj(output[..., :, :, dc + 1:]), dims=(-3, -2, -1)
+    )
     return output
 
 
-def symmetrised_dft_to_dft_2d(dft: torch.Tensor, inplace: bool = True):
+def _symmetrised_dft_to_dft_2d(dft: torch.Tensor, inplace: bool = True):
     """Desymmetrise a symmetrised 2D discrete Fourier transform.
 
     Turn a symmetrised DFT into a normal DFT by averaging duplicated
@@ -243,7 +244,7 @@ def symmetrised_dft_to_rfft_2d(dft: torch.Tensor, inplace: bool = True):
     return torch.fft.ifftshift(rfft, dim=-2)
 
 
-def symmetrised_dft_to_dft_3d(dft: torch.Tensor, inplace: bool = True):
+def _symmetrised_dft_to_dft_3d(dft: torch.Tensor, inplace: bool = True):
     """Desymmetrise a symmetrised 3D discrete Fourier transform.
 
     Turn a symmetrised DFT into a normal DFT by averaging duplicated
@@ -271,6 +272,48 @@ def symmetrised_dft_to_dft_3d(dft: torch.Tensor, inplace: bool = True):
     dft[..., :, 0, :] = (0.5 * dft[..., :, 0, :]) + (0.5 * dft[..., :, -1, :])
     dft[..., 0, :, :] = (0.5 * dft[..., 0, :, :]) + (0.5 * dft[..., -1, :, :])
     return dft[..., :-1, :-1, :-1]
+
+
+def rfft_to_dft_2d(
+    dft: torch.Tensor,
+    symmetrise: bool = False,
+) -> torch.Tensor:
+    dft = _rfft_to_symmetrised_dft_2d(dft)
+    if symmetrise is False:
+        dft = _symmetrised_dft_to_dft_2d(dft)
+    return dft
+
+
+def rfft_to_dft_3d(
+    dft: torch.Tensor,
+    symmetrise: bool = False,
+) -> torch.Tensor:
+    dft = _rfft_to_symmetrised_dft_3d(dft)
+    if symmetrise is False:
+        dft = _symmetrised_dft_to_dft_3d(dft)
+    return dft
+
+
+def dft_to_rfft_2d(
+    dft: torch.Tensor,
+    symmetrised: bool = False,
+) -> torch.Tensor:
+    if symmetrised is True:
+        dft = _symmetrised_dft_to_dft_2d(dft)
+    else:
+        raise NotImplementedError()
+    return dft
+
+
+def dft_to_rfft_3d(
+    dft: torch.Tensor,
+    symmetrised: bool = False,
+) -> torch.Tensor:
+    if symmetrised is True:
+        dft = _symmetrised_dft_to_dft_3d(dft)
+    else:
+        raise NotImplementedError()
+    return dft
 
 
 def _indices_centered_on_dc_for_shifted_rfft(
@@ -373,3 +416,39 @@ def _pad_to_best_fft_shape_2d(
     image = F.pad(image, pad=(0, pw, 0, ph), mode=padding_mode)
     [image] = einops.unpack(image, pattern='* h w', packed_shapes=ps)
     return image
+
+
+def fftfreq_to_dft_coordinates(
+    frequencies: torch.Tensor, image_shape: tuple[int, ...], rfft: bool
+):
+    """Convert DFT sample frequencies into array coordinates in a fftshifted DFT.
+
+    Parameters
+    ----------
+    frequencies: torch.Tensor
+        `(..., d)` array of multidimensional DFT sample frequencies
+    image_shape: tuple[int, ...]
+        Length `d` array of image dimensions.
+    rfft: bool
+        Whether output should be compatible with an rfft (`True`) or a
+        full DFT (`False`)
+
+    Returns
+    -------
+    coordinates: torch.Tensor
+        `(..., d)` array of coordinates into a fftshifted DFT.
+    """
+    image_shape = torch.as_tensor(
+        image_shape, device=frequencies.device, dtype=frequencies.dtype
+    )
+    _rfft_shape = torch.as_tensor(
+        rfft_shape(image_shape), device=frequencies.device, dtype=frequencies.dtype
+    )
+    coordinates = torch.empty_like(frequencies)
+    coordinates[..., :-1] = frequencies[..., :-1] * image_shape[:-1]
+    if rfft is True:
+        coordinates[..., -1] = frequencies[..., -1] * 2 * (_rfft_shape[-1] - 1)
+    else:
+        coordinates[..., -1] = frequencies[..., -1] * image_shape[-1]
+    dc = dft_center(image_shape, rfft=rfft, fftshifted=True, device=frequencies.device)
+    return coordinates + dc
