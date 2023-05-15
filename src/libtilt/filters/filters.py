@@ -4,7 +4,7 @@ import torch
 from libtilt.grids import fftfreq_grid
 
 
-def band_pass_filter(
+def bandpass_filter(
     low: float,
     high: float,
     falloff: float,
@@ -45,7 +45,7 @@ def low_pass_filter(
     fftshift: bool,
     device: torch.device = None,
 ) -> torch.Tensor:
-    filter = band_pass_filter(
+    filter = bandpass_filter(
         low=0,
         high=cutoff,
         falloff=falloff,
@@ -65,7 +65,7 @@ def high_pass_filter(
     fftshift: bool,
     device: torch.device = None,
 ) -> torch.Tensor:
-    filter = band_pass_filter(
+    filter = bandpass_filter(
         low=cutoff,
         high=1,
         falloff=falloff,
