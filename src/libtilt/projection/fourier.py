@@ -104,7 +104,7 @@ def project(
         volume = volume * torch.sinc(grid) ** 2
 
     # calculate DFT
-    dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))  # center to origin
+    dft = torch.fft.fftshift(volume, dim=(-3, -2, -1))  # volume center to origin
     dft = torch.fft.rfftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.fftshift(dft, dim=(-3, -2, ))  # actual fftshift of rfft
 
@@ -132,15 +132,15 @@ def project(
         image_shape=volume.shape,
         rfft=True
     )
-    projections = extract_from_dft_3d(dft, grid)  # (..., h, w)
+    projections = extract_from_dft_3d(dft, grid)  # (..., h, w) rfft
 
     # take complex conjugate of values from redundant half transform
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
 
     # transform back to real space
-    projections = torch.fft.ifftshift(projections, dim=(-2, ))
+    projections = torch.fft.ifftshift(projections, dim=(-2, ))  # ifftshift of rfft
     projections = torch.fft.irfftn(projections, dim=(-2, -1))
-    projections = torch.fft.ifftshift(projections, dim=(-2, -1))
+    projections = torch.fft.ifftshift(projections, dim=(-2, -1))  # recenter real space
 
     # unpadding
     if pad is True:
