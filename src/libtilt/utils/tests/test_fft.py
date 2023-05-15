@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from libtilt.utils.fft import (
+from libtilt.fft_utils import (
     rfft_shape,
     _rfft_to_symmetrised_dft_2d,
     _rfft_to_symmetrised_dft_3d,

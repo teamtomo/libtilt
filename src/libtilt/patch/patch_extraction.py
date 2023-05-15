@@ -4,8 +4,8 @@ from torch.nn import functional as F
 
 from libtilt.grids import coordinate_grid
 from libtilt.shift.fourier_shift import fourier_shift_2d
-from libtilt.utils.coordinates import array_to_grid_sample
-from libtilt.utils.fft import dft_center
+from libtilt.coordinate_utils import array_to_grid_sample
+from libtilt.fft_utils import dft_center
 
 
 def extract_patches(

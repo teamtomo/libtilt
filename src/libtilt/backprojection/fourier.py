@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from libtilt.grids.fftfreq import fftfreq_grid
 from libtilt.grids import rotated_central_slice_grid
-from libtilt.utils.fft import rfft_shape, fftfreq_to_dft_coordinates
+from libtilt.fft_utils import rfft_shape, fftfreq_to_dft_coordinates
 
 
 def insert_into_dft_3d(

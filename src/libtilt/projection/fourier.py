@@ -4,8 +4,8 @@ import einops
 
 from libtilt.grids import rotated_central_slice_grid
 from libtilt.grids.fftfreq import fftfreq_grid
-from libtilt.utils.coordinates import array_to_grid_sample
-from libtilt.utils.fft import fftfreq_to_dft_coordinates
+from libtilt.coordinate_utils import array_to_grid_sample
+from libtilt.fft_utils import fftfreq_to_dft_coordinates
 
 
 def extract_from_dft_3d(

@@ -2,7 +2,7 @@ import einops
 import torch
 import numpy as np
 
-from libtilt.utils.coordinates import (
+from libtilt.coordinate_utils import (
     array_to_grid_sample,
     grid_sample_to_array,
     add_positional_coordinate,
@@ -82,8 +82,4 @@ def test_homogenise_coordinates():
     assert torch.all(homogenised[..., 3] == 1)
 
 
-def test_promote_2d_shifts_to_3d():
-    shifts_2d = torch.tensor([1, 1])
-    shifts_3d = promote_2d_shifts_to_3d(shifts_2d)
-    assert torch.all(shifts_3d[..., :2] == shifts_2d)
-    assert torch.all(shifts_3d[..., 2] == 0)
+

@@ -5,7 +5,7 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from libtilt.utils.coordinates import (
+from libtilt.coordinate_utils import (
     homogenise_coordinates,
     array_to_grid_sample,
 )

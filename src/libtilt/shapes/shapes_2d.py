@@ -5,7 +5,7 @@ from libtilt.grids import coordinate_grid
 
 from .soft_edge import add_soft_edge_2d
 from .geometry_utils import _angle_between_vectors
-from ..utils.fft import dft_center
+from libtilt.fft_utils import dft_center
 
 
 def circle(

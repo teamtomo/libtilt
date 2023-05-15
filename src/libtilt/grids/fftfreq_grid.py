@@ -4,7 +4,7 @@ from typing import Sequence, Tuple
 import einops
 import torch
 
-from libtilt.utils.fft import rfft_shape, fftshift_2d, fftshift_3d
+from libtilt.fft_utils import rfft_shape, fftshift_2d, fftshift_3d
 
 
 @functools.lru_cache(maxsize=1)

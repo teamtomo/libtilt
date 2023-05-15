@@ -11,7 +11,7 @@ import einops
 import torch.nn.functional as F
 from torch_cubic_spline_grids import CubicBSplineGrid3d
 
-from libtilt.utils.coordinates import array_to_grid_sample
+from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.shift.fourier_shift import phase_shift_dft_2d
 from libtilt.shapes.shapes_2d import circle
 from libtilt.grids import patch_grid

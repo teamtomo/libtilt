@@ -4,7 +4,7 @@ from scipy.spatial.transform import Rotation as R
 from libtilt.projection.fourier import extract_from_dft_3d
 from libtilt.backprojection.fourier import insert_into_dft_3d
 from libtilt.grids.central_slice import rotated_central_slice_grid
-from libtilt.utils.fft import fftfreq_to_dft_coordinates
+from libtilt.fft_utils import fftfreq_to_dft_coordinates
 
 
 def test_fourier_slice_extraction_insertion_cycle_no_rotation():
