@@ -3,7 +3,7 @@ from typing import Tuple, Literal
 import einops
 import torch
 
-from libtilt.grids.fftfreq import _grid_sinc2, fftfreq_grid
+from libtilt.grids.fftfreq import fftfreq_grid
 
 
 def insert_into_dft_3d(
