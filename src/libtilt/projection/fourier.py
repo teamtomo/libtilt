@@ -3,9 +3,9 @@ import torch.nn.functional as F
 import einops
 
 from libtilt.grids import rotated_fftfreq_central_slice
-from libtilt.grids.fftfreq import _grid_sinc2, fftfreq_grid
+from libtilt.grids.fftfreq import fftfreq_grid
 from libtilt.utils.coordinates import array_to_grid_sample
-from libtilt.utils.fft import fftshift_3d, fftfreq_to_dft_coordinates
+from libtilt.utils.fft import fftfreq_to_dft_coordinates
 
 
 def extract_from_dft_3d(
