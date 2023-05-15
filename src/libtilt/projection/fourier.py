@@ -85,7 +85,7 @@ def project(
     Returns
     -------
     projections: torch.Tensor
-        `(b, d, d)` array of projection images.
+        `(..., d, d)` array of projection images.
     """
     # padding
     if pad is True:
@@ -132,7 +132,7 @@ def project(
         image_shape=volume.shape,
         rfft=True
     )
-    projections = extract_from_dft_3d(dft, grid)  # (b, h, w)
+    projections = extract_from_dft_3d(dft, grid)  # (..., h, w)
 
     # take complex conjugate of values from redundant half transform
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
