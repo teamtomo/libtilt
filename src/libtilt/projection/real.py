@@ -2,7 +2,7 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from libtilt.utils.coordinates import (
+from libtilt.coordinate_utils import (
     array_to_grid_sample,
 )
 from libtilt.grids.coordinate_grid import coordinate_grid

@@ -4,7 +4,7 @@ import einops
 import torch
 
 from libtilt.grids.coordinate_grid import coordinate_grid
-from libtilt.utils.fft import distance_from_dc_for_dft
+from libtilt.fft_utils import distance_from_dc_for_dft
 
 
 def rotational_average_2d(

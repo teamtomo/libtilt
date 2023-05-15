@@ -2,7 +2,7 @@ import einops
 import torch
 
 from libtilt.grids import fftfreq_grid
-from libtilt.utils.fft import rfft_shape
+from libtilt.fft_utils import rfft_shape
 
 
 def fsc(

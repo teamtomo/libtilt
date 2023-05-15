@@ -18,8 +18,10 @@ def fsc_conical(
         image_shape=a.shape,
         rfft=True,
         fftshift=False,
+        norm=True
     )  # (..., 3)
-    vectors /= einops.reduce(vectors ** 2, '... vec -> ... 1', reduction='sum') ** 0.5
+    vector_norms = einops.reduce(vectors ** 2, '... vec -> ... 1', reduction='sum') ** 0.5
+    vectors /= vector_norms
     cone_direction = torch.as_tensor(cone_direction, dtype=torch.float)
     cone_direction /= torch.linalg.norm(cone_direction)
     angles = _angle_between_vectors(vectors, cone_direction)

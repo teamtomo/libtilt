@@ -2,7 +2,7 @@ import einops
 import torch
 
 from libtilt.grids.fftfreq_grid import _construct_fftfreq_grid_2d, _construct_fftfreq_grid_3d
-from libtilt.utils.fft import fftshift_2d, fftshift_3d
+from libtilt.fft_utils import fftshift_2d, fftshift_3d
 
 
 def get_phase_shifts_2d(

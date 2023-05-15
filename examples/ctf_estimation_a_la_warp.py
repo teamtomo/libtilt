@@ -14,7 +14,7 @@ from libtilt.grids import patch_grid
 from libtilt.filters import bandpass_filter
 from libtilt.ctf.ctf_1d import calculate_ctf as calculate_ctf_1d
 from libtilt.ctf.ctf_2d import calculate_ctf as calculate_ctf_2d
-from libtilt.utils.fft import spatial_frequency_to_fftfreq
+from libtilt.fft_utils import spatial_frequency_to_fftfreq
 
 # image parameters
 IMAGE_FILE = 'data/TS_01_015_21.0.mrc'

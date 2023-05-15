@@ -3,7 +3,7 @@ from math import ceil, floor
 import torch
 import torch.nn.functional as F
 
-from libtilt.utils.fft import (
+from libtilt.fft_utils import (
     _target_fftfreq_from_spacing, _pad_to_best_fft_shape_2d, dft_center,
 )
 from libtilt.shift.fourier_shift import phase_shift_dft_2d

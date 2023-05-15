@@ -1,6 +1,5 @@
 from typing import Sequence
 
-import einops
 import torch
 from torch.nn import functional as F
 
@@ -49,30 +48,6 @@ def grid_sample_to_array(
     return array_coordinates
 
 
-def promote_2d_shifts_to_3d(shifts: torch.Tensor) -> torch.Tensor:
-    """Promote arrays of 2D shifts to 3D with zeros in the last column.
-
-    Last dimension of array should be of length 2.
-
-    Parameters
-    ----------
-    shifts: torch.Tensor
-        `(..., 2)` array of 2D shifts
-
-    Returns
-    -------
-    output: torch.Tensor
-        `(..., 3)` array of 3D shifts with 0 in the last column.
-    """
-    shifts = torch.as_tensor(shifts)
-    if shifts.ndim == 1:
-        shifts = einops.rearrange(shifts, 's -> 1 s')
-    if shifts.shape[-1] != 2:
-        raise ValueError('last dimension must have length 2.')
-    shifts = F.pad(shifts, pad=(0, 1), mode='constant', value=0)
-    return torch.squeeze(shifts)
-
-
 def homogenise_coordinates(coords: torch.Tensor) -> torch.Tensor:
     """3D coordinates to 4D homogenous coordinates with ones in the last column.
 
@@ -96,10 +71,6 @@ def add_positional_coordinate(
 
     For an array of coordinates with shape `(n, t, 3)`, this function produces an array of
     shape `(n, t, 4)`.
-    The values in the new column reflect the position of the coordinate in `dim`.
-    `prepend_new_coordinate` controls whether the new coordinate is prepended
-    (`prepend_new_coordinate=True`) or appended (`prepend_new_coordinate=False`) to the existing
-    coordinates.
 
     Parameters
     ----------
