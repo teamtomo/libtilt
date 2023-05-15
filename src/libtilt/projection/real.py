@@ -13,9 +13,11 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
 
     Projections are made by
 
-    1. generating a grid of coordinates sufficient to cover the volume in any principal_axis.
+    1. generating a grid of coordinates sufficient to cover
+       the volume in any orientation.
 
-    2. left-multiplying `rotation matrices` and coordinate grids to produce rotated coordinates.
+    2. left-multiplying `rotation matrices` and coordinate grids to
+       produce rotated coordinates.
 
     3. sampling `volume` at rotated coordinates.
 
