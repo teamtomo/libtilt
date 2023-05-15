@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional
 import einops
 import torch
 
-from libtilt.grids.coordinate import coordinate_grid
+from libtilt.grids.coordinate_grid import coordinate_grid
 from libtilt.utils.fft import distance_from_dc_for_dft
 
 

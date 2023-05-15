@@ -9,7 +9,7 @@ from libtilt.utils.coordinates import (
     homogenise_coordinates,
     array_to_grid_sample,
 )
-from libtilt.grids.coordinate import coordinate_grid
+from libtilt.grids.coordinate_grid import coordinate_grid
 
 
 def backproject(

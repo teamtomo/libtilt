@@ -6,7 +6,7 @@ import scipy.constants as C
 import torch
 
 from libtilt.ctf.relativistic_wavelength import calculate_relativistic_electron_wavelength
-from ..grids.fftfreq import _construct_fftfreq_grid_2d
+from ..grids.fftfreq_grid import _construct_fftfreq_grid_2d
 
 
 def calculate_ctf(

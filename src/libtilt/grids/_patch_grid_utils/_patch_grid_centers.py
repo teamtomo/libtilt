@@ -4,7 +4,7 @@ import einops
 import torch
 
 
-def patch_centers(
+def patch_grid_centers(
     image_shape: tuple[int, int] | tuple[int, int, int],
     patch_shape: tuple[int, int] | tuple[int, int, int],
     patch_step: tuple[int, int] | tuple[int, int, int],

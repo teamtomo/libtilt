@@ -1,7 +1,7 @@
 import einops
 import torch
 
-from libtilt.grids.fftfreq import _construct_fftfreq_grid_2d
+from libtilt.grids.fftfreq_grid import _construct_fftfreq_grid_2d
 from libtilt.utils.fft import rfft_shape, fftshift_2d
 
 
