@@ -14,7 +14,7 @@ from libtilt.utils.fft import (
     spatial_frequency_to_fftfreq,
     fftfreq_to_dft_coordinates,
 )
-from libtilt.grids.fftfreq import _construct_fftfreq_grid_2d
+from libtilt.grids.fftfreq_grid import _construct_fftfreq_grid_2d
 
 
 def test_rfft_shape_from_signal_shape():

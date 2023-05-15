@@ -3,10 +3,10 @@ from typing import Sequence, Tuple
 import einops
 import torch
 
-from libtilt.grids.patch_grid.patch_grid_centers import _patch_centers_1d
+from libtilt.grids._patch_grid_utils._patch_grid_centers import _patch_centers_1d
 
 
-def patch_indices(
+def patch_grid_indices(
     image_shape: tuple[int, int] | tuple[int, int, int],
     patch_shape: tuple[int, int] | tuple[int, int, int],
     patch_step: tuple[int, int] | tuple[int, int, int],

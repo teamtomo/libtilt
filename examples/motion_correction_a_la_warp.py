@@ -11,8 +11,7 @@ from torch_cubic_spline_grids import CubicBSplineGrid3d
 from libtilt.utils.coordinates import array_to_grid_sample
 from libtilt.shift.fourier_shift import phase_shift_dft_2d
 from libtilt.shapes.shapes_2d import circle
-from libtilt.grids.patch_grid import _patch_indices_2d
-from libtilt.grids.patch_grid import _patch_centers_3d
+from libtilt.grids import patch_grid
 
 IMAGE_FILE = 'data/TS_01_000_0.0.mrc'
 GT_DEFORMATION_FIELD_RESOLUTION = (3, 3, 3)  # (t, h, w)
@@ -38,7 +37,7 @@ gt_deformation_field = CubicBSplineGrid3d.from_grid_data(
     torch.tensor(gt_deformation_field_data).float()
 )
 _t, _y, _x = torch.linspace(0, 1, t), torch.linspace(0, 1, h), torch.linspace(0, 1, w)
-tt, yy, xx = torch.meshgrid(_t, _y, _x)
+tt, yy, xx = torch.meshgrid(_t, _y, _x, indexing='ij')
 tyx = einops.rearrange([tt, yy, xx], 'tyx t h w -> t h w tyx')
 
 predicted_shifts = gt_deformation_field(tyx)
@@ -58,28 +57,29 @@ multi_frame_micrograph = F.grid_sample(
 
 multi_frame_micrograph = einops.rearrange(multi_frame_micrograph, 't 1 h w -> t h w')
 
-### learn the motion
+# prepare data for learning the motion...
 reference = image.clone()
 
-# extract patches...
-patch_idx_h, patch_idx_w = _patch_indices_2d(
-    image_shape=image.shape,
+# extract patches from data and reference
+ph, pw = (PATCH_SIDELENGTH, PATCH_SIDELENGTH)
+data_patches, data_patch_centers = patch_grid(
+    images=multi_frame_micrograph,
+    patch_shape=(1, ph, pw),
+    patch_step=(1, ph // 2, pw // 2),
+    distribute_patches=True,
+)
+data_patches = einops.rearrange(data_patches, 't gh gw 1 ph pw -> t gh gw ph pw')
+gh, gw = data_patch_centers.shape[1:3]
+
+reference_patches, _ = patch_grid(
+    images=reference,
     patch_shape=(PATCH_SIDELENGTH, PATCH_SIDELENGTH),
     patch_step=(PATCH_SIDELENGTH // 2, PATCH_SIDELENGTH // 2),
     distribute_patches=True,
-)
-patch_centers = _patch_centers_3d(
-    image_shape=multi_frame_micrograph.shape,
-    patch_shape=(1, PATCH_SIDELENGTH, PATCH_SIDELENGTH),
-    patch_step=(1, PATCH_SIDELENGTH // 2, PATCH_SIDELENGTH // 2),
-    distribute_patches=True
-)  # (t, h, w, thw)
-patch_centers = patch_centers / torch.tensor([t - 1, h - 1, w - 1])
+)  # (grid_h, grid_w, ph, pw)
 
-data_patches = multi_frame_micrograph[:, patch_idx_h, patch_idx_w].detach()
-reference_patches = reference[patch_idx_h, patch_idx_w].detach()
 
-# shapes the reference and the data
+# apply a soft circular mask on both reference and data patches
 mask = circle(
     radius=PATCH_SIDELENGTH / 4,
     image_shape=(PATCH_SIDELENGTH, PATCH_SIDELENGTH),
@@ -88,85 +88,89 @@ mask = circle(
 data_patches *= mask
 reference_patches *= mask
 
-# fft the data and the reference
+# rfft the data and the reference
 data_patches = torch.fft.rfftn(data_patches, dim=(-2, -1))
 reference_patches = torch.fft.rfftn(reference_patches, dim=(-2, -1))
 
+
+# initialise the deformation field with learnable parameters and normalise
+# patch centers to [0, 1] for evaluation of shifts.
 deformation_field = CubicBSplineGrid3d(
     resolution=LEARNED_DEFORMATION_FIELD_RESOLUTION,
     n_channels=2
 )
+data_patch_centers = data_patch_centers / torch.tensor([t - 1, h - 1, w - 1])
+
+
+# initialise optimiser and detach data
 motion_optimiser = torch.optim.Adam(
     params=deformation_field.parameters(),
     lr=LEARNING_RATE,
 )
-ph, pw = patch_centers.shape[1:3]
-patch_shape = (PATCH_SIDELENGTH, PATCH_SIDELENGTH)
+data_patches = data_patches.detach()
+reference_patches=reference_patches.detach()
 
+
+# optimise shifts at grid points on deformation field
 start = datetime.now()
 for i in range(N_ITERATIONS):
-    # take a random subset of the 2D patch grid and the reference patches
-    patch_idx = np.random.randint(
-        low=(0, 0), high=(ph, pw), size=(N_PATCHES_PER_BATCH, 2)
+    # take a random subset of the patch grid over spatial dimensions
+    subset_idx = np.random.randint(
+        low=(0, 0), high=(gh, gw), size=(N_PATCHES_PER_BATCH, 2)
     )
-    patch_idx_h, patch_idx_w = einops.rearrange(patch_idx, 'b idx -> idx b')
+    patch_idx_h, patch_idx_w = einops.rearrange(subset_idx, 'b idx -> idx b')
     patch_subset = data_patches[:, patch_idx_h, patch_idx_w]
-    patch_subset_centers = patch_centers[:, patch_idx_h, patch_idx_w]
+    patch_subset_centers = data_patch_centers[:, patch_idx_h, patch_idx_w]
     reference_patch_subset = reference_patches[patch_idx_h, patch_idx_w]
 
     # predict the shifts at patch centers
     predicted_shifts = deformation_field(patch_subset_centers)
 
-    # shift the data patches by the current shifts
+    # shift the patches by the predicted shifts
     shifted_patches = phase_shift_dft_2d(
-        patch_subset,
+        dft=patch_subset,
+        image_shape=(ph, pw),
         shifts=predicted_shifts,
         rfft=True,
-        image_shape=patch_shape,
     )  # (b, ph, pw, h, w)
 
     # calculate the loss, MSE between data patches and reference patches
-    loss = torch.sqrt(torch.mean((reference_patch_subset - shifted_patches).abs() ** 2))
+    loss = torch.mean((reference_patch_subset - shifted_patches).abs() ** 2)
 
-    # zero gradients, backpropagate and step optimiser
+    # zero gradients, backpropagate loss and step optimiser
     motion_optimiser.zero_grad()
     loss.backward()
     motion_optimiser.step()
 
     if i % 20 == 0:
         print(loss.item())
-
 end = datetime.now()
 delta = (end - start).total_seconds()
 print(f'time taken: {delta}s')
 
-
-# quantify how well we're doing
-gt = gt_deformation_field(patch_centers)
-learned = deformation_field(patch_centers)
+# quantify how well we're doing over whole field
+gt = gt_deformation_field(tyx)
+learned = deformation_field(tyx)
 print(torch.mean(torch.abs(gt - learned)))
 
-# invert the motion
+# invert the motion to reconstruct a 'motion corrected' image
 predicted_shifts = -1 * deformation_field(tyx)
 sample_coords = array_coordinates + predicted_shifts
-reconstruction = F.grid_sample(
+corrected_image_thw = F.grid_sample(
     input=einops.rearrange(multi_frame_micrograph, 't h w -> t 1 h w'),
     grid=array_to_grid_sample(sample_coords, array_shape=(h, w)),
     mode='bicubic',
     padding_mode='zeros',
     align_corners=True,
 )
-reconstruction = einops.rearrange(reconstruction, 't 1 h w -> t h w')
+corrected_image_thw = einops.rearrange(corrected_image_thw, 't 1 h w -> t h w')
+corrected_image = einops.reduce(corrected_image_thw, 't h w -> h w', reduction='mean')
 
-# visualise
+# visualise results
 import napari
 viewer = napari.Viewer()
 viewer.add_image(reference.detach().numpy(), name='reference')
-viewer.add_image(multi_frame_micrograph.detach().numpy(), name='wavy data')
-viewer.add_image(reconstruction.detach().numpy(), name='motion corrected')
+viewer.add_image(multi_frame_micrograph.detach().numpy(), name='beam induced motion (simulated)')
+viewer.add_image(corrected_image_thw.detach().numpy(), name='motion corrected (2d+t)')
+viewer.add_image(corrected_image.detach().numpy(), name='motion corrected (2d)')
 napari.run()
-
-
-
-
-

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from libtilt.utils.coordinates import (
     array_to_grid_sample,
 )
-from libtilt.grids.coordinate import coordinate_grid
+from libtilt.grids.coordinate_grid import coordinate_grid
 
 
 def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
