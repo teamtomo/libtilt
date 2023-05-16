@@ -16,7 +16,7 @@ def patch_grid_centers(
     )
     if parameters_are_valid is False:
         raise ValueError(
-            "image shape, patch_extraction length and patch_extraction step are not the same length."
+            "image shape, patch length and patch step are not the same length."
         )
     ndim = len(image_shape)
     if ndim == 2:

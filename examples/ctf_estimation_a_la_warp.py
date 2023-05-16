@@ -40,7 +40,7 @@ grid_t, grid_h, grid_w = GRID_RESOLUTION
 t, h, w = image.shape
 ph, pw = PATCH_SIDELENGTH, PATCH_SIDELENGTH
 
-# extract patches and calculate patch_extraction power spectra
+# extract patches and calculate patch power spectra
 patches, patch_centers = patch_grid(
     images=image,
     patch_shape=(1, ph, pw),
@@ -48,7 +48,7 @@ patches, patch_centers = patch_grid(
 )
 patch_ps = torch.abs(torch.fft.rfftn(patches, dim=(-2, -1))) ** 2
 
-# normalise patch_extraction centers to [0, 1]
+# normalise patch centers to [0, 1]
 patch_centers = patch_centers / torch.tensor([t - 1, h - 1, w - 1])
 
 # average over dims which are not resolved in desired spatiotemporal grid model

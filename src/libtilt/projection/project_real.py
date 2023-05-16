@@ -23,7 +23,7 @@ def project(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tens
 
     4. summing samples along depth dimension of a `(d, h, w)` volume.
 
-    The rotation center_grid of `volume` is taken to be `torch.tensor(volume.shape) // 2`.
+    The rotation center of `volume` is taken to be `torch.tensor(volume.shape) // 2`.
 
     Parameters
     ----------

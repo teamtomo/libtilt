@@ -151,7 +151,7 @@ def _rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     elif rfft.ndim == 3:
         b = rfft.shape[0]
         output = torch.zeros((b, r + 1, r + 1), dtype=torch.complex64)
-    # fftshift full length dims to center_grid DC component
+    # fftshift full length dims to center DC component
     dc = r // 2
     rfft = torch.fft.fftshift(rfft, dim=(-2,))
     output[..., :-1, dc:] = rfft  # place rfft in output
@@ -182,7 +182,7 @@ def _rfft_to_symmetrised_dft_3d(dft: torch.Tensor) -> torch.Tensor:
     elif dft.ndim == 4:
         b = dft.shape[0]
         output = torch.zeros((b, r + 1, r + 1, r + 1), dtype=torch.complex64)
-    # fftshift full length dims (i.e. not -1) to center_grid DC component
+    # fftshift full length dims (i.e. not -1) to center DC component
     dft = torch.fft.fftshift(dft, dim=(-3, -2))
     # place rfft in output
     dc = r // 2  # index for DC component

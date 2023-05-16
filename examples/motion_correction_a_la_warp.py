@@ -96,7 +96,7 @@ data_patches = torch.fft.rfftn(data_patches, dim=(-2, -1))
 reference_patches = torch.fft.rfftn(reference_patches, dim=(-2, -1))
 
 # initialise the deformation field with learnable parameters and normalise
-# patch_extraction centers to [0, 1] for evaluation of shifts.
+# patch centers to [0, 1] for evaluation of shifts.
 deformation_field = CubicBSplineGrid3d(
     resolution=LEARNED_DEFORMATION_FIELD_RESOLUTION,
     n_channels=2
@@ -115,7 +115,7 @@ reference_patches=reference_patches.detach()
 # optimise shifts at grid points on deformation field
 start = datetime.now()
 for i in range(N_ITERATIONS):
-    # take a random subset of the patch_extraction grid over spatial dimensions
+    # take a random subset of the patch grid over spatial dimensions
     subset_idx = np.random.randint(
         low=(0, 0), high=(gh, gw), size=(N_PATCHES_PER_BATCH, 2)
     )
@@ -124,7 +124,7 @@ for i in range(N_ITERATIONS):
     patch_subset_centers = data_patch_centers[:, patch_idx_h, patch_idx_w]
     reference_patch_subset = reference_patches[patch_idx_h, patch_idx_w]
 
-    # predict the shifts at patch_extraction centers
+    # predict the shifts at patch centers
     predicted_shifts = deformation_field(patch_subset_centers)
 
     # shift the patches by the predicted shifts
