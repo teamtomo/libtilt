@@ -1,7 +1,7 @@
 import torch
 from scipy.spatial.transform import Rotation as R
 
-from libtilt.projection.project_fourier import project
+from libtilt.projection.project_fourier import project_in_fourier_space
 
 
 def test_project_no_rotation():
@@ -10,7 +10,7 @@ def test_project_no_rotation():
 
     # no rotation
     rotation_matrix = torch.eye(3).reshape(1, 3, 3)
-    projection = project(volume, rotation_matrix)
+    projection = project_in_fourier_space(volume, rotation_matrix)
     expected = torch.sum(volume, dim=0)
     assert torch.allclose(projection, expected)
 
@@ -22,6 +22,6 @@ def test_project_with_rotation():
     # with rotation
     # (5, 5, 5) is rotation center so projection shouldn't change...
     rotation_matrix = torch.tensor(R.random(num=1).as_matrix()).reshape(1, 3, 3).float()
-    projection = project(volume, rotation_matrix)
+    projection = project_in_fourier_space(volume, rotation_matrix)
     expected = torch.sum(volume, dim=0)
     assert torch.allclose(projection, expected, atol=1e-3)

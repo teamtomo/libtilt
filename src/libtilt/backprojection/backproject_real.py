@@ -12,7 +12,7 @@ from libtilt.coordinate_utils import (
 from libtilt.grids.coordinate_grid import coordinate_grid
 
 
-def backproject(
+def backproject_in_real_space(
         projection_images: torch.Tensor,
         projection_matrices: torch.Tensor,
         output_dimensions: Tuple[int, int, int]

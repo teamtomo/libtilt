@@ -7,7 +7,7 @@ from libtilt.fft_utils import fftfreq_to_dft_coordinates
 from libtilt.interpolation import extract_from_dft_3d
 
 
-def project(
+def project_in_fourier_space(
     volume: torch.Tensor,
     rotation_matrices: torch.Tensor,
     rotation_matrix_zyx: bool = False,

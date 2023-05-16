@@ -13,7 +13,7 @@ from libtilt.transformations import Rx, Ry, Rz, T, S
 from libtilt.coordinate_utils import homogenise_coordinates
 from libtilt.patch_extraction.patch_extraction_spp import extract_patches
 from libtilt.rescaling.fourier_rescale import fourier_rescale_2d
-from libtilt.backprojection.backproject_fourier import reconstruct_from_images
+from libtilt.backprojection import backproject_in_fourier_space
 from libtilt.fft_utils import dft_center
 
 TILT_SERIES_FILE = 'data/TS_01.mrc'
@@ -124,7 +124,7 @@ class VirtualTomogram(BaseModel):
         local_tilt_series = self.extract_local_tilt_series(
             position_in_tomogram=position_in_tomogram, sidelength=sidelength
         )
-        local_reconstruction = reconstruct_from_images(
+        local_reconstruction = backproject_in_fourier_space(
             images=local_tilt_series,
             rotation_matrices=torch.linalg.inv(self.rotation_matrices),
             rotation_matrix_zyx=True,

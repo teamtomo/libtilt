@@ -4,8 +4,8 @@ import torch
 from scipy.stats import special_ortho_group
 
 from libtilt.fsc import fsc
-from libtilt.projection.project_fourier import project
-from libtilt.backprojection.backproject_fourier import reconstruct_from_images
+from libtilt.projection import project_in_fourier_space
+from libtilt.backprojection import backproject_in_fourier_space
 
 N_IMAGES = 1000
 torch.manual_seed(42)
@@ -21,14 +21,14 @@ rotations = torch.tensor(
 ).float()
 
 # make projections
-projections = project(
+projections = project_in_fourier_space(
     volume,
     rotation_matrices=rotations,
     rotation_matrix_zyx=False
 )  # (b, h, w)
 
 # reconstruct volume from projections
-reconstruction = reconstruct_from_images(
+reconstruction = backproject_in_fourier_space(
     images=projections,
     rotation_matrices=rotations,
     rotation_matrix_zyx=False,
@@ -43,6 +43,7 @@ print(_fsc)
 
 # visualise
 import napari
+
 viewer = napari.Viewer()
 viewer.add_image(projections.numpy(), name='projections')
 
