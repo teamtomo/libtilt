@@ -8,24 +8,24 @@ import napari
 
 from libtilt.interpolation import insert_into_image_2d
 
-input_model_file = 'data/4v6x-ribo.cif'
-n_particles = 30
-output_pixel_spacing = 1
-output_image_shape = (4096, 4096)
-add_noise = False
+INPUT_MODEL_FILE = 'data/4v6x-ribo.cif'
+N_PARTICLES = 30
+SIMULATION_PIXEL_SPACING = 1
+SIMULATION_IMAGE_SHAPE = (4096, 4096)
+ADD_NOISE = False
 
 # load molecular model, center and rescale
-print(f"loading model from {input_model_file}")
-df = mmdf.read(input_model_file)
+print(f"loading model from {INPUT_MODEL_FILE}")
+df = mmdf.read(INPUT_MODEL_FILE)
 atom_zyx = torch.tensor(df[['z', 'y', 'x']].to_numpy()).float()  # (n_atoms, 3)
 atom_zyx -= torch.mean(atom_zyx, dim=-1, keepdim=True)
-atom_zyx /= output_pixel_spacing
+atom_zyx /= SIMULATION_PIXEL_SPACING
 
 # randomly place in volume
 print("placing particles in 3D volume")
-volume_shape = (output_image_shape[0] // 3, *output_image_shape)
+volume_shape = (SIMULATION_IMAGE_SHAPE[0] // 3, *SIMULATION_IMAGE_SHAPE)
 pz, py, px = [
-    np.random.uniform(low=0, high=dim_length, size=n_particles)
+    np.random.uniform(low=0, high=dim_length, size=N_PARTICLES)
     for dim_length in volume_shape
 ]
 particle_positions = einops.rearrange([pz, py, px], 'zyx b -> b 1 zyx')
@@ -37,7 +37,7 @@ atom_yx = per_particle_atom_positions[..., 1:]
 atom_yx = einops.rearrange(atom_yx, 'particles atoms yx -> (particles atoms) yx')
 n_atoms = atom_yx.shape[0]
 values = torch.ones(n_atoms)
-image = torch.zeros(output_image_shape)
+image = torch.zeros(SIMULATION_IMAGE_SHAPE)
 weights = torch.zeros_like(image)
 image, weights = insert_into_image_2d(
     data=values,
@@ -46,19 +46,19 @@ image, weights = insert_into_image_2d(
     weights=weights
 )
 
-if add_noise is True:
-    image = image + np.random.normal(loc=0, scale=50, size=output_image_shape)
+if ADD_NOISE is True:
+    image = image + np.random.normal(loc=0, scale=50, size=SIMULATION_IMAGE_SHAPE)
 else:
     image = image
 
 # simulate a reference image for template matching
 print("simulating reference")
-reference_zyx = atom_zyx + np.array([0, *output_image_shape]) // 2
+reference_zyx = atom_zyx + np.array([0, *SIMULATION_IMAGE_SHAPE]) // 2
 reference_yx = reference_zyx[..., 1:]
 n_atoms = reference_yx.shape[0]
 
 values = torch.ones(n_atoms)
-reference = torch.zeros(output_image_shape)
+reference = torch.zeros(SIMULATION_IMAGE_SHAPE)
 weights = torch.zeros_like(image)
 reference, weights = insert_into_image_2d(
     data=values,
