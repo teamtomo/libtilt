@@ -18,7 +18,7 @@ def fsc_conical(
         image_shape=a.shape,
         rfft=True,
         fftshift=False,
-        norm=True
+        norm=False
     )  # (..., 3)
     vector_norms = einops.reduce(vectors ** 2, '... vec -> ... 1', reduction='sum') ** 0.5
     vectors /= vector_norms

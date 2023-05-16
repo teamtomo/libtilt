@@ -46,14 +46,7 @@ def extract_from_dft_3d(
         align_corners=True,
     )
     samples = einops.rearrange(samples, 'b complex 1 1 1 -> b complex')
-
-    # zero out samples from outside of volume
-    samples = torch.view_as_complex(samples.contiguous())
-    coordinates = einops.rearrange(coordinates, 'b 1 1 1 zyx -> b zyx')
-    dft_shape = torch.as_tensor(dft.shape[-3:])
-    inside = torch.logical_and(coordinates >= 0, coordinates <= dft_shape)
-    inside = torch.all(inside, dim=-1)  # (b, )
-    samples[~inside] *= 0
+    samples = torch.view_as_complex(samples.contiguous())  # (b, )
 
     # pack data back up and return
     [samples] = einops.unpack(samples, pattern='*', packed_shapes=ps)

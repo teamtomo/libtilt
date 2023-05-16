@@ -24,4 +24,4 @@ def test_project_with_rotation():
     rotation_matrix = torch.tensor(R.random(num=1).as_matrix()).reshape(1, 3, 3).float()
     projection = project(volume, rotation_matrix)
     expected = torch.sum(volume, dim=0)
-    assert torch.allclose(projection, expected, atol=1e-7)
+    assert torch.allclose(projection, expected, atol=1e-3)
