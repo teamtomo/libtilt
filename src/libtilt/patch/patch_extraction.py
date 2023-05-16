@@ -81,7 +81,7 @@ def _extract_patches_from_single_image(
         input=einops.repeat(image, 'h w -> b 1 h w', b=b),
         grid=array_to_grid_sample(grid, array_shape=(h, w)),
         mode='nearest',
-        padding_mode='border',
+        padding_mode='zeros',
         align_corners=True
     )
     patches = einops.rearrange(patches, 'b 1 h w -> b h w')

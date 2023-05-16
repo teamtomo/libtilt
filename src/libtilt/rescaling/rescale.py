@@ -13,7 +13,7 @@ def rescale_2d(
     image: torch.Tensor,
     source_spacing: float | tuple[float, float],
     target_spacing: float | tuple[float, float],
-    maintain_dft_center: bool = False
+    maintain_center: bool = False
 ) -> tuple[torch.Tensor, tuple[float, float]]:
     """Rescale 2D image(s) from `source_spacing` to `target_spacing`.
 
@@ -30,9 +30,9 @@ def rescale_2d(
         Pixel spacing in the input image.
     target_spacing: float | tuple[float, float]
         Pixel spacing in the output image.
-    maintain_dft_center: bool
-        Whether to maintain the DFT center of the image (`True`) or the array
-        origin `[0, 0]` (`False`).
+    maintain_center: bool
+        Whether to maintain the center (position of DC component of DFT) of the
+        image (`True`) or the array origin `[0, 0]` (`False`).
 
     Returns
     -------
@@ -71,7 +71,7 @@ def rescale_2d(
     new_spacing_w = 1 / (2 * new_nyquist_w * (1 / source_spacing_w))
 
     # maintain origin at rotation center if requested
-    if maintain_dft_center is True:
+    if maintain_center is True:
         dft = _align_to_original_dft_center(
             dft=dft,
             original_image_shape=(h, w),
@@ -193,7 +193,7 @@ def _align_to_original_dft_center(
     h, w = original_image_shape
     original_spacing_h, original_spacing_w = original_image_spacing
     rescaled_spacing_h, rescaled_spacing_w = rescaled_image_spacing
-    old_dft_center = dft_center(
+    previous_center_h, previous_center_w = dft_center(
         grid_shape=(h, w), rfft=False, fftshifted=True
     )
     final_h, final_w = _get_final_shape(
@@ -204,9 +204,9 @@ def _align_to_original_dft_center(
     target_center_h, target_center_w = dft_center(
         grid_shape=(final_h, final_w), rfft=False, fftshifted=True
     )
-    center_h = old_dft_center[0] * (original_spacing_h / rescaled_spacing_h)
-    center_w = old_dft_center[1] * (original_spacing_w / rescaled_spacing_w)
-    dh, dw = target_center_h - center_h, target_center_w - center_w
+    current_center_h = previous_center_h * (original_spacing_h / rescaled_spacing_h)
+    current_center_w = previous_center_w * (original_spacing_w / rescaled_spacing_w)
+    dh, dw = target_center_h - current_center_h, target_center_w - current_center_w
     rescaled_image_h, rescaled_image_w = dft.shape[-2], (dft.shape[-1] - 1) * 2
     dft = phase_shift_dft_2d(
         dft=dft,
