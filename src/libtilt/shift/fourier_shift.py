@@ -102,7 +102,7 @@ def phase_shift_dft_2d(
     rfft: bool
         Whether the input was computed using `rfft`.
     fftshifted: bool
-        Whether the DFTs have been fftshifted to center_grid the DC component.
+        Whether the DFTs have been fftshifted to center the DC component.
 
     Returns
     -------
@@ -138,7 +138,7 @@ def phase_shift_dft_3d(
     rfft: bool
         Whether the input was computed using `rfft`.
     fftshifted: bool
-        Whether the DFTs have been fftshifted to center_grid the DC component.
+        Whether the DFTs have been fftshifted to center the DC component.
 
     Returns
     -------

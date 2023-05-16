@@ -1,9 +1,9 @@
 import torch
 from scipy.spatial.transform import Rotation as R
 
-from libtilt.projection.fourier import extract_from_dft_3d
-from libtilt.backprojection.fourier import insert_into_dft_3d
-from libtilt.grids.central_slice import rotated_central_slice_grid
+from libtilt.interpolation.interpolate_dft_3d import extract_from_dft_3d, \
+    insert_into_dft_3d
+from libtilt.grids import rotated_central_slice_grid
 from libtilt.fft_utils import fftfreq_to_dft_coordinates
 
 

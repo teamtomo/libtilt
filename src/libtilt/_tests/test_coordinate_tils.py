@@ -7,7 +7,6 @@ from libtilt.coordinate_utils import (
     grid_sample_to_array,
     add_positional_coordinate,
     homogenise_coordinates,
-    promote_2d_shifts_to_3d,
 )
 from libtilt.grids.coordinate_grid import coordinate_grid
 

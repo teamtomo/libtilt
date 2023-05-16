@@ -11,9 +11,9 @@ from pydantic import BaseModel, validator
 
 from libtilt.transformations import Rx, Ry, Rz, T, S
 from libtilt.coordinate_utils import homogenise_coordinates
-from libtilt.patch.patch_extraction import extract_patches
-from libtilt.rescaling.rescale import rescale_2d
-from libtilt.backprojection.fourier import reconstruct_from_images
+from libtilt.patch_extraction.patch_extraction_spp import extract_patches
+from libtilt.rescaling.fourier_rescale import fourier_rescale_2d
+from libtilt.backprojection import backproject_in_fourier_space
 from libtilt.fft_utils import dft_center
 
 TILT_SERIES_FILE = 'data/TS_01.mrc'
@@ -87,7 +87,7 @@ class VirtualTomogram(BaseModel):
 
     @lru_cache(maxsize=1)
     def rescale_tilt_series(self, target_pixel_size: float) -> torch.Tensor:
-        tilt_series, spacing_rescaled = rescale_2d(
+        tilt_series, spacing_rescaled = fourier_rescale_2d(
             self.tilt_series,
             source_spacing=self.tilt_series_pixel_size,
             target_spacing=target_pixel_size,
@@ -124,7 +124,7 @@ class VirtualTomogram(BaseModel):
         local_tilt_series = self.extract_local_tilt_series(
             position_in_tomogram=position_in_tomogram, sidelength=sidelength
         )
-        local_reconstruction = reconstruct_from_images(
+        local_reconstruction = backproject_in_fourier_space(
             images=local_tilt_series,
             rotation_matrices=torch.linalg.inv(self.rotation_matrices),
             rotation_matrix_zyx=True,
