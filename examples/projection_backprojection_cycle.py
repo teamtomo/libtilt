@@ -4,8 +4,8 @@ import torch
 from scipy.stats import special_ortho_group
 
 from libtilt.fsc import fsc
-from libtilt.projection.fourier import project
-from libtilt.backprojection.fourier import reconstruct_from_images
+from libtilt.projection.project_fourier import project
+from libtilt.backprojection.backproject_fourier import reconstruct_from_images
 
 N_IMAGES = 1000
 torch.manual_seed(42)
@@ -14,7 +14,6 @@ torch.manual_seed(42)
 volume = torch.tensor(mrcfile.read('data/4v6x.mrc'))
 volume -= torch.mean(volume)
 volume /= torch.std(volume)
-
 
 # rotation matrices for projection (operate on xyz column vectors)
 rotations = torch.tensor(

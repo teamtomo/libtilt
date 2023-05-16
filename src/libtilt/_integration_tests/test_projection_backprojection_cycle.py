@@ -3,8 +3,8 @@ import torch.nn.functional as F
 from scipy.stats import special_ortho_group
 
 from libtilt.fsc import fsc
-from libtilt.projection.fourier import project
-from libtilt.backprojection.fourier import reconstruct_from_images
+from libtilt.projection.project_fourier import project
+from libtilt.backprojection.backproject_fourier import reconstruct_from_images
 
 
 def test_projection_backprojection_cycle_rfft():

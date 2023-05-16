@@ -14,14 +14,14 @@ def extract_patches(
     """Extract patches from 2D images at positions with subpixel precision.
 
     Patches are extracted at the nearest integer coordinates then phase shifted
-    such that the requested position is at the DFT center of the patch.
+    such that the requested position is at the DFT center of the patch_extraction.
 
     Parameters
     ----------
     images: torch.Tensor
         `(t, h, w)` or `(h, w)` array of 2D images.
     positions: torch.Tensor
-        `(..., t, 2)` or `(..., 2)` array of coordinates for patch centers.
+        `(..., t, 2)` or `(..., 2)` array of coordinates for patch_extraction centers.
     sidelength: int
         Sidelength of square 2D patches extracted from `images`.
 

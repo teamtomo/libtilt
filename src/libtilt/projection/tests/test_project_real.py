@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.projection.real import project
+from libtilt.projection.project_real import project
 
 
 def test_real_space_projection():

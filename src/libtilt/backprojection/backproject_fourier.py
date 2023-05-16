@@ -1,78 +1,9 @@
-from typing import Tuple, Literal
-
-import einops
 import torch
 import torch.nn.functional as F
 
 from libtilt.grids import fftfreq_grid, rotated_central_slice_grid
 from libtilt.fft_utils import rfft_shape, fftfreq_to_dft_coordinates
-
-
-def insert_into_dft_3d(
-    data: torch.Tensor,
-    coordinates: torch.Tensor,
-    dft: torch.Tensor,
-    weights: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Insert values into a 3D DFT with trilinear interpolation (rasterisation).
-
-    Parameters
-    ----------
-    data: torch.Tensor
-        `(...)` array of values to be inserted into the DFT.
-    coordinates: torch.Tensor
-        `(..., 3)` array of 3D coordinates for each value in `data`.
-    dft: torch.Tensor
-        `(d, d, d)` volume containing the discrete Fourier transform into which data will be inserted.
-    weights: torch.Tensor
-        `(d, d, d)` volume containing the weights associated with each voxel of `dft`
-
-    Returns
-    -------
-    dft, weights: Tuple[torch.Tensor, torch.Tensor]
-        The dft and weights after updating with data from `slices` at `slice_coordinates`.
-    """
-    if data.shape != coordinates.shape[:-1]:
-        raise ValueError('One coordinate triplet is required for each value in data.')
-
-    # linearise data and coordinates
-    data, _ = einops.pack([data], pattern='*')
-    coordinates, _ = einops.pack([coordinates], pattern='* zyx')
-    coordinates = coordinates.float()
-
-    # only keep data and coordinates inside the volume
-    in_volume_idx = (coordinates >= 0) & (coordinates <= torch.tensor(dft.shape) - 1)
-    in_volume_idx = torch.all(in_volume_idx, dim=-1)
-    data, coordinates = data[in_volume_idx], coordinates[in_volume_idx]
-
-    # calculate and cache floor and ceil of coordinates for each piece of slice data
-    corner_coordinates = torch.empty(size=(data.shape[0], 2, 3), dtype=torch.long)
-    corner_coordinates[:, 0] = torch.floor(coordinates)  # for lower corners
-    corner_coordinates[:, 1] = torch.ceil(coordinates)  # for upper corners
-
-    # cache linear interpolation weights for each data point being inserted
-    _weights = torch.empty(size=(data.shape[0], 2, 3))  # (b, 2, zyx)
-    _weights[:, 1] = coordinates - corner_coordinates[:, 0]  # upper corner weights
-    _weights[:, 0] = 1 - _weights[:, 1]  # lower corner weights
-
-    def add_data_at_corner(z: Literal[0, 1], y: Literal[0, 1], x: Literal[0, 1]):
-        w = einops.reduce(_weights[:, [z, y, x], [0, 1, 2]], 'b zyx -> b',
-                          reduction='prod')
-        zc, yc, xc = einops.rearrange(corner_coordinates[:, [z, y, x], [0, 1, 2]],
-                                      'b zyx -> zyx b')
-        dft.index_put_(indices=(zc, yc, xc), values=w * data, accumulate=True)
-        weights.index_put_(indices=(zc, yc, xc), values=w, accumulate=True)
-
-    add_data_at_corner(0, 0, 0)
-    add_data_at_corner(0, 0, 1)
-    add_data_at_corner(0, 1, 0)
-    add_data_at_corner(0, 1, 1)
-    add_data_at_corner(1, 0, 0)
-    add_data_at_corner(1, 0, 1)
-    add_data_at_corner(1, 1, 0)
-    add_data_at_corner(1, 1, 1)
-
-    return dft, weights
+from libtilt.interpolation.interpolate_dft_3d import insert_into_dft_3d
 
 
 def reconstruct_from_images(

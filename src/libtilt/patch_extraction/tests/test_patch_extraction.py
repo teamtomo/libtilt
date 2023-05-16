@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.patch.patch_extraction import extract_patches, \
+from libtilt.patch_extraction.patch_extraction_spp import extract_patches, \
     _extract_patches_from_single_image
 
 

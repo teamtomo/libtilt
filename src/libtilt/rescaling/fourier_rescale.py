@@ -9,7 +9,7 @@ from libtilt.fft_utils import (
 from libtilt.shift.fourier_shift import phase_shift_dft_2d
 
 
-def rescale_2d(
+def fourier_rescale_2d(
     image: torch.Tensor,
     source_spacing: float | tuple[float, float],
     target_spacing: float | tuple[float, float],
