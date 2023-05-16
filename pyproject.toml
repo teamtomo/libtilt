@@ -27,6 +27,7 @@ dependencies = [
     "torch",
     "numpy",
     "einops",
+    "torch-cubic-spline-grids",
 ]
 
 # extras
