@@ -69,10 +69,10 @@ reference, weights = insert_into_image_2d(
 reference = torch.fft.fftshift(reference, dim=(-2, -1))
 
 print("convolution theorem-ing it up")
-image_dft = torch.fft.fftn(image, dim=(-2, -1))
-reference_dft = torch.fft.fftn(reference, dim=(-2, -1))
+image_dft = torch.fft.rfftn(image, dim=(-2, -1))
+reference_dft = torch.fft.rfftn(reference, dim=(-2, -1))
 product = image_dft * reference_dft
-result = torch.real(torch.fft.ifftn(product, dim=(-2, -1)))
+result = torch.real(torch.fft.irfftn(product, dim=(-2, -1)))
 
 # visualise results
 viewer = napari.Viewer()
