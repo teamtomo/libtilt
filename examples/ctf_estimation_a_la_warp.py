@@ -9,7 +9,7 @@ import torchvision.transforms.functional as TF
 import einops
 
 from torch_cubic_spline_grids import CubicBSplineGrid1d, CubicBSplineGrid3d
-from libtilt.rotational_average import rotational_average_2d
+from libtilt.rotational_averaging import rotational_average_dft_2d
 from libtilt.grids import patch_grid
 from libtilt.filters import bandpass_filter
 from libtilt.ctf.ctf_1d import calculate_ctf as calculate_ctf_1d
@@ -64,16 +64,16 @@ patch_ps = einops.reduce(
 
 # estimate background in 1D from rotational average of mean power spectrum
 mean_power_spectrum = einops.reduce(patch_ps, '... ph pw -> ph pw', reduction='mean')
-raps_1d = rotational_average_2d(
+raps_1d, _ = rotational_average_dft_2d(
     mean_power_spectrum,
+    image_shape=(ph, pw),
     rfft=True,
     fftshifted=False,
-    return_1d_average=True
 )
 raps_1d = einops.reduce(raps_1d, '... shell -> shell', reduction='mean')
 
 # determine fit range
-fftfreq = torch.fft.rfftfreq(PATCH_SIDELENGTH - 1)
+fftfreq = torch.fft.rfftfreq(PATCH_SIDELENGTH)
 lower_limit_fftfreq = spatial_frequency_to_fftfreq(
     1 / FITTING_RANGE[0], spacing=PIXEL_SIZE
 )
@@ -119,7 +119,7 @@ ctf2 = calculate_ctf_1d(
     b_factor=0,
     phase_shift=0,
     pixel_size=PIXEL_SIZE,
-    n_samples=256,
+    n_samples=PATCH_SIDELENGTH // 2 + 1,
     oversampling_factor=3,
 ) ** 2
 
@@ -136,11 +136,12 @@ best_defocus = test_defoci[max_correlation_idx]
 print(f'best defocus from 1D fit: {best_defocus}')
 
 # estimate 2D background and subtract from power spectra
-raps_2d = rotational_average_2d(
-    image=mean_power_spectrum,
+raps_2d, _ = rotational_average_dft_2d(
+    dft=mean_power_spectrum,
+    image_shape=(ph, pw),
     rfft=True,
     fftshifted=False,
-    return_1d_average=False,
+    return_2d_average=True,
 )
 raps_2d[0, 0] = 0
 raps_2d = einops.rearrange(raps_2d, 'h w -> 1 1 h w')

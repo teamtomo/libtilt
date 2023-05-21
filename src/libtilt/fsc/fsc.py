@@ -42,8 +42,7 @@ def fsc(
     # define split points in data as midpoint between bin centers
     bin_centers = torch.cat([bin_centers, torch.as_tensor([0.5 + df])])
     bin_centers = bin_centers.unfold(dimension=0, size=2, step=1)  # (n_shells, 2)
-    split_points = einops.reduce(bin_centers, 'shells high_low -> shells',
-                                 reduction='mean')
+    split_points = einops.reduce(bin_centers, 'shells high_low -> shells', reduction='mean')
 
     # find indices of all components in each shell
     sorted_frequencies, sort_idx = torch.sort(frequencies, descending=False)
