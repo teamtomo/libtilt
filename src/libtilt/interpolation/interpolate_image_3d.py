@@ -70,14 +70,14 @@ def insert_into_image_3d(
     coordinates: torch.Tensor
         `(..., 3)` array of 3D coordinates for each value in `data`.
     image: torch.Tensor
-        `(d, d, d)` volume containing the discrete Fourier transform into which data will be inserted.
+        `(d, h, w)` volume containing the image into which data will be inserted.
     weights: torch.Tensor
-        `(d, d, d)` volume containing the weights associated with each voxel of `image`
+        `(d, h, w)` volume containing the weights associated with each voxel of `image`
 
     Returns
     -------
-    dft, weights: tuple[torch.Tensor, torch.Tensor]
-        The dft and weights after updating with data from `slices` at `slice_coordinates`.
+    image, weights: tuple[torch.Tensor, torch.Tensor]
+        The image and weights after updating with data from `data` at `coordinates`.
     """
     if data.shape != coordinates.shape[:-1]:
         raise ValueError('One coordinate triplet is required for each value in data.')
@@ -88,25 +88,23 @@ def insert_into_image_3d(
     coordinates = coordinates.float()
 
     # only keep data and coordinates inside the volume
-    in_volume_idx = (coordinates >= 0) & (coordinates <= torch.tensor(image.shape) - 1)
-    in_volume_idx = torch.all(in_volume_idx, dim=-1)
-    data, coordinates = data[in_volume_idx], coordinates[in_volume_idx]
+    inside = (coordinates >= 0) & (coordinates <= torch.tensor(image.shape) - 1)
+    inside = torch.all(inside, dim=-1)
+    data, coordinates = data[inside], coordinates[inside]
 
     # calculate and cache floor and ceil of coordinates for each piece of slice data
-    corner_coordinates = torch.empty(size=(data.shape[0], 2, 3), dtype=torch.long)
-    corner_coordinates[:, 0] = torch.floor(coordinates)  # for lower corners
-    corner_coordinates[:, 1] = torch.ceil(coordinates)  # for upper corners
+    _c = torch.empty(size=(data.shape[0], 2, 3), dtype=torch.long)
+    _c[:, 0] = torch.floor(coordinates)  # for lower corners
+    _c[:, 1] = torch.ceil(coordinates)  # for upper corners
 
     # cache linear interpolation weights for each data point being inserted
-    _weights = torch.empty(size=(data.shape[0], 2, 3))  # (b, 2, zyx)
-    _weights[:, 1] = coordinates - corner_coordinates[:, 0]  # upper corner weights
-    _weights[:, 0] = 1 - _weights[:, 1]  # lower corner weights
+    _w = torch.empty(size=(data.shape[0], 2, 3))  # (b, 2, zyx)
+    _w[:, 1] = coordinates - _c[:, 0]  # upper corner weights
+    _w[:, 0] = 1 - _w[:, 1]  # lower corner weights
 
     def add_data_at_corner(z: Literal[0, 1], y: Literal[0, 1], x: Literal[0, 1]):
-        w = einops.reduce(_weights[:, [z, y, x], [0, 1, 2]], 'b zyx -> b',
-                          reduction='prod')
-        zc, yc, xc = einops.rearrange(corner_coordinates[:, [z, y, x], [0, 1, 2]],
-                                      'b zyx -> zyx b')
+        w = einops.reduce(_w[:, [z, y, x], [0, 1, 2]], 'b zyx -> b', reduction='prod')
+        zc, yc, xc = einops.rearrange(_c[:, [z, y, x], [0, 1, 2]], 'b zyx -> zyx b')
         image.index_put_(indices=(zc, yc, xc), values=w * data, accumulate=True)
         weights.index_put_(indices=(zc, yc, xc), values=w, accumulate=True)
 
