@@ -2,6 +2,7 @@ import einops
 import torch
 
 from libtilt.grids import fftfreq_grid
+from libtilt import fft_utils
 
 
 def bandpass_filter(
@@ -75,3 +76,24 @@ def high_pass_filter(
         device=device,
     )
     return filter
+
+def b_envelope(
+        B: float,
+        image_shape: tuple[int, int] | tuple[int, int, int],
+        pixel_size: float,
+        rfft: bool,
+        fftshift: bool,
+        device: torch.device = None
+) -> torch.Tensor:
+
+    frequency_grid = fftfreq_grid(
+        image_shape=image_shape,
+        rfft=rfft,
+        fftshift=fftshift,
+        norm=True,
+        device=device,
+    )
+    frequency_grid_px = frequency_grid/pixel_size
+    divisor = 4  # this is 4 for amplitude, 2 for intensity
+    b_tensor = torch.exp(-(B*frequency_grid_px**2)/divisor)
+    return b_tensor

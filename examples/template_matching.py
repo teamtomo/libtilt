@@ -6,20 +6,23 @@ import numpy as np
 import torch
 import napari
 
+
 from libtilt.atomic_models import coordinates_to_image_2d
+from libtilt.filters import bfactor_2d
 
 INPUT_MODEL_FILE = 'data/4v6x-ribo.cif'
 N_PARTICLES = 30
 SIMULATION_PIXEL_SPACING = 1
 SIMULATION_IMAGE_SHAPE = (4096, 4096)
 ADD_NOISE = False
+BFACTOR = 85
 
 # load molecular model, center and rescale
 print(f"loading model from {INPUT_MODEL_FILE}")
 df = mmdf.read(INPUT_MODEL_FILE)
 atom_zyx = torch.tensor(df[['z', 'y', 'x']].to_numpy()).float()  # (n_atoms, 3)
-atom_zyx -= torch.mean(atom_zyx, dim=-1, keepdim=True)
-atom_zyx /= SIMULATION_PIXEL_SPACING
+atom_zyx -= torch.mean(atom_zyx, dim=-1, keepdim=True)  # center
+atom_zyx /= SIMULATION_PIXEL_SPACING  # rescale
 
 # randomly place in volume
 print("placing particles in 3D volume")
@@ -49,6 +52,7 @@ if ADD_NOISE is True:
 else:
     image = image
 
+
 # simulate a reference image for template matching
 print("simulating reference")
 reference_zyx = atom_zyx + np.array([0, *SIMULATION_IMAGE_SHAPE]) // 2
@@ -63,6 +67,16 @@ reference = coordinates_to_image_2d(
     image_shape=SIMULATION_IMAGE_SHAPE,
 )
 reference = torch.fft.fftshift(reference, dim=(-2, -1))
+
+# Here the B factor is being applied to each image but
+# it will be more efficient to apply it to the 3D reference
+# (I was just testing it)
+if BFACTOR > 0:
+    reference = bfactor_2d(
+        image=reference,
+        B=BFACTOR,
+        pixel_size=SIMULATION_PIXEL_SPACING,
+    )
 
 print("convolution theorem-ing it up")
 image_dft = torch.fft.rfftn(image, dim=(-2, -1))
