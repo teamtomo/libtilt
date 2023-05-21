@@ -172,9 +172,18 @@ if __name__ == '__main__':
         sidelength=EXTRACTION_SIDELENGTH,
     )
 
+    # subtract mean
+    local_reconstruction -= torch.mean(local_reconstruction)
+
+    from libtilt.grids import coordinate_grid
+    grid = coordinate_grid(image_shape=[EXTRACTION_SIDELENGTH] * 3)
+    grid = grid * -1 * einops.rearrange(local_reconstruction, 'd h w -> d h w 1')
+    com = einops.reduce(grid, 'd h w zyx -> zyx', reduction='mean')
+
     # visualise results
     viewer = napari.Viewer()
     viewer.add_image(local_tilt_series.numpy())
     viewer.add_image(local_reconstruction.numpy(), rendering='minip')
+    viewer.add_points(com)
     viewer.dims.set_point(axis=0, value=len(local_reconstruction) // 2)
     napari.run()
