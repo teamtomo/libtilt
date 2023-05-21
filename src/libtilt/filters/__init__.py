@@ -4,3 +4,9 @@ from .bandpass import (
     bandpass_3d,
     bandpass_dft,
 )
+from .bfactors import (
+    b_envelope,
+    bfactor_2d,
+    bfactor_3d,
+    bfactor_dft,
+)
