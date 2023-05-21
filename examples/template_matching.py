@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import napari
 
-from libtilt.interpolation import insert_into_image_2d
+from libtilt.atomic_models import coordinates_to_image_2d
 
 INPUT_MODEL_FILE = 'data/4v6x-ribo.cif'
 N_PARTICLES = 30
@@ -39,11 +39,9 @@ n_atoms = atom_yx.shape[0]
 values = torch.ones(n_atoms)
 image = torch.zeros(SIMULATION_IMAGE_SHAPE)
 weights = torch.zeros_like(image)
-image, weights = insert_into_image_2d(
-    data=values,
+image = coordinates_to_image_2d(
     coordinates=atom_yx,
-    image=image,
-    weights=weights
+    image_shape=SIMULATION_IMAGE_SHAPE,
 )
 
 if ADD_NOISE is True:
@@ -60,11 +58,9 @@ n_atoms = reference_yx.shape[0]
 values = torch.ones(n_atoms)
 reference = torch.zeros(SIMULATION_IMAGE_SHAPE)
 weights = torch.zeros_like(image)
-reference, weights = insert_into_image_2d(
-    data=values,
+reference = coordinates_to_image_2d(
     coordinates=reference_yx,
-    image=reference,
-    weights=weights,
+    image_shape=SIMULATION_IMAGE_SHAPE,
 )
 reference = torch.fft.fftshift(reference, dim=(-2, -1))
 
