@@ -8,7 +8,7 @@ from libtilt.coordinate_utils import (
 from libtilt.grids.coordinate_grid import coordinate_grid
 
 
-def project_in_real_space(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
+def project_real(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
     """Make 2D projections of a 3D volume in specific orientations.
 
     Projections are made by

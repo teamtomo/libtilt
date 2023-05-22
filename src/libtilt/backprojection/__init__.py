@@ -1,2 +1,2 @@
-from .backproject_fourier import backproject_in_fourier_space
-from .backproject_real import backproject_in_real_space
+from .backproject_fourier import backproject_fourier
+from .backproject_real import backproject_real

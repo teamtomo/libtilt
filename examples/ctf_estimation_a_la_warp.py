@@ -170,7 +170,7 @@ filter = bandpass_filter(
 patch_ps *= filter
 
 # optimise 2d+t defocus model at grid points
-for i in range(200):
+for i in range(100):
     _, ph, pw = patch_centers.shape[:3]
     patch_idx = np.random.randint(
         low=(0, 0), high=(ph, pw), size=(N_PATCHES_PER_BATCH, 2)

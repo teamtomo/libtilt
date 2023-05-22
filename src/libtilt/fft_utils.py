@@ -16,18 +16,18 @@ def rfft_shape(input_shape: Sequence[int]) -> Tuple[int]:
 
 
 def dft_center(
-    grid_shape: Tuple[int, ...],
+    image_shape: Tuple[int, ...],
     rfft: bool,
     fftshifted: bool,
     device: torch.device | None = None,
 ) -> torch.LongTensor:
     """Return the position of the DFT center for a given input shape."""
-    fft_center = torch.zeros(size=(len(grid_shape),), device=device)
-    grid_shape = torch.as_tensor(grid_shape).float()
+    fft_center = torch.zeros(size=(len(image_shape),), device=device)
+    image_shape = torch.as_tensor(image_shape).float()
     if rfft is True:
-        grid_shape = torch.tensor(rfft_shape(grid_shape))
+        image_shape = torch.tensor(rfft_shape(image_shape))
     if fftshifted is True:
-        fft_center = torch.divide(grid_shape, 2, rounding_mode='floor')
+        fft_center = torch.divide(image_shape, 2, rounding_mode='floor')
     if rfft is True:
         fft_center[-1] = 0
     return fft_center.long()

@@ -3,8 +3,8 @@ import torch.nn.functional as F
 from scipy.stats import special_ortho_group
 
 from libtilt.fsc import fsc
-from libtilt.projection.project_fourier import project_in_fourier_space
-from libtilt.backprojection.backproject_fourier import backproject_in_fourier_space
+from libtilt.projection.project_fourier import project_fourier
+from libtilt.backprojection.backproject_fourier import backproject_fourier
 
 
 def test_projection_backprojection_cycle_rfft():
@@ -29,7 +29,7 @@ def test_projection_backprojection_cycle_rfft():
     ).float()
 
     # take slices
-    projections = project_in_fourier_space(
+    projections = project_fourier(
         volume,
         rotation_matrices=rotations,
         rotation_matrix_zyx=False
@@ -41,7 +41,7 @@ def test_projection_backprojection_cycle_rfft():
         p = projections.shape[-1] // 4
         projections = F.pad(projections, pad=[p] * 4)
 
-    reconstruction = backproject_in_fourier_space(
+    reconstruction = backproject_fourier(
         images=projections, rotation_matrices=rotations, rotation_matrix_zyx=False
     )
 
