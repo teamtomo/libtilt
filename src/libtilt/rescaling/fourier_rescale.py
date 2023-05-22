@@ -194,7 +194,7 @@ def _align_to_original_dft_center(
     original_spacing_h, original_spacing_w = original_image_spacing
     rescaled_spacing_h, rescaled_spacing_w = rescaled_image_spacing
     previous_center_h, previous_center_w = dft_center(
-        grid_shape=(h, w), rfft=False, fftshifted=True
+        image_shape=(h, w), rfft=False, fftshifted=True
     )
     final_h, final_w = _get_final_shape(
         original_image_shape=(h, w),
@@ -202,7 +202,7 @@ def _align_to_original_dft_center(
         rescaled_image_spacing=(rescaled_spacing_h, rescaled_spacing_w),
     )
     target_center_h, target_center_w = dft_center(
-        grid_shape=(final_h, final_w), rfft=False, fftshifted=True
+        image_shape=(final_h, final_w), rfft=False, fftshifted=True
     )
     current_center_h = previous_center_h * (original_spacing_h / rescaled_spacing_h)
     current_center_w = previous_center_w * (original_spacing_w / rescaled_spacing_w)

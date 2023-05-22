@@ -7,7 +7,7 @@ from libtilt.fft_utils import fftfreq_to_dft_coordinates
 from libtilt.interpolation import extract_from_dft_3d
 
 
-def project_in_fourier_space(
+def project_fourier(
     volume: torch.Tensor,
     rotation_matrices: torch.Tensor,
     rotation_matrix_zyx: bool = False,
@@ -90,5 +90,5 @@ def project_in_fourier_space(
 
     # unpadding
     if pad is True:
-        projections = projections[:, pad_length:-pad_length, pad_length:-pad_length]
+        projections = projections[..., pad_length:-pad_length, pad_length:-pad_length]
     return torch.real(projections)

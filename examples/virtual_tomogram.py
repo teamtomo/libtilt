@@ -13,7 +13,7 @@ from libtilt.transformations import Rx, Ry, Rz, T, S
 from libtilt.coordinate_utils import homogenise_coordinates
 from libtilt.patch_extraction.patch_extraction_spp import extract_patches
 from libtilt.rescaling.fourier_rescale import fourier_rescale_2d
-from libtilt.backprojection import backproject_in_fourier_space
+from libtilt.backprojection import backproject_fourier
 from libtilt.fft_utils import dft_center
 
 TILT_SERIES_FILE = 'data/TS_01.mrc'
@@ -49,7 +49,7 @@ class VirtualTomogram(BaseModel):
     @property
     def tilt_image_center(self) -> torch.Tensor:  # (3, ) 0, center_h, center_w
         center = dft_center(
-            grid_shape=self.tilt_series.shape[-2:],
+            image_shape=self.tilt_series.shape[-2:],
             rfft=False,
             fftshifted=True
         )
@@ -122,14 +122,15 @@ class VirtualTomogram(BaseModel):
         self, position_in_tomogram: torch.Tensor, sidelength: int
     ) -> torch.Tensor:  # (sidelength, sidelength, sidelength)
         local_tilt_series = self.extract_local_tilt_series(
-            position_in_tomogram=position_in_tomogram, sidelength=sidelength
+            position_in_tomogram=position_in_tomogram, sidelength=2 * sidelength
         )
-        local_reconstruction = backproject_in_fourier_space(
+        local_reconstruction = backproject_fourier(
             images=local_tilt_series,
             rotation_matrices=torch.linalg.inv(self.rotation_matrices),
             rotation_matrix_zyx=True,
         )
-        return local_reconstruction
+        low, high = sidelength // 2, (sidelength // 2) + sidelength
+        return local_reconstruction[low:high, low:high, low:high]
 
     @validator('tilt_series', 'euler_angles', 'shifts', pre=True)
     def to_float32_tensor(cls, value):

@@ -6,7 +6,7 @@ from libtilt.fft_utils import rfft_shape, fftfreq_to_dft_coordinates
 from libtilt.interpolation.interpolate_dft_3d import insert_into_dft_3d
 
 
-def backproject_in_fourier_space(
+def backproject_fourier(
     images: torch.Tensor,  # (b, h, w)
     rotation_matrices: torch.Tensor,  # (b, 3, 3)
     rotation_matrix_zyx: bool = False,
