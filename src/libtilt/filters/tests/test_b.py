@@ -4,12 +4,11 @@ from libtilt.filters import bfactor_2d
 
 def test_bfactor_2d():
     # Generate an image
-    img1 = torch.zeros((1,4))
-    img2 = torch.ones((3,4))
-    img = torch.vstack((img1,img2))
+    image = torch.zeros((4,4))
+    image[1:, :] = 1
     # apply bfactor
     result = bfactor_2d(
-        image=img,
+        image=image,
         B=10,
         pixel_size=1,
     )
