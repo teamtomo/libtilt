@@ -52,6 +52,14 @@ projection_model_optimiser = torch.optim.Adam(
     lr=0.1,
 )
 
+# initial reconstruction (for comparison)
+initial_reconstruction = backproject_fourier(
+    images=experimental_tilt_series,
+    rotation_matrices=rotation_matrices,
+    rotation_matrix_zyx=True,
+)
+
+# optimise
 for i in range(250):
     # Make an intermediate reconstruction from 90% of the data
     with torch.no_grad():
@@ -104,6 +112,7 @@ viewer.add_image(tilt_series.detach().numpy(), name='ideal - zero shifts')
 viewer.add_image(experimental_tilt_series.detach().numpy(), name='experimental')
 viewer.add_image(centered_tilt_series.detach().numpy(), name='aligned')
 viewer.add_image(ground_truth_volume.detach().numpy(), name='ground truth volume')
-viewer.add_image(final_reconstruction.detach().numpy(), name='reconstruction')
+viewer.add_image(initial_reconstruction.detach().numpy(), name='initial reconstruction')
+viewer.add_image(final_reconstruction.detach().numpy(), name='final reconstruction')
 viewer.add_image(ideal_reconstruction.detach().numpy(), name='ideal reconstruction')
 napari.run()
