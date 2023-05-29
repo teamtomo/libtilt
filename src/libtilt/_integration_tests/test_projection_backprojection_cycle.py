@@ -49,3 +49,4 @@ def test_projection_backprojection_cycle_rfft():
     _fsc = fsc(reconstruction, volume)
     print(_fsc)
     assert torch.all(_fsc[-16:] > 0.99)
+    assert torch.min(torch.abs(_fsc)) > 0.97
