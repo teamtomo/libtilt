@@ -86,8 +86,8 @@ def phase_shift_dft_2d(
     dft: torch.Tensor,
     image_shape: tuple[int, int],
     shifts: torch.Tensor,
-    rfft: bool = False,
-    fftshifted: bool = False,
+    rfft: bool,
+    fftshifted: bool,
 ):
     """Apply phase shifts to 2D discrete Fourier transforms.
 
