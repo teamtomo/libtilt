@@ -6,10 +6,10 @@ import torch.nn.functional as F
 from libtilt.fft_utils import (
     _target_fftfreq_from_spacing, _pad_to_best_fft_shape_2d, dft_center,
 )
-from libtilt.shift.fourier_shift import phase_shift_dft_2d
+from libtilt.shift import phase_shift_dft_2d
 
 
-def fourier_rescale_2d(
+def rescale_2d(
     image: torch.Tensor,
     source_spacing: float | tuple[float, float],
     target_spacing: float | tuple[float, float],
@@ -17,10 +17,8 @@ def fourier_rescale_2d(
 ) -> tuple[torch.Tensor, tuple[float, float]]:
     """Rescale 2D image(s) from `source_spacing` to `target_spacing`.
 
-    - rescaling is performed in Fourier space by either cropping or padding the
+    Rescaling is performed in Fourier space by either cropping or padding the
     discrete Fourier transform (DFT).
-    - the output image(s) will have even sidelengths in both spatial dimensions.
-    - the origin [..., 0, 0] is maintained.
 
     Parameters
     ----------
@@ -70,9 +68,9 @@ def fourier_rescale_2d(
     new_spacing_h = 1 / (2 * new_nyquist_h * (1 / source_spacing_h))
     new_spacing_w = 1 / (2 * new_nyquist_w * (1 / source_spacing_w))
 
-    # maintain origin at rotation center if requested
+    # maintain rotation center if requested
     if maintain_center is True:
-        dft = _align_to_original_dft_center(
+        dft = _align_to_original_image_center_2d(
             dft=dft,
             original_image_shape=(h, w),
             original_image_spacing=(source_spacing_h, source_spacing_w),
@@ -184,12 +182,13 @@ def _rescale_rfft_2d(
     return dft, (nyquist_h, nyquist_w)
 
 
-def _align_to_original_dft_center(
+def _align_to_original_image_center_2d(
     dft: torch.Tensor,
     original_image_shape: tuple[int, int],
     original_image_spacing: tuple[float, float],
     rescaled_image_spacing: tuple[float, float],
 ):
+    """Align the new image center to the original image center."""
     h, w = original_image_shape
     original_spacing_h, original_spacing_w = original_image_spacing
     rescaled_spacing_h, rescaled_spacing_w = rescaled_image_spacing

@@ -1,8 +1,9 @@
 import einops
 import torch
 
-from libtilt.grids.fftfreq_grid import _construct_fftfreq_grid_2d, _construct_fftfreq_grid_3d
 from libtilt.fft_utils import fftshift_2d, fftshift_3d
+from libtilt.grids.fftfreq_grid import _construct_fftfreq_grid_2d, \
+    _construct_fftfreq_grid_3d
 
 
 def get_phase_shifts_2d(
@@ -152,31 +153,3 @@ def phase_shift_dft_3d(
         fftshift=fftshifted,
     )
     return dft * phase_shifts
-
-
-def fourier_shift_2d(images: torch.Tensor, shifts: torch.Tensor):
-    h, w = images.shape[-2:]
-    images = torch.fft.rfftn(images, dim=(-2, -1))
-    images = phase_shift_dft_2d(
-        images,
-        image_shape=(h, w),
-        shifts=shifts,
-        rfft=True,
-        fftshifted=False
-    )
-    images = torch.fft.irfftn(images, dim=(-2, -1))
-    return torch.real(images)
-
-
-def fourier_shift_3d(images: torch.Tensor, shifts: torch.Tensor):
-    d, h, w = images.shape[-3:]
-    images = torch.fft.rfftn(images, dim=(-3, -2, -1))
-    images = phase_shift_dft_3d(
-        images,
-        image_shape=(d, h, w),
-        shifts=shifts,
-        rfft=True,
-        fftshifted=False
-    )
-    images = torch.fft.irfftn(images, dim=(-3, -2, -1))
-    return torch.real(images)

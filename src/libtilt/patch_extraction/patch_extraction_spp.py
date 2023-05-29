@@ -3,7 +3,7 @@ import torch
 from torch.nn import functional as F
 
 from libtilt.grids import coordinate_grid
-from libtilt.shift.fourier_shift import fourier_shift_2d
+from libtilt.shift.shift_image import shift_2d
 from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.fft_utils import dft_center
 
@@ -14,7 +14,7 @@ def extract_patches(
     """Extract patches from 2D images at positions with subpixel precision.
 
     Patches are extracted at the nearest integer coordinates then phase shifted
-    such that the requested position is at the DFT center of the patch.
+    such that the requested position is at the center of the patch.
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def extract_patches(
     -------
     patches: torch.Tensor
         `(..., t, sidelength, sidelength)` array of patches from `images` with their
-        DFT center at `positions`.
+        centers at `positions`.
     """
     if images.ndim == 2:
         images = einops.rearrange(images, 'h w -> 1 h w')
@@ -87,6 +87,6 @@ def _extract_patches_from_single_image(
     patches = einops.rearrange(patches, 'b 1 h w -> b h w')
 
     # phase shift to center images then remove border
-    patches = fourier_shift_2d(images=patches, shifts=shifts)
+    patches = shift_2d(images=patches, shifts=shifts)
     patches = F.pad(patches, pad=(-1, -1, -1, -1))
     return patches
