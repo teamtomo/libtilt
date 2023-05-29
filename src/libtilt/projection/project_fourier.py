@@ -54,7 +54,7 @@ def project_fourier(
     dft = torch.fft.fftshift(dft, dim=(-3, -2,))  # actual fftshift of rfft
 
     # make projections by taking central slices
-    projections = extract_central_slice_rfft(
+    projections = extract_central_slices_rfft(
         dft=dft,
         image_shape=volume.shape,
         rotation_matrices=rotation_matrices,
@@ -72,7 +72,7 @@ def project_fourier(
     return torch.real(projections)
 
 
-def extract_central_slice_rfft(
+def extract_central_slices_rfft(
     dft: torch.Tensor,
     image_shape: tuple[int, int, int],
     rotation_matrices: torch.Tensor,

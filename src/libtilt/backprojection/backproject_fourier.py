@@ -51,7 +51,7 @@ def backproject_fourier(
     images = torch.fft.fftshift(images, dim=(-2,))  # actual fftshift
 
     # insert image DFTs into a 3D rfft as central slices
-    dft, weights = insert_slices_rfft(
+    dft, weights = insert_central_slices_rfft(
         slices=images,
         image_shape=volume_shape,
         rotation_matrices=rotation_matrices,
@@ -84,7 +84,7 @@ def backproject_fourier(
     return torch.real(dft)
 
 
-def insert_slices_rfft(
+def insert_central_slices_rfft(
     slices: torch.Tensor,
     image_shape: tuple[int, int, int],
     rotation_matrices: torch.Tensor,
