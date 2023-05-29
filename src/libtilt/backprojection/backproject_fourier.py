@@ -45,56 +45,79 @@ def backproject_fourier(
     b, h, w = images.shape
     volume_shape = (w, w, w)
 
-    # initialise output volume and volume for keeping track of weights
-    dft = torch.zeros(
-        size=rfft_shape(volume_shape), dtype=torch.complex64, device=images.device
-    )
-    weights = torch.zeros_like(dft, dtype=torch.float32)
-
     # calculate DFTs of images
-    images = torch.fft.fftshift(images, dim=(-2, -1))
+    images = torch.fft.fftshift(images, dim=(-2, -1))  # volume center to array origin
     images = torch.fft.rfftn(images, dim=(-2, -1))
-    images = torch.fft.fftshift(images, dim=(-2,))
+    images = torch.fft.fftshift(images, dim=(-2,))  # actual fftshift
 
-    # generate grid of rotated slice coordinates for each element in image DFTs
-    grid = rotated_central_slice_grid(
+    # insert image DFTs into a 3D rfft as central slices
+    dft, weights = insert_slices_rfft(
+        slices=images,
         image_shape=volume_shape,
+        rotation_matrices=rotation_matrices,
+        rotation_matrix_zyx=rotation_matrix_zyx,
+
+    )
+
+    # reweight reconstruction
+    valid_weights = weights > 1e-3
+    dft[valid_weights] /= weights[valid_weights]
+
+    # back to real space
+    dft = torch.fft.ifftshift(dft, dim=(-3, -2,))  # actual ifftshift
+    dft = torch.fft.irfftn(dft, dim=(-3, -2, -1))
+    dft = torch.fft.ifftshift(dft, dim=(-3, -2, -1))  # center in real space
+
+    # correct for convolution with linear interpolation kernel
+    grid = fftfreq_grid(
+        image_shape=dft.shape,
+        rfft=False,
+        fftshift=True,
+        norm=True,
+        device=dft.device
+    )
+    dft = dft / torch.sinc(grid) ** 2
+
+    # unpad
+    if pad is True:
+        dft = F.pad(dft, pad=[-p] * 6)
+    return torch.real(dft)
+
+
+def insert_slices_rfft(
+    slices: torch.Tensor,
+    image_shape: tuple[int, int, int],
+    rotation_matrices: torch.Tensor,
+    rotation_matrix_zyx: bool,
+):
+    grid = rotated_central_slice_grid(
+        image_shape=image_shape,
         rotation_matrices=rotation_matrices,
         rotation_matrix_zyx=rotation_matrix_zyx,
         rfft=True,
         fftshift=True,
-        device=images.device
+        device=slices.device
     )  # centered on DC of DFT
 
     # flip coordinates in redundant half transform and take conjugate value
     conjugate_mask = grid[..., 2] < 0
     grid[conjugate_mask] *= -1
-    images[conjugate_mask] = torch.conj(images[conjugate_mask])
+    slices[conjugate_mask] = torch.conj(slices[conjugate_mask])
 
     # calculate actual coordinates into DFT from rotated fftfreq grid
-    grid = fftfreq_to_dft_coordinates(grid, image_shape=volume_shape, rfft=True)
+    grid = fftfreq_to_dft_coordinates(grid, image_shape=image_shape, rfft=True)
 
-    # insert data into DFT
-    dft, weights = insert_into_dft_3d(
-        data=images,
+    # initialise output volume and volume for keeping track of weights
+    dft_3d = torch.zeros(
+        size=rfft_shape(image_shape), dtype=torch.complex64, device=slices.device
+    )
+    weights = torch.zeros_like(dft_3d, dtype=torch.float32)
+
+    # insert data into 3D DFT
+    dft_3d, weights = insert_into_dft_3d(
+        data=slices,
         coordinates=grid,
-        dft=dft,
+        dft=dft_3d,
         weights=weights
     )
-    valid_weights = weights > 1e-3
-    dft[valid_weights] /= weights[valid_weights]
-    dft = torch.fft.ifftshift(dft, dim=(-3, -2,))
-    dft = torch.fft.irfftn(dft, dim=(-3, -2, -1))
-    dft = torch.fft.ifftshift(dft, dim=(-3, -2, -1))
-    if do_gridding_correction is True:
-        grid = fftfreq_grid(
-            image_shape=dft.shape,
-            rfft=False,
-            fftshift=True,
-            norm=True,
-            device=dft.device
-        )
-        dft = dft * torch.sinc(grid) ** 2
-    if pad is True:  # un-pad
-        dft = F.pad(dft, pad=[-p] * 6)
-    return torch.real(dft)
+    return dft_3d, weights
