@@ -62,9 +62,9 @@ initial_reconstruction = backproject_fourier(
 
 # optimise
 for i in range(250):
-    # Make an intermediate reconstruction from 90% of the data
+    # Make an intermediate reconstruction
     with torch.no_grad():
-        tilt_mask = torch.rand((len(tilt_series))) < 0.90
+        tilt_mask = torch.rand((len(tilt_series))) < 0.40
         _tilt_series = shift_2d(
             images=tilt_series[tilt_mask],
             shifts=-predicted_shifts[tilt_mask]
