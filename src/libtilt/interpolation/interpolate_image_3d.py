@@ -31,7 +31,7 @@ def extract_from_image_3d(
     coordinates, ps = einops.pack([coordinates], pattern='* zyx')
     n_samples = coordinates.shape[0]
 
-    # sample dft at coordinates
+    # sample image at coordinates
     image = einops.repeat(image, 'd h w -> b 1 d h w', b=n_samples)  # b c d h w
     coordinates = einops.rearrange(coordinates, 'b zyx -> b 1 1 1 zyx')  # b d h w zyx
     samples = F.grid_sample(
@@ -46,7 +46,7 @@ def extract_from_image_3d(
     # zero out samples from outside of volume
     coordinates = einops.rearrange(coordinates, 'b 1 1 1 zyx -> b zyx')
     volume_shape = torch.as_tensor(image.shape[-3:])
-    inside = torch.logical_and(coordinates >= 0, coordinates <= volume_shape)
+    inside = torch.logical_and(coordinates >= 0, coordinates <= volume_shape - 1)
     inside = torch.all(inside, dim=-1)  # (b, d, h, w)
     samples[~inside] *= 0
 
