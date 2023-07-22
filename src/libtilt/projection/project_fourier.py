@@ -4,7 +4,7 @@ import einops
 
 from libtilt.grids import fftfreq_grid, rotated_central_slice_grid
 from libtilt.fft_utils import fftfreq_to_dft_coordinates
-from libtilt.interpolation import extract_from_dft_3d
+from libtilt.interpolation import sample_dft_3d
 
 
 def project_fourier(
@@ -102,7 +102,7 @@ def extract_central_slices_rfft(
         image_shape=image_shape,
         rfft=True
     )
-    projections = extract_from_dft_3d(dft=dft, coordinates=grid)  # (..., h, w) rfft
+    projections = sample_dft_3d(dft=dft, coordinates=grid)  # (..., h, w) rfft
 
     # take complex conjugate of values from redundant half transform
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])

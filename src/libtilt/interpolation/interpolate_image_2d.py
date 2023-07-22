@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from libtilt.coordinate_utils import array_to_grid_sample
 
 
-def extract_from_image_2d(
+def sample_image_2d(
     image: torch.Tensor,
     coordinates: torch.Tensor
 ) -> torch.Tensor:

@@ -2,7 +2,7 @@ import einops
 import torch
 import torch.nn.functional as F
 
-from libtilt.interpolation.interpolate_dft_3d import extract_from_dft_3d
+from libtilt.interpolation.interpolate_dft_3d import sample_dft_3d
 
 
 def test_extract_slices():
@@ -20,6 +20,6 @@ def test_extract_slices():
     slice_coordinates = einops.rearrange([zz, yy, xx], 'zyx h w -> h w zyx')
 
     # extract slice
-    extracted_slice = extract_from_dft_3d(dft=volume, coordinates=slice_coordinates)
+    extracted_slice = sample_dft_3d(dft=volume, coordinates=slice_coordinates)
     error = F.mse_loss(slice, torch.real(extracted_slice.squeeze()))
     assert error < 1e-10
