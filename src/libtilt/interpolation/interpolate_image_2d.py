@@ -45,7 +45,7 @@ def extract_from_image_2d(
     # zero out samples from outside of image
     coordinates = einops.rearrange(coordinates, 'b 1 1 yx -> b yx')
     image_shape = torch.as_tensor(image.shape)
-    inside = torch.logical_and(coordinates >= 0, coordinates <= image_shape)
+    inside = torch.logical_and(coordinates >= 0, coordinates <= image_shape - 1)
     inside = torch.all(inside, dim=-1)  # (b, d, h, w)
     samples[~inside] *= 0
 
