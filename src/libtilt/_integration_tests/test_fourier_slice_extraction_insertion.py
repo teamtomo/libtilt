@@ -1,7 +1,7 @@
 import torch
 from scipy.spatial.transform import Rotation as R
 
-from libtilt.interpolation.interpolate_dft_3d import extract_from_dft_3d, \
+from libtilt.interpolation.interpolate_dft_3d import sample_dft_3d, \
     insert_into_dft_3d
 from libtilt.grids import rotated_central_slice_grid
 from libtilt.fft_utils import fftfreq_to_dft_coordinates
@@ -32,7 +32,7 @@ def test_fourier_slice_extraction_insertion_cycle_no_rotation():
         weights=weights
     )
     volume_with_slice[weights > 1e-3] /= weights[weights > 1e-3]
-    output_slice = extract_from_dft_3d(volume_with_slice, coordinates=slice_coordinates_dft)
+    output_slice = sample_dft_3d(volume_with_slice, coordinates=slice_coordinates_dft)
     assert torch.allclose(input_slice, output_slice)
 
 
@@ -67,7 +67,7 @@ def test_fourier_slice_extraction_insertion_cycle_with_rotation():
     volume_with_slice[weights > 1e-3] /= weights[weights > 1e-3]
 
     # extract slice
-    output_slice = extract_from_dft_3d(volume_with_slice, coordinates=grid_dft)
+    output_slice = sample_dft_3d(volume_with_slice, coordinates=grid_dft)
 
     # calculate error on all pixels which were inside the volume
     input_slice, output_slice = torch.real(input_slice), torch.real(output_slice)

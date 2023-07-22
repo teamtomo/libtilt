@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from libtilt.coordinate_utils import array_to_grid_sample
 
 
-def extract_from_dft_3d(
+def sample_dft_3d(
     dft: torch.Tensor,
     coordinates: torch.Tensor
 ) -> torch.Tensor:
@@ -42,7 +42,7 @@ def extract_from_dft_3d(
         input=dft,
         grid=array_to_grid_sample(coordinates, array_shape=dft.shape[-3:]),
         mode='bilinear',  # this is trilinear when input is volumetric
-        padding_mode='border', # this increases sampling fidelity at nyquist
+        padding_mode='border',  # this increases sampling fidelity at nyquist
         align_corners=True,
     )
     samples = einops.rearrange(samples, 'b complex 1 1 1 -> b complex')
