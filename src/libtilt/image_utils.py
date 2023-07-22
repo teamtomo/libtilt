@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from libtilt.fft_utils import dft_center as _dft_center
 
 def central_crop_2d(image: np.ndarray, percentage: float = 25) -> np.ndarray:
     """Get a central crop of (a batch of) 2D image(s).
@@ -41,3 +42,24 @@ def estimate_background_std(image: torch.Tensor, mask: torch.Tensor):
     image = central_crop_2d(image, percentage=25).float()
     mask = central_crop_2d(mask, percentage=25)
     return torch.std(image[mask == 0])
+
+
+def rotation_center(
+    image_shape: tuple[int, int] | tuple[int, int, int],
+    device: torch.device | None = None,
+) -> torch.Tensor:
+    """Get the rotation center of an image.
+
+    Parameters
+    ----------
+    image_shape: tuple[int, int] | tuple[int, int, int]
+        The 2D or 3D shape of the image for which the rotation center should be returned.
+
+    Returns
+    -------
+    rotation_center: torch.Tensor
+        `(2, )` or `(3, )` array containing the rotation center.
+    """
+    return _dft_center(
+        image_shape=image_shape, rfft=False, fftshifted=True, device=device
+    )
