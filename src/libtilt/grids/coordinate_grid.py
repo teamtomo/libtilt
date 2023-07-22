@@ -28,8 +28,6 @@ def coordinate_grid(
         Whether to compute the Euclidean norm of the coordinate grid.
     device: torch.device
         PyTorch device on which to put the coordinate grid.
-    center: torch.Tensor | tuple[float, ...] | None
-        Whether the coordinates should be centered on the rotation center of the grid.
 
     Returns
     -------
