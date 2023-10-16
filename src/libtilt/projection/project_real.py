@@ -73,5 +73,5 @@ def project_real(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch
 
     yl, yh = padding[1, 0], -padding[1, 1]
     xl, xh = padding[2, 0], -padding[2, 1]
-    images = [_project_volume(matrix)[yl:yh, xl:xh] for matrix in rotation_matrices]
+    images = [_project_volume(matrix)[yl:yh, xl:xh] for matrix in rotation_matrices] #TODO: This can probabaly optimized using vmap
     return torch.stack(images, dim=0)
