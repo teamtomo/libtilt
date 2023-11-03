@@ -10,14 +10,14 @@ from ..grids.fftfreq_grid import _construct_fftfreq_grid_2d
 
 
 def calculate_ctf(
-        defocus: float,
-        astigmatism: float,
-        astigmatism_angle: float,
+        defocus: float | torch.Tensor,
+        astigmatism: float | torch.Tensor,
+        astigmatism_angle: float | torch.Tensor,
         voltage: float,
         spherical_aberration: float,
         amplitude_contrast: float,
-        b_factor: float,
-        phase_shift: float,
+        b_factor: float | torch.Tensor,
+        phase_shift: float | torch.Tensor,
         pixel_size: float,
         image_shape: Tuple[int, int],
         rfft: bool,
