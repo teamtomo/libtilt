@@ -22,10 +22,11 @@ def dft_center(
     device: torch.device | None = None,
 ) -> torch.LongTensor:
     """Return the position of the DFT center for a given input shape."""
+    _rfft_shape = rfft_shape(image_shape)
     fft_center = torch.zeros(size=(len(image_shape),), device=device)
     image_shape = torch.as_tensor(image_shape).float()
     if rfft is True:
-        image_shape = torch.tensor(rfft_shape(image_shape), device=device)
+        image_shape = torch.tensor(_rfft_shape, device=device)
     if fftshifted is True:
         fft_center = torch.divide(image_shape, 2, rounding_mode='floor')
     if rfft is True:
@@ -438,11 +439,13 @@ def fftfreq_to_dft_coordinates(
     coordinates: torch.Tensor
         `(..., d)` array of coordinates into a fftshifted DFT.
     """
+    _image_shape = image_shape
     image_shape = torch.as_tensor(
-        image_shape, device=frequencies.device, dtype=frequencies.dtype
+        _image_shape, device=frequencies.device, dtype=frequencies.dtype
     )
+    _rfft_shape = rfft_shape(_image_shape)
     _rfft_shape = torch.as_tensor(
-        rfft_shape(image_shape), device=frequencies.device, dtype=frequencies.dtype
+        _rfft_shape, device=frequencies.device, dtype=frequencies.dtype
     )
     coordinates = torch.empty_like(frequencies)
     coordinates[..., :-1] = frequencies[..., :-1] * image_shape[:-1]
@@ -450,5 +453,5 @@ def fftfreq_to_dft_coordinates(
         coordinates[..., -1] = frequencies[..., -1] * 2 * (_rfft_shape[-1] - 1)
     else:
         coordinates[..., -1] = frequencies[..., -1] * image_shape[-1]
-    dc = dft_center(image_shape, rfft=rfft, fftshifted=True, device=frequencies.device)
+    dc = dft_center(_image_shape, rfft=rfft, fftshifted=True, device=frequencies.device)
     return coordinates + dc
