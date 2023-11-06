@@ -7,11 +7,11 @@ from libtilt.interpolation.interpolate_dft_3d import insert_into_dft_3d
 
 
 def backproject_fourier(
-    images: torch.Tensor,  # (b, h, w)
-    rotation_matrices: torch.Tensor,  # (b, 3, 3)
-    rotation_matrix_zyx: bool = False,
-    pad: bool = True,
-    do_gridding_correction: bool = True,
+        images: torch.Tensor,  # (b, h, w)
+        rotation_matrices: torch.Tensor,  # (b, 3, 3)
+        rotation_matrix_zyx: bool = False,
+        pad: bool = True,
+        do_gridding_correction: bool = True,
 ):
     """Perform a 3D reconstruction from a set of 2D projection images.
 
@@ -68,15 +68,16 @@ def backproject_fourier(
     dft = torch.fft.irfftn(dft, dim=(-3, -2, -1))
     dft = torch.fft.ifftshift(dft, dim=(-3, -2, -1))  # center in real space
 
-    # correct for convolution with linear interpolation kernel
-    grid = fftfreq_grid(
-        image_shape=dft.shape,
-        rfft=False,
-        fftshift=True,
-        norm=True,
-        device=dft.device
-    )
-    dft = dft / torch.sinc(grid) ** 2
+    # correct for effective convolution with linear interpolation kernel
+    if do_gridding_correction is True:
+        grid = fftfreq_grid(
+            image_shape=dft.shape,
+            rfft=False,
+            fftshift=True,
+            norm=True,
+            device=dft.device
+        )
+        dft = dft / torch.sinc(grid) ** 2
 
     # unpad
     if pad is True:
@@ -85,10 +86,10 @@ def backproject_fourier(
 
 
 def insert_central_slices_rfft(
-    slices: torch.Tensor,
-    image_shape: tuple[int, int, int],
-    rotation_matrices: torch.Tensor,
-    rotation_matrix_zyx: bool,
+        slices: torch.Tensor,
+        image_shape: tuple[int, int, int],
+        rotation_matrices: torch.Tensor,
+        rotation_matrix_zyx: bool,
 ):
     grid = rotated_central_slice_grid(
         image_shape=image_shape,
