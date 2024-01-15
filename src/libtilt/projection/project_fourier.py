@@ -35,7 +35,7 @@ def project_fourier(
     projections: torch.Tensor
         `(..., d, d)` array of projection images.
     """
-    dft, vol_shape, pad_length = compute_vol_dtf(volume, pad)
+    dft, vol_shape, pad_length = _compute_dft(volume, pad)
 
     # make projections by taking central slices
     projections = extract_central_slices_rfft(
