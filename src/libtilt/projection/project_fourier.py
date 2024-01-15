@@ -93,7 +93,7 @@ def extract_central_slices_rfft(
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
     return projections
 
-def compute_vol_dtf( #TODO: Is this the best place to have this?
+def _compute_dtf(
     volume: torch.Tensor,
     pad: bool = True,
     pad_length: int | None = None
