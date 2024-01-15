@@ -50,7 +50,7 @@ def sample_dft_3d(
 
     # pack data back up and return
     # [samples] = einops.unpack(samples, pattern='*', packed_shapes=ps)
-    samples = samples.reshape(*ps) #Ask Alister if this will work in any situation
+    samples = samples.reshape(*ps)  # replaces commented line above, for performance
     return samples  # (...)
 
 
