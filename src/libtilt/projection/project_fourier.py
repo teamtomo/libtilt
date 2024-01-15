@@ -107,7 +107,7 @@ def compute_vol_dtf( #TODO: Is this the best place to have this?
     pad: bool
         Whether to pad the volume with zeros to increase sampling in the DFT.
     pad_length: bool
-        The lenght used for padding. If None, volume.shape[-1] // 2 is used instead
+        The length used for padding each side of each dimension. If pad_length=None, and pad=True then volume.shape[-1] // 2 is used instead
 
     Returns
     -------
