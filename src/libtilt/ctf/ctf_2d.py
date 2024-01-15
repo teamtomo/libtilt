@@ -22,7 +22,7 @@ def calculate_ctf(
         image_shape: Tuple[int, int],
         rfft: bool,
         fftshift: bool,
-        device
+        device: torch.device | None = None
 ):
     """
 
