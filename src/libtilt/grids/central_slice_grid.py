@@ -43,7 +43,7 @@ def rotated_central_slice_grid(
         device=device,
     )  # (h, w, 3)
     if rotation_matrix_zyx is False:
-        grid = torch.flip(grid, dims=(-1,)) #TODO: This operation is slow since it is copying the full tensor
+        grid = torch.flip(grid, dims=(-1,))
     rotation_matrices = einops.rearrange(rotation_matrices, '... i j -> ... 1 1 i j')
     grid = einops.rearrange(grid, 'h w coords -> h w coords 1')
     grid = rotation_matrices @ grid

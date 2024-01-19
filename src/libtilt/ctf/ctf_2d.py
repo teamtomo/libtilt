@@ -22,7 +22,7 @@ def calculate_ctf(
         image_shape: Tuple[int, int],
         rfft: bool,
         fftshift: bool,
-        device
+        device: torch.device | None = None
 ):
     """
 
@@ -57,7 +57,8 @@ def calculate_ctf(
         Whether to apply fftshift on the resulting CTF images.
     """
     # to torch.Tensor and unit conversions
-    assert bool(rfft) + bool(fftshift) <= 1, "Error, only one of `rfft` and `fftshift` may be `True`."
+    if bool(rfft) + bool(fftshift) > 1:
+        raise ValueError("Only one of `rfft` and `fftshift` may be `True`.")
     defocus = torch.atleast_1d(torch.as_tensor(defocus, dtype=torch.float, device=device))
     defocus *= 1e4  # micrometers -> angstroms
     astigmatism = torch.atleast_1d(torch.as_tensor(astigmatism, dtype=torch.float, device=device))

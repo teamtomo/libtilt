@@ -35,7 +35,7 @@ def project_fourier(
     projections: torch.Tensor
         `(..., d, d)` array of projection images.
     """
-    dft, vol_shape, pad_length = compute_vol_dtf(volume, pad)
+    dft, vol_shape, pad_length = _compute_dft(volume, pad)
 
     # make projections by taking central slices
     projections = extract_central_slices_rfft(
@@ -93,7 +93,7 @@ def extract_central_slices_rfft(
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
     return projections
 
-def compute_vol_dtf( #TODO: Is this the best place to have this?
+def _compute_dtf(
     volume: torch.Tensor,
     pad: bool = True,
     pad_length: int | None = None
@@ -106,8 +106,8 @@ def compute_vol_dtf( #TODO: Is this the best place to have this?
         `(d, d, d)` volume.
     pad: bool
         Whether to pad the volume with zeros to increase sampling in the DFT.
-    pad_length: bool
-        The lenght used for padding. If None, volume.shape[-1] // 2 is used instead
+    pad_length: int | None
+        The length used for padding each side of each dimension. If pad_length=None, and pad=True then volume.shape[-1] // 2 is used instead
 
     Returns
     -------
