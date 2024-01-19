@@ -103,7 +103,7 @@ ENV/
 
 # IDE settings
 .vscode/
-.idea/ #For PyCharm
+.idea/
 
 libtilt/_version.py
 src/libtilt/_version.py
