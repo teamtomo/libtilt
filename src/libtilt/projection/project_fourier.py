@@ -93,12 +93,12 @@ def extract_central_slices_rfft(
     projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
     return projections
 
-def _compute_dtf(
+def _compute_dft(
     volume: torch.Tensor,
     pad: bool = True,
     pad_length: int | None = None
 ) -> Tuple[torch.Tensor, Tuple[int,int,int], int]:
-    """Project a cubic volume by sampling a central slice through its DFT.
+    """Computes the DFT of a volume. Intended to be used as a preprocessing before using extract_central_slices_rfft.
 
     Parameters
     ----------
