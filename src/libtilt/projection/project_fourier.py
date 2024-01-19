@@ -76,8 +76,8 @@ def extract_central_slices_rfft(
 
     # flip coordinates in redundant half transform
     conjugate_mask = grid[..., 2] < 0
-    # conjugate_mask = einops.repeat(conjugate_mask, '... -> ... 3')
-    conjugate_mask.unsqueeze(-1).repeat(1, 1, 1, 3)
+    # conjugate_mask = einops.repeat(conjugate_mask, '... -> ... 3') #This operation does not compile
+    conjugate_mask = conjugate_mask.unsqueeze(-1).expand(*[-1] * len(conjugate_mask.shape), 3) #This does
     grid[conjugate_mask] *= -1
     conjugate_mask = conjugate_mask[..., 0]  # un-repeat
 
