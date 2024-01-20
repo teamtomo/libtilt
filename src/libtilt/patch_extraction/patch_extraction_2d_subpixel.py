@@ -8,10 +8,10 @@ from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.fft_utils import dft_center
 
 
-def extract_patches_2d(
+def extract_square_patches(
     image: torch.Tensor, positions: torch.Tensor, sidelength: int,
 ):
-    """Extract patches from 2D images at positions with subpixel precision.
+    """Extract square patches from 2D images at positions with subpixel precision.
 
     Patches are extracted at the nearest integer coordinates then phase shifted
     such that the requested position is at the center of the patch.
@@ -44,7 +44,7 @@ def extract_patches_2d(
 
     # extract patches from each 2D image
     patches = [
-            _extract_patches_from_single_image(
+            _extract_square_patches_from_single_2d_image(
                 image=_image,
                 positions=_positions,
                 output_image_sidelength=sidelength
@@ -62,7 +62,7 @@ def extract_patches_2d(
     return patches
 
 
-def _extract_patches_from_single_image(
+def _extract_square_patches_from_single_2d_image(
     image: torch.Tensor,  # (h, w)
     positions: torch.Tensor,  # (b, 2) yx
     output_image_sidelength: int,

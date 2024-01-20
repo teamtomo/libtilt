@@ -1,1 +1,1 @@
-from .patch_extraction_2d_subpixel import extract_patches_2d
+from .patch_extraction_2d_subpixel import extract_square_patches

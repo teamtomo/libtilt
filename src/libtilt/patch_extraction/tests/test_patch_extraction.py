@@ -1,7 +1,7 @@
 import torch
 
-from libtilt.patch_extraction.patch_extraction_2d_subpixel import extract_patches_2d, \
-    _extract_patches_from_single_image
+from libtilt.patch_extraction.patch_extraction_2d_subpixel import extract_square_patches, \
+    _extract_square_patches_from_single_2d_image
 
 
 def test_extract_patches_from_single_image():
@@ -9,7 +9,7 @@ def test_extract_patches_from_single_image():
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([14., 14.]).reshape((1, 2))
-    patches = _extract_patches_from_single_image(
+    patches = _extract_square_patches_from_single_2d_image(
         image=img, positions=positions, output_image_sidelength=4
     )
     assert patches.shape == (1, 4, 4)
@@ -22,7 +22,7 @@ def test_extract_patches():
     img = torch.zeros((2, 28, 28))
     img[:, ::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]]).reshape((1, 2, 2))
-    patches = extract_patches_2d(
+    patches = extract_square_patches(
         image=img,  # (t, h, w)
         positions=positions,  # (b, t, 2)
         sidelength=4
@@ -39,7 +39,7 @@ def test_extract_patches_single_image():
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]])
-    patches = extract_patches_2d(
+    patches = extract_square_patches(
         image=img,  # (h, w)
         positions=positions,  # (b, 2)
         sidelength=4
