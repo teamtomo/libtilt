@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.patch_extraction.patch_extraction_2d_subpixel import extract_square_patches, \
+from libtilt.patch_extraction.subpixel_square_patch_extraction import extract_square_patches, \
     _extract_square_patches_from_single_2d_image
 
 

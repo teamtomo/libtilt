@@ -11,7 +11,7 @@ from pydantic import BaseModel, validator
 
 from libtilt.transformations import Rx, Ry, Rz, T, S
 from libtilt.coordinate_utils import homogenise_coordinates
-from libtilt.patch_extraction.patch_extraction_2d_subpixel import extract_square_patches
+from libtilt.patch_extraction.subpixel_square_patch_extraction import extract_square_patches
 from libtilt.rescaling import rescale_2d
 from libtilt.backprojection import backproject_fourier
 from libtilt.fft_utils import dft_center

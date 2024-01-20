@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.grids._patch_grid_utils import patch_grid_centers, patch_grid_indices
+from ._patch_grid_utils import patch_grid_centers, patch_grid_indices
 
 
 def extract_patches_on_grid(
