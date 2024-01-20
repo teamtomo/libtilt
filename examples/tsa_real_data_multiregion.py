@@ -35,7 +35,7 @@ n_tilts, h, w = tilt_series.shape
 center = dft_center((h, w), rfft=False, fftshifted=True)
 center = einops.repeat(center, 'yx -> b yx', b=len(tilt_series))
 tilt_series = extract_patches_2d(
-    images=tilt_series,
+    image=tilt_series,
     positions=center,
     sidelength=min(h, w),
 )
@@ -87,7 +87,7 @@ for i in range(250):
         projected_yx = projected_yx.view((8, -1, 2))
 
         local_ts = extract_patches_2d(
-            images=tilt_series,
+            image=tilt_series,
             positions=projected_yx,
             sidelength=s
         )

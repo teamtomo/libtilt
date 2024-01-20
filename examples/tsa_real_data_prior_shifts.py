@@ -22,7 +22,7 @@ ALIGNMENT_PIXEL_SIZE = 10
 tilt_series = torch.as_tensor(mrcfile.read(IMAGE_FILE))
 df = pd.read_csv(FID_CENTERS_FILE)
 fiducial_tilt_series = extract_patches_2d(
-    images=tilt_series,
+    image=tilt_series,
     positions=torch.tensor(df[['axis-1', 'axis-2']].to_numpy()).float(),
     sidelength=256
 )

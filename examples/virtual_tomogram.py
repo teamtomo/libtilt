@@ -112,7 +112,7 @@ class VirtualTomogram(BaseModel):
         )
         projected_positions = self.calculate_projected_positions(position_in_tomogram)
         particle_tilt_series = extract_patches_2d(
-            images=rescaled_tilt_series,
+            image=rescaled_tilt_series,
             positions=projected_positions,
             sidelength=sidelength,
         )

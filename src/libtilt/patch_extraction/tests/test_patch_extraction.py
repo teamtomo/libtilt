@@ -23,7 +23,7 @@ def test_extract_patches():
     img[:, ::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]]).reshape((1, 2, 2))
     patches = extract_patches_2d(
-        images=img,  # (t, h, w)
+        image=img,  # (t, h, w)
         positions=positions,  # (b, t, 2)
         sidelength=4
     )  # -> (b, t, 4, 4)
@@ -40,7 +40,7 @@ def test_extract_patches_single_image():
     img[::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]])
     patches = extract_patches_2d(
-        images=img,  # (h, w)
+        image=img,  # (h, w)
         positions=positions,  # (b, 2)
         sidelength=4
     )  # -> (b, 1, 4, 4)
