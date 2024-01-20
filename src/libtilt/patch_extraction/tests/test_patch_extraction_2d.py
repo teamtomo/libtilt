@@ -17,16 +17,16 @@ def test_single_square_patch_from_single_image():
     assert torch.allclose(patches, expected_image, atol=1e-6)
 
 
-def test_extract_patches_single():
+def test_extract_square_patches_single():
     """Test extracting patches from a stack of images."""
     img = torch.zeros((2, 28, 28))
     img[:, ::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]]).reshape((1, 2, 2))
     patches = extract_square_patches(
-        image=img,  # (t, h, w)
-        positions=positions,  # (b, t, 2)
+        image=img,  # (b2, h, w)
+        positions=positions,  # (b1, b2, 2)
         sidelength=4
-    )  # -> (b, t, 4, 4)
+    )  # -> (b1, b2, 4, 4)
     assert patches.shape == (1, 2, 4, 4)
     expected_image_0 = img[0, 12:16, 12:16]
     expected_image_1 = img[1, 13:17, 13:17]
@@ -34,7 +34,7 @@ def test_extract_patches_single():
     assert torch.allclose(patches[0, 1], expected_image_1, atol=1e-6)
 
 
-def test_extract_patches_batched():
+def test_extract_square_patches_batched():
     """Test batched particle extraction from single image."""
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
