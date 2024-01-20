@@ -8,7 +8,7 @@ from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.fft_utils import dft_center
 
 
-def extract_patches(
+def extract_patches_2d(
     images: torch.Tensor, positions: torch.Tensor, sidelength: int,
 ):
     """Extract patches from 2D images at positions with subpixel precision.

@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.patch_extraction.patch_extraction_spp import extract_patches, \
+from libtilt.patch_extraction.patch_extraction_2d_subpixel import extract_patches_2d, \
     _extract_patches_from_single_image
 
 
@@ -22,7 +22,7 @@ def test_extract_patches():
     img = torch.zeros((2, 28, 28))
     img[:, ::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]]).reshape((1, 2, 2))
-    patches = extract_patches(
+    patches = extract_patches_2d(
         images=img,  # (t, h, w)
         positions=positions,  # (b, t, 2)
         sidelength=4
@@ -39,7 +39,7 @@ def test_extract_patches_single_image():
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]])
-    patches = extract_patches(
+    patches = extract_patches_2d(
         images=img,  # (h, w)
         positions=positions,  # (b, 2)
         sidelength=4

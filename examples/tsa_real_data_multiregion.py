@@ -7,7 +7,7 @@ import einops
 from libtilt.backprojection import backproject_fourier
 from libtilt.coordinate_utils import homogenise_coordinates
 from libtilt.fft_utils import dft_center
-from libtilt.patch_extraction import extract_patches
+from libtilt.patch_extraction import extract_patches_2d
 from libtilt.projection import project_fourier
 from libtilt.rescaling.rescale_fourier import rescale_2d
 from libtilt.shapes import circle
@@ -34,7 +34,7 @@ tilt_series /= torch.std(tilt_series, dim=(-2, -1), keepdim=True)
 n_tilts, h, w = tilt_series.shape
 center = dft_center((h, w), rfft=False, fftshifted=True)
 center = einops.repeat(center, 'yx -> b yx', b=len(tilt_series))
-tilt_series = extract_patches(
+tilt_series = extract_patches_2d(
     images=tilt_series,
     positions=center,
     sidelength=min(h, w),
@@ -86,7 +86,7 @@ for i in range(250):
         projected_yx = Mproj @ positions_homogenous.view((-1, 1, 4, 1))
         projected_yx = projected_yx.view((8, -1, 2))
 
-        local_ts = extract_patches(
+        local_ts = extract_patches_2d(
             images=tilt_series,
             positions=projected_yx,
             sidelength=s
