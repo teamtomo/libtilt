@@ -4,8 +4,8 @@ from libtilt.patch_extraction.patch_extraction_2d_subpixel import extract_square
     _extract_square_patches_from_single_2d_image
 
 
-def test_extract_patches_from_single_image():
-    """Test particle_extraction from single image."""
+def test_single_square_patch_from_single_image():
+    """Test square patch extraction from single image."""
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([14., 14.]).reshape((1, 2))
@@ -17,7 +17,7 @@ def test_extract_patches_from_single_image():
     assert torch.allclose(patches, expected_image, atol=1e-6)
 
 
-def test_extract_patches():
+def test_extract_patches_single():
     """Test extracting patches from a stack of images."""
     img = torch.zeros((2, 28, 28))
     img[:, ::2, ::2] = 1
@@ -34,8 +34,8 @@ def test_extract_patches():
     assert torch.allclose(patches[0, 1], expected_image_1, atol=1e-6)
 
 
-def test_extract_patches_single_image():
-    """Test particle_extraction from image stack."""
+def test_extract_patches_batched():
+    """Test batched particle extraction from single image."""
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]])
