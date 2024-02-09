@@ -11,7 +11,7 @@ from pydantic import BaseModel, validator
 
 from libtilt.transformations import Rx, Ry, Rz, T, S
 from libtilt.coordinate_utils import homogenise_coordinates
-from libtilt.patch_extraction.subpixel_square_patch_extraction import extract_square_patches
+from libtilt.patch_extraction.subpixel_square_patch_extraction import extract_squares
 from libtilt.rescaling import rescale_2d
 from libtilt.backprojection import backproject_fourier
 from libtilt.fft_utils import dft_center
@@ -111,7 +111,7 @@ class VirtualTomogram(BaseModel):
             self, target_pixel_size=self.target_pixel_size
         )
         projected_positions = self.calculate_projected_positions(position_in_tomogram)
-        particle_tilt_series = extract_square_patches(
+        particle_tilt_series = extract_squares(
             image=rescaled_tilt_series,
             positions=projected_positions,
             sidelength=sidelength,

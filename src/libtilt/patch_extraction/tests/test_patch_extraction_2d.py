@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.patch_extraction.subpixel_square_patch_extraction import extract_square_patches, \
+from libtilt.patch_extraction.subpixel_square_patch_extraction import extract_squares, \
     _extract_square_patches_from_single_2d_image
 
 
@@ -22,7 +22,7 @@ def test_extract_square_patches_single():
     img = torch.zeros((2, 28, 28))
     img[:, ::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]]).reshape((1, 2, 2))
-    patches = extract_square_patches(
+    patches = extract_squares(
         image=img,  # (b2, h, w)
         positions=positions,  # (b1, b2, 2)
         sidelength=4
@@ -39,13 +39,13 @@ def test_extract_square_patches_batched():
     img = torch.zeros((28, 28))
     img[::2, ::2] = 1
     positions = torch.tensor([[14., 14.], [15., 15.]])
-    patches = extract_square_patches(
+    patches = extract_squares(
         image=img,  # (h, w)
         positions=positions,  # (b, 2)
         sidelength=4
-    )  # -> (b, 1, 4, 4)
-    assert patches.shape == (2, 1, 4, 4)
+    )  # -> (b, 4, 4)
+    assert patches.shape == (2, 4, 4)
     expected_image_0 = img[12:16, 12:16]
     expected_image_1 = img[13:17, 13:17]
-    assert torch.allclose(patches[0, 0], expected_image_0, atol=1e-6)
-    assert torch.allclose(patches[1, 0], expected_image_1, atol=1e-6)
+    assert torch.allclose(patches[0], expected_image_0, atol=1e-6)
+    assert torch.allclose(patches[1], expected_image_1, atol=1e-6)

@@ -1,6 +1,6 @@
 import torch
 
-from libtilt.patch_extraction.subpixel_cubic_patch_extraction import extract_cubic_patches, \
+from libtilt.patch_extraction.subpixel_cubic_patch_extraction import extract_cubes, \
     _extract_cubic_patches_from_single_3d_image
 
 
@@ -22,7 +22,7 @@ def test_extract_cubic_patches():
     img = torch.zeros((28, 28, 28))
     img[::2, ::2, ::2] = 1
     positions = torch.tensor([[14., 14., 14.], [15., 15., 15.]]).reshape((2, 3))
-    patches = extract_cubic_patches(
+    patches = extract_cubes(
         image=img,  # (d, h, w)
         positions=positions,  # (b, 3)
         sidelength=4

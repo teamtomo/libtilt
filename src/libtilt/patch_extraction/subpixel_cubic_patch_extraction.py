@@ -8,7 +8,7 @@ from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.fft_utils import dft_center
 
 
-def extract_cubic_patches(
+def extract_cubes(
     image: torch.Tensor, positions: torch.Tensor, sidelength: int,
 ):
     """Extract cubic patches from a 3D image at positions with subpixel precision.
@@ -69,13 +69,13 @@ def _extract_cubic_patches_from_single_3d_image(
         ),
         device=image.device
     )  # (d, h, w, 3)
-    broadcastable_positions = einops.rearrange(integer_positions, 'b zyx -> b 1 1 1 yx')
+    broadcastable_positions = einops.rearrange(integer_positions, 'b zyx -> b 1 1 1 zyx')
     grid = coordinates + broadcastable_positions  # (b, d, h, w, 3)
 
     # extract patches, grid sample handles boundaries
     patches = F.grid_sample(
         input=einops.repeat(image, 'd h w -> b 1 d h w', b=b),
-        grid=array_to_grid_sample(grid, array_shape=(h, w)),
+        grid=array_to_grid_sample(grid, array_shape=(d, h, w)),
         mode='nearest',
         padding_mode='zeros',
         align_corners=True
