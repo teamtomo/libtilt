@@ -1,9 +1,9 @@
 import torch
 
-from libtilt.grids._patch_grid_utils import patch_grid_centers, patch_grid_indices
+from ._patch_grid_utils import patch_grid_centers, patch_grid_indices
 
 
-def patch_grid(
+def extract_patches_on_grid(
     images: torch.Tensor,
     patch_shape: tuple[int, int] | tuple[int, int, int],
     patch_step: tuple[int, int] | tuple[int, int, int],
@@ -13,14 +13,14 @@ def patch_grid(
         raise ValueError('patch shape and step must have the same number of dimensions.')
     ndim = len(patch_shape)
     if ndim == 2:
-        patches, patch_centers = _patch_grid_2d(
+        patches, patch_centers = _extract_2d_patches_on_2d_grid(
             images=images,
             patch_shape=patch_shape,
             patch_step=patch_step,
             distribute_patches=distribute_patches,
         )
     elif ndim == 3:
-        patches, patch_centers = _patch_grid_3d(
+        patches, patch_centers = _extract_3d_patches_on_3d_grid(
             images=images,
             patch_shape=patch_shape,
             patch_step=patch_step,
@@ -31,7 +31,7 @@ def patch_grid(
     return patches, patch_centers
 
 
-def _patch_grid_2d(
+def _extract_2d_patches_on_2d_grid(
     images: torch.Tensor,
     patch_shape: tuple[int, int],
     patch_step: tuple[int, int],
@@ -76,7 +76,7 @@ def _patch_grid_2d(
     return patches, patch_centers
 
 
-def _patch_grid_3d(
+def _extract_3d_patches_on_3d_grid(
     images: torch.Tensor,
     patch_shape: tuple[int, int, int],
     patch_step: tuple[int, int, int],

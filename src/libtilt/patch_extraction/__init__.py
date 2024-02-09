@@ -1,1 +1,3 @@
-from .patch_extraction_spp import extract_patches
+from .subpixel_square_patch_extraction import extract_squares
+from .subpixel_cubic_patch_extraction import extract_cubes
+from .patch_extraction_on_grid import extract_patches_on_grid

@@ -5,7 +5,7 @@ import einops
 
 from libtilt.backprojection import backproject_fourier
 from libtilt.fft_utils import dft_center
-from libtilt.patch_extraction import extract_patches
+from libtilt.patch_extraction import extract_squares
 from libtilt.projection import project_fourier
 from libtilt.rescaling.rescale_fourier import rescale_2d
 from libtilt.shapes import circle
@@ -21,8 +21,8 @@ ALIGNMENT_PIXEL_SIZE = 10
 
 tilt_series = torch.as_tensor(mrcfile.read(IMAGE_FILE))
 df = pd.read_csv(FID_CENTERS_FILE)
-fiducial_tilt_series = extract_patches(
-    images=tilt_series,
+fiducial_tilt_series = extract_squares(
+    image=tilt_series,
     positions=torch.tensor(df[['axis-1', 'axis-2']].to_numpy()).float(),
     sidelength=256
 )

@@ -8,52 +8,61 @@ from libtilt.coordinate_utils import array_to_grid_sample
 from libtilt.fft_utils import dft_center
 
 
-def extract_patches(
-    images: torch.Tensor, positions: torch.Tensor, sidelength: int,
+def extract_squares(
+    image: torch.Tensor, positions: torch.Tensor, sidelength: int,
 ):
-    """Extract patches from 2D images at positions with subpixel precision.
+    """Extract square patches from 2D images at positions with subpixel precision.
 
     Patches are extracted at the nearest integer coordinates then phase shifted
     such that the requested position is at the center of the patch.
 
     Parameters
     ----------
-    images: torch.Tensor
-        `(t, h, w)` or `(h, w)` array of 2D images.
+    image: torch.Tensor
+        `(h, w)` or `(b, h, w)` array containing a 2D image or 2D images.
     positions: torch.Tensor
-        `(..., t, 2)` or `(..., 2)` array of coordinates for patch centers.
+        `(..., 2)` or `(..., b, 2)` array of coordinates for patch centers.
     sidelength: int
-        Sidelength of square 2D patches extracted from `images`.
+        Sidelength of square patches extracted from `images`.
 
 
     Returns
     -------
     patches: torch.Tensor
-        `(..., t, sidelength, sidelength)` array of patches from `images` with their
-        centers at `positions`.
+        `(..., sidelength, sidelength)` or `(..., b, sidelength, sidelength)`
+        array of patches from `images` with their centers at `positions`.
     """
-    if images.ndim == 2:
-        images = einops.rearrange(images, 'h w -> 1 h w')
+    images_had_batch_dim = True
+    if image.ndim == 2:  # add empty batch dim
+        images_had_batch_dim = False
+        image = einops.rearrange(image, 'h w -> 1 h w')
         positions = einops.rearrange(positions, '... yx -> ... 1 yx')
-    positions, ps = einops.pack([positions], pattern='* t yx')
-    positions = einops.rearrange(positions, 'b t yx -> t b yx')
-    patches = einops.rearrange(
-        [
-            _extract_patches_from_single_image(
-                image=_image,
-                positions=_positions,
-                output_image_sidelength=sidelength
-            )
-            for _image, _positions
-            in zip(images, positions)
-        ],
-        pattern='t b h w -> b t h w'
-    )
-    [patches] = einops.unpack(patches, pattern='* t h w', packed_shapes=ps)
+
+    # pack arbitrary dimensions up into one new batch dim 'b1'
+    positions, ps = einops.pack([positions], pattern='* b2 yx')
+    positions = einops.rearrange(positions, 'b1 b2 yx -> b2 b1 yx')
+
+    # extract patches from each 2D image
+    patches = [
+        _extract_square_patches_from_single_2d_image(
+            image=_image,
+            positions=_positions,
+            output_image_sidelength=sidelength
+        )
+        for _image, _positions
+        in zip(image, positions)
+    ]
+
+    # reassemble patches into arbitrary dimensional stacks
+    patches = einops.rearrange(patches, pattern='b2 b1 h w -> b1 b2 h w')
+    [patches] = einops.unpack(patches, pattern='* b2 h w', packed_shapes=ps)
+
+    if images_had_batch_dim is False:
+        patches = einops.rearrange(patches, pattern='... 1 h w -> ... h w')
     return patches
 
 
-def _extract_patches_from_single_image(
+def _extract_square_patches_from_single_2d_image(
     image: torch.Tensor,  # (h, w)
     positions: torch.Tensor,  # (b, 2) yx
     output_image_sidelength: int,

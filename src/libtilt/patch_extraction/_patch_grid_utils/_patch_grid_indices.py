@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 import einops
 import torch
 
-from libtilt.grids._patch_grid_utils._patch_grid_centers import _patch_centers_1d
+from libtilt.patch_extraction._patch_grid_utils._patch_grid_centers import _patch_centers_1d
 
 
 def patch_grid_indices(
