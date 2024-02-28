@@ -16,21 +16,6 @@ from libtilt.transformations import Ry, Rz, T
 from libtilt.correlation import correlate_2d
 from libtilt.projection import project_real_2d
 
-
-def rotation_matrix(angles_degrees):
-    """Calculate rotation matrices for images."""
-    angles_radians = torch.deg2rad(angles_degrees)
-    n = angles_radians.shape[0]
-    c = torch.cos(angles_radians)
-    s = torch.sin(angles_radians)
-    matrices = einops.repeat(torch.eye(2), 'i j -> n i j', n=n).clone()
-    matrices[:, 0, 0] = c
-    matrices[:, 0, 1] = -s
-    matrices[:, 1, 0] = s
-    matrices[:, 1, 1] = c
-    return matrices
-
-
 IMAGE_FILE = 'data/tomo200528_100.st'
 IMAGE_PIXEL_SIZE = 1.724
 STAGE_TILT_ANGLE_PRIORS = torch.arange(-51, 51, 3)
@@ -104,11 +89,10 @@ for i in range(REFERENCE_TILT, tilt_series.shape[0] - 1, 1):
     current_shift += shift
     coarse_shifts[i + 1] = current_shift
 
-# apply the shifts for coarse aligned series
-coarse_aligned_tilt_series = shift_2d(tilt_series, shifts=-coarse_shifts)
-
-tilt_axis_grid = CubicBSplineGrid1d(resolution=1, n_channels=1)
-tilt_axis_grid.data = torch.tensor([TILT_AXIS_ANGLE_PRIOR, ], dtype=torch.float32)
+# optimize tilt axis angle
+grid_resolution = 1
+tilt_axis_grid = CubicBSplineGrid1d(resolution=grid_resolution, n_channels=1)
+tilt_axis_grid.data = torch.tensor([TILT_AXIS_ANGLE_PRIOR, ] * grid_resolution, dtype=torch.float32)
 interpolation_points = torch.linspace(0, 1, len(tilt_series))
 
 common_lines_optimiser = torch.optim.Adam(
@@ -116,13 +100,13 @@ common_lines_optimiser = torch.optim.Adam(
     lr=1,
 )
 
-print('initial tilt axis:', tilt_axis_grid.data)
-for epoch in range(200):
+for epoch in range(100):
     # interpolate the grid
     tilt_axis_angles = tilt_axis_grid(interpolation_points)
 
     # for common lines each 2d image is projected perpendicular to the tilt axis, thus add 90 degrees
-    R = rotation_matrix(tilt_axis_angles + 90)
+    R = Rz(tilt_axis_angles + 90, zyx=False)[:, :2, :2]
+
     projections = []
     for i in range(len(tilt_series)):
         p = project_real_2d(tilt_series[i] * coarse_alignment_mask, R[i:i+1])
@@ -134,12 +118,16 @@ for epoch in range(200):
         loss = loss - (x * y).sum() / y.numel()
     loss.backward()
     common_lines_optimiser.step()
-    if not (epoch % 10):
-        print(tilt_axis_grid.data)
-        print(epoch, loss.item())
-print('final tilt axis angle:', tilt_axis_grid.data)
 
-# TODO After this should calculate stretching to determine ideal tilt-angle offset
+    if not (epoch % 10):
+        print(epoch, loss.item(), tilt_axis_grid.data.mean())
+
+tilt_axis_prediction = tilt_axis_grid(interpolation_points).clone().detach()
+print('final tilt axis angle:', torch.unique(tilt_axis_prediction))
+
+# apply the shifts only after optimizing the axis angle, optimizing
+# the shifts on the aligned tilt-series seems to fail
+coarse_aligned_tilt_series = shift_2d(tilt_series, shifts=-coarse_shifts)
 
 tomogram_center = dft_center(tomogram_dimensions, rfft=False, fftshifted=True)
 tilt_image_center = dft_center(tilt_dimensions, rfft=False, fftshifted=True)
@@ -159,7 +147,7 @@ shifts_only_reconstruction = backproject_fourier(
 
 s0 = T(-tomogram_center)
 r0 = Ry(STAGE_TILT_ANGLE_PRIORS, zyx=True)
-r1 = Rz(tilt_axis_grid(interpolation_points), zyx=True)
+r1 = Rz(tilt_axis_prediction, zyx=True)
 s2 = T(F.pad(tilt_image_center, pad=(1, 0), value=0))
 M = s2 @ r1 @ r0 @ s0
 
