@@ -139,6 +139,9 @@ for epoch in range(50):
         print(epoch, loss.item())
 print('final tilt axis angle:', tilt_axis_grid.data)
 
+# TODO At this point we'd want to recalculate the pairwise shifts, considering the optimized set of tilt-axis angles
+#  (in-plane rotations), and then reiterate the process until convergence.
+
 tomogram_center = dft_center(tomogram_dimensions, rfft=False, fftshifted=True)
 tilt_image_center = dft_center(tilt_dimensions, rfft=False, fftshifted=True)
 
