@@ -125,7 +125,7 @@ for epoch in range(50):
     R = rotation_matrix(tilt_axis_angles + 90)
     projections = []
     for i in range(len(tilt_series)):
-        p = project_real_2d(tilt_series[i] * coarse_alignment_mask, R[i].unsqueeze(0)).squeeze()
+        p = project_real_2d(tilt_series[i] * coarse_alignment_mask, R[i:i+1])
         projections.append((p - p.mean()) / p.std())
 
     common_lines_optimiser.zero_grad()
