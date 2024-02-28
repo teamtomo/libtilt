@@ -34,7 +34,7 @@ def rotation_matrix(angles_degrees):
 IMAGE_FILE = 'data/tomo200528_100.st'
 IMAGE_PIXEL_SIZE = 1.724
 STAGE_TILT_ANGLE_PRIORS = torch.arange(-51, 51, 3)
-TILT_AXIS_ANGLE_PRIOR = -88.7
+TILT_AXIS_ANGLE_PRIOR = -30  # -88.7 according to mdoc, but I set it faulty to see if the optimization works
 ALIGNMENT_PIXEL_SIZE = 13.79 * 2
 # set 0 degree tilt as reference
 REFERENCE_TILT = STAGE_TILT_ANGLE_PRIORS.abs().argmin()
@@ -107,17 +107,17 @@ for i in range(REFERENCE_TILT, tilt_series.shape[0] - 1, 1):
 # apply the shifts for coarse aligned series
 coarse_aligned_tilt_series = shift_2d(tilt_series, shifts=-coarse_shifts)
 
-tilt_axis_grid = CubicBSplineGrid1d(resolution=4, n_channels=1)
-tilt_axis_grid.data = torch.tensor([TILT_AXIS_ANGLE_PRIOR, ] * 4)
+tilt_axis_grid = CubicBSplineGrid1d(resolution=1, n_channels=1)
+tilt_axis_grid.data = torch.tensor([TILT_AXIS_ANGLE_PRIOR, ], dtype=torch.float32)
 interpolation_points = torch.linspace(0, 1, len(tilt_series))
 
 common_lines_optimiser = torch.optim.Adam(
     tilt_axis_grid.parameters(),
-    lr=0.1,
+    lr=1,
 )
 
 print('initial tilt axis:', tilt_axis_grid.data)
-for epoch in range(50):
+for epoch in range(200):
     # interpolate the grid
     tilt_axis_angles = tilt_axis_grid(interpolation_points)
 
@@ -139,8 +139,7 @@ for epoch in range(50):
         print(epoch, loss.item())
 print('final tilt axis angle:', tilt_axis_grid.data)
 
-# TODO At this point we'd want to recalculate the pairwise shifts, considering the optimized set of tilt-axis angles
-#  (in-plane rotations), and then reiterate the process until convergence.
+# TODO After this should calculate stretching to determine ideal tilt-angle offset
 
 tomogram_center = dft_center(tomogram_dimensions, rfft=False, fftshifted=True)
 tilt_image_center = dft_center(tilt_dimensions, rfft=False, fftshifted=True)
