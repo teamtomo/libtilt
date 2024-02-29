@@ -14,7 +14,7 @@ from libtilt.shapes import circle
 from libtilt.shift.shift_image import shift_2d
 from libtilt.transformations import Ry, Rz, T
 from libtilt.correlation import correlate_2d
-from libtilt.projection import project_real_2d
+from libtilt.projection import project_image_real
 
 IMAGE_FILE = 'data/tomo200528_100.st'
 IMAGE_PIXEL_SIZE = 1.724
@@ -109,7 +109,7 @@ for epoch in range(100):
 
     projections = []
     for i in range(len(tilt_series)):
-        p = project_real_2d(tilt_series[i] * coarse_alignment_mask, R[i:i+1])
+        p = project_image_real(tilt_series[i] * coarse_alignment_mask, R[i:i+1])
         projections.append((p - p.mean()) / p.std())
 
     common_lines_optimiser.zero_grad()

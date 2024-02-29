@@ -8,7 +8,7 @@ from libtilt.coordinate_utils import (
 from libtilt.grids.coordinate_grid import coordinate_grid
 
 
-def project_real_3d(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
+def project_volume_real(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
     """Make 2D projections of a 3D volume in specific orientations.
 
     Projections are made by
@@ -58,7 +58,7 @@ def project_real_3d(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> to
         rotated_coordinates = rotation_matrix @ volume_coordinates
         rotated_coordinates += padded_sidelength // 2
         rotated_coordinates = einops.rearrange(rotated_coordinates, 'd h w zyx 1 -> 1 d h w zyx')
-        rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # zyx -> zyx
+        rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # zyx -> xyz
         rotated_coordinates = array_to_grid_sample(
             rotated_coordinates, array_shape=padded_volume_shape
         )
@@ -77,7 +77,7 @@ def project_real_3d(volume: torch.Tensor, rotation_matrices: torch.Tensor) -> to
     return torch.stack(images, dim=0)
 
 
-def project_real_2d(image: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
+def project_image_real(image: torch.Tensor, rotation_matrices: torch.Tensor) -> torch.Tensor:
     """Make 1D projections of a 2D image in specific orientations.
 
     Projections are made by
@@ -90,7 +90,7 @@ def project_real_2d(image: torch.Tensor, rotation_matrices: torch.Tensor) -> tor
 
     3. sampling `image` at rotated coordinates.
 
-    4. summing samples along depth dimension of a `(h, w)` image.
+    4. summing samples along 'h' dimension of a `(h, w)` image.
 
     The rotation center of `image` is taken to be `torch.tensor(image.shape) // 2`.
 
@@ -127,14 +127,14 @@ def project_real_2d(image: torch.Tensor, rotation_matrices: torch.Tensor) -> tor
         rotated_coordinates = rotation_matrix @ image_coordinates
         rotated_coordinates += padded_sidelength // 2
         rotated_coordinates = einops.rearrange(rotated_coordinates, 'h w yx 1 -> 1 h w yx')
-        rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # yx -> yx
+        rotated_coordinates = torch.flip(rotated_coordinates, dims=(-1,))  # yx -> xy
         rotated_coordinates = array_to_grid_sample(
             rotated_coordinates, array_shape=padded_image_shape
         )
         samples = F.grid_sample(
             input=einops.rearrange(image, 'h w -> 1 1 h w'),  # add batch and channel dims
             grid=rotated_coordinates,
-            mode='bilinear',  # trilinear for volume
+            mode='bilinear',
             padding_mode='zeros',
             align_corners=True,
         )
