@@ -89,6 +89,12 @@ for i in range(REFERENCE_TILT, tilt_series.shape[0] - 1, 1):
     current_shift += shift
     coarse_shifts[i + 1] = current_shift
 
+# create aligned stack for common lines; apply the mask here to prevent recalculation
+coarse_aligned_masked = shift_2d(tilt_series, shifts=-coarse_shifts) * coarse_alignment_mask
+# generate a weighting for the common line ROI by projecting the mask
+mask_weights = project_image_real(coarse_alignment_mask, torch.eye(2).reshape(1, 2, 2))
+mask_weights /= mask_weights.max()  # normalise to 0 and 1
+
 # optimize tilt axis angle
 grid_resolution = 1
 tilt_axis_grid = CubicBSplineGrid1d(resolution=grid_resolution, n_channels=1)
@@ -100,7 +106,7 @@ common_lines_optimiser = torch.optim.Adam(
     lr=1,
 )
 
-for epoch in range(100):
+for epoch in range(200):
     # interpolate the grid
     tilt_axis_angles = tilt_axis_grid(interpolation_points)
 
@@ -108,14 +114,22 @@ for epoch in range(100):
     R = Rz(tilt_axis_angles + 90, zyx=False)[:, :2, :2]
 
     projections = []
-    for i in range(len(tilt_series)):
-        p = project_image_real(tilt_series[i] * coarse_alignment_mask, R[i:i+1])
-        projections.append((p - p.mean()) / p.std())
+    for i in range(len(coarse_aligned_masked)):
+        projections.append(
+            project_image_real(
+                coarse_aligned_masked[i],
+                R[i:i+1]
+            ).squeeze()
+        )
+    projections = torch.stack(projections)
+    projections = projections - einops.reduce(projections, 'tilt w -> tilt 1', reduction='mean')
+    projections = projections / torch.std(projections, dim=(-1), keepdim=True)
+    # weight the lines by the projected mask
+    projections = projections * mask_weights
 
     common_lines_optimiser.zero_grad()
-    loss = 0
-    for x, y in combinations(projections, 2):
-        loss = loss - (x * y).sum() / y.numel()
+    squared_differences = (projections - einops.rearrange(projections, 'b d -> b 1 d')) ** 2
+    loss = einops.reduce(squared_differences, 'b1 b2 d -> 1', reduction='sum')
     loss.backward()
     common_lines_optimiser.step()
 
@@ -125,9 +139,8 @@ for epoch in range(100):
 tilt_axis_prediction = tilt_axis_grid(interpolation_points).clone().detach()
 print('final tilt axis angle:', torch.unique(tilt_axis_prediction))
 
-# apply the shifts only after optimizing the axis angle, optimizing
-# the shifts on the aligned tilt-series seems to fail
-coarse_aligned_tilt_series = shift_2d(tilt_series, shifts=-coarse_shifts)
+# create the aligned stack
+coarse_aligned = shift_2d(tilt_series, shifts=-coarse_shifts)
 
 tomogram_center = dft_center(tomogram_dimensions, rfft=False, fftshifted=True)
 tilt_image_center = dft_center(tilt_dimensions, rfft=False, fftshifted=True)
@@ -140,7 +153,7 @@ M = s2 @ r1 @ r0 @ s0
 
 # coarse reconstruction
 shifts_only_reconstruction = backproject_fourier(
-    images=coarse_aligned_tilt_series,
+    images=coarse_aligned,
     rotation_matrices=torch.linalg.inv(M[:, :3, :3]),
     rotation_matrix_zyx=True,
 )
@@ -153,7 +166,7 @@ M = s2 @ r1 @ r0 @ s0
 
 # coarse reconstruction
 coarse_reconstruction = backproject_fourier(
-    images=coarse_aligned_tilt_series,
+    images=coarse_aligned,
     rotation_matrices=torch.linalg.inv(M[:, :3, :3]),
     rotation_matrix_zyx=True,
 )
@@ -162,7 +175,7 @@ import napari
 
 viewer = napari.Viewer()
 viewer.add_image(tilt_series.detach().numpy(), name='experimental')
-viewer.add_image(coarse_aligned_tilt_series.detach().numpy(), name='coarse aligned')
+viewer.add_image(coarse_aligned.detach().numpy(), name='coarse aligned')
 viewer.add_image(shifts_only_reconstruction.detach().numpy(), name='shifts only reconstruction')
 viewer.add_image(coarse_reconstruction.detach().numpy(), name='coarse reconstruction')
 napari.run()
