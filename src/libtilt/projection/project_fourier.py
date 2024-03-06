@@ -8,7 +8,6 @@ from libtilt.grids import fftfreq_grid, rotated_central_slice_grid
 from libtilt.fft_utils import fftfreq_to_dft_coordinates
 from libtilt.interpolation import sample_dft_3d
 
-
 def project_fourier(
     volume: torch.Tensor,
     rotation_matrices: torch.Tensor,
@@ -55,7 +54,8 @@ def project_fourier(
         projections = projections[..., pad_length:-pad_length, pad_length:-pad_length]
     return torch.real(projections)
 
-
+# from line_profiler import profile
+# @profile
 def extract_central_slices_rfft(
     dft: torch.Tensor,
     image_shape: tuple[int, int, int],
@@ -65,7 +65,7 @@ def extract_central_slices_rfft(
     """Extract central slice from an fftshifted rfft."""
     # generate grid of DFT sample frequencies for a central slice in the xy-plane
     # these are a coordinate grid for the DFT
-    grid = rotated_central_slice_grid(
+    grid = rotated_central_slice_grid( #I added a lru_cache, so no need to worry about this
         image_shape=image_shape,
         rotation_matrices=rotation_matrices,
         rotation_matrix_zyx=rotation_matrix_zyx,
@@ -77,8 +77,10 @@ def extract_central_slices_rfft(
     # flip coordinates in redundant half transform
     conjugate_mask = grid[..., 2] < 0
     # conjugate_mask = einops.repeat(conjugate_mask, '... -> ... 3') #This operation does not compile
-    conjugate_mask = conjugate_mask.unsqueeze(-1).expand(*[-1] * len(conjugate_mask.shape), 3) #This does
-    grid[conjugate_mask] *= -1
+    conjugate_mask = conjugate_mask.unsqueeze(-1).expand(*[-1] * len(conjugate_mask.shape), 3) #This does compile
+    # grid[conjugate_mask] *= -1 #This is super slower. masked_scatter_ seems 15% faster, still slow #TODO: This is the cornercase
+    grid.masked_scatter_(conjugate_mask, -1 * grid.masked_select(conjugate_mask))
+
     conjugate_mask = conjugate_mask[..., 0]  # un-repeat
 
     # convert frequencies to array coordinates and sample from DFT
@@ -90,7 +92,8 @@ def extract_central_slices_rfft(
     projections = sample_dft_3d(dft=dft, coordinates=grid)  # (..., h, w) rfft
 
     # take complex conjugate of values from redundant half transform
-    projections[conjugate_mask] = torch.conj(projections[conjugate_mask])
+    # projections[conjugate_mask] = torch.conj(projections[conjugate_mask]) #This is slower
+    projections.masked_scatter_(conjugate_mask, torch.conj(projections.masked_select(conjugate_mask)))
     return projections
 
 def _compute_dft(

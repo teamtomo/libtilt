@@ -7,7 +7,6 @@ from .soft_edge import add_soft_edge_2d
 from .geometry_utils import _angle_between_vectors
 from libtilt.fft_utils import dft_center
 
-
 def circle(
     radius: float,
     image_shape: tuple[int, int] | int,

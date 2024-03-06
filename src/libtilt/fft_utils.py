@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
-
+@functools.lru_cache(1)
 def rfft_shape(input_shape: Sequence[int]) -> Tuple[int]:
     """Get the output shape of an rfft on an input with input_shape."""
     rfft_shape = list(input_shape)
@@ -418,7 +418,21 @@ def _pad_to_best_fft_shape_2d(
     [image] = einops.unpack(image, pattern='* h w', packed_shapes=ps)
     return image
 
+@functools.lru_cache(1)
+def _prepare_shapes(image_shape, device, dtype):
+    _image_shape = image_shape
+    image_shape = torch.as_tensor(
+        _image_shape, device=device, dtype=dtype
+    )
+    _rfft_shape = rfft_shape(_image_shape)
+    _rfft_shape = torch.as_tensor(
+        _rfft_shape, device=device, dtype=dtype
+    )
+    return image_shape, _rfft_shape
 
+
+# from line_profiler import profile
+# @profile
 def fftfreq_to_dft_coordinates(
     frequencies: torch.Tensor, image_shape: tuple[int, ...], rfft: bool
 ):
@@ -439,19 +453,21 @@ def fftfreq_to_dft_coordinates(
     coordinates: torch.Tensor
         `(..., d)` array of coordinates into a fftshifted DFT.
     """
-    _image_shape = image_shape
-    image_shape = torch.as_tensor(
-        _image_shape, device=frequencies.device, dtype=frequencies.dtype
-    )
-    _rfft_shape = rfft_shape(_image_shape)
-    _rfft_shape = torch.as_tensor(
-        _rfft_shape, device=frequencies.device, dtype=frequencies.dtype
-    )
+    # _image_shape = image_shape
+    # image_shape = torch.as_tensor(
+    #     _image_shape, device=frequencies.device, dtype=frequencies.dtype
+    # )
+    # _rfft_shape = rfft_shape(_image_shape)
+    # _rfft_shape = torch.as_tensor(
+    #     _rfft_shape, device=frequencies.device, dtype=frequencies.dtype
+    # )
+
+    _image_shape , _rfft_shape = _prepare_shapes(image_shape, device=frequencies.device, dtype=frequencies.dtype)
     coordinates = torch.empty_like(frequencies)
-    coordinates[..., :-1] = frequencies[..., :-1] * image_shape[:-1]
+    coordinates[..., :-1] = frequencies[..., :-1] * _image_shape[:-1]
     if rfft is True:
         coordinates[..., -1] = frequencies[..., -1] * 2 * (_rfft_shape[-1] - 1)
     else:
-        coordinates[..., -1] = frequencies[..., -1] * image_shape[-1]
-    dc = dft_center(_image_shape, rfft=rfft, fftshifted=True, device=frequencies.device)
+        coordinates[..., -1] = frequencies[..., -1] * _image_shape[-1]
+    dc = dft_center(image_shape, rfft=rfft, fftshifted=True, device=frequencies.device)
     return coordinates + dc

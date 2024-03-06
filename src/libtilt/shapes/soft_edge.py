@@ -8,7 +8,7 @@ def _add_soft_edge_single_binary_image(
 ) -> torch.FloatTensor:
     if smoothing_radius == 0:
         return image.float()
-    distances = ndi.distance_transform_edt(torch.logical_not(image))
+    distances = ndi.distance_transform_edt(torch.logical_not(image)) #TODO: This does not work with GPU
     distances = torch.as_tensor(distances, device=image.device).float()
     idx = torch.logical_and(distances > 0, distances <= smoothing_radius)
     output = torch.clone(image).float()

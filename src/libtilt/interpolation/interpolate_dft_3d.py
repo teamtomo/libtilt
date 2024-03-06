@@ -6,7 +6,9 @@ from torch.nn import functional as F
 
 from libtilt.coordinate_utils import array_to_grid_sample
 
-
+# from line_profiler import profile
+# @profile
+# @torch.compile(mode="max-autotune")
 def sample_dft_3d(
     dft: torch.Tensor,
     coordinates: torch.Tensor
