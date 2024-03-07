@@ -37,9 +37,9 @@ def find_image_shift(
     if upsampling_factor < 1:
         raise ValueError('Upsampling factor for finding a shift between two images '
                          'cannot be smaller than 1.')
-    image_shape = image_a.shape
+    image_shape = torch.tensor(image_a.shape, device=image_a.device)
     center = dft_center(
-        image_shape, rfft=False, fftshifted=True, device=image_a.device
+        image_a.shape, rfft=False, fftshifted=True, device=image_a.device
     )
     correlation = correlate_2d(
         image_a,
@@ -47,7 +47,7 @@ def find_image_shift(
         normalize=True
     )
     maximum_idx = torch.tensor(  # explicitly put tensor on CPU in case input is on GPU
-        np.unravel_index(correlation.argmax().cpu(), shape=image_shape),
+        np.unravel_index(correlation.argmax().cpu(), shape=image_a.shape),
         device=image_a.device
     )
     shift = center - maximum_idx
