@@ -1,9 +1,7 @@
 import mrcfile
-import numpy as np
 import torch
 import torch.nn.functional as F
 import einops
-from itertools import combinations
 from torch_cubic_spline_grids import CubicBSplineGrid1d
 
 from libtilt.backprojection import backproject_fourier
@@ -13,8 +11,8 @@ from libtilt.rescaling.rescale_fourier import rescale_2d
 from libtilt.shapes import circle
 from libtilt.shift.shift_image import shift_2d
 from libtilt.transformations import Ry, Rz, T
-from libtilt.correlation import correlate_2d
 from libtilt.projection import project_image_real
+from libtilt.alignment import find_image_shift
 
 IMAGE_FILE = 'data/tomo200528_100.st'
 IMAGE_PIXEL_SIZE = 1.724
@@ -64,13 +62,9 @@ coarse_shifts = torch.zeros((len(tilt_series), 2), dtype=torch.float32)
 # find coarse alignment for negative tilts
 current_shift = reference_shift.clone()
 for i in range(REFERENCE_TILT, 0, -1):
-    correlation = correlate_2d(
+    shift = find_image_shift(
         tilt_series[i] * coarse_alignment_mask,
         tilt_series[i - 1] * coarse_alignment_mask,
-        normalize=True
-    )
-    shift = center - torch.tensor(
-        np.unravel_index(correlation.argmax(), shape=tilt_dimensions)
     )
     current_shift += shift
     coarse_shifts[i - 1] = current_shift
@@ -78,13 +72,9 @@ for i in range(REFERENCE_TILT, 0, -1):
 # find coarse alignment positive tilts
 current_shift = reference_shift.clone()
 for i in range(REFERENCE_TILT, tilt_series.shape[0] - 1, 1):
-    correlation = correlate_2d(
+    shift = find_image_shift(
         tilt_series[i] * coarse_alignment_mask,
         tilt_series[i + 1] * coarse_alignment_mask,
-        normalize=True
-    )
-    shift = center - torch.tensor(
-        np.unravel_index(correlation.argmax(), shape=tilt_dimensions)
     )
     current_shift += shift
     coarse_shifts[i + 1] = current_shift
