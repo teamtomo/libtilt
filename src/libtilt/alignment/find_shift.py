@@ -21,7 +21,7 @@ def find_image_shift(
     Parameters
     ----------
     image_a: torch.Tensor
-        `(y, x)` image.
+        `(h, w)` image.
     image_b: torch.Tensor
         `(y, x)` image with the same shape as image_a
     upsampling_factor: float
