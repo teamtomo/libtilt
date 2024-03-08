@@ -411,7 +411,7 @@ def _pad_to_best_fft_shape_2d(
     # pad to best fft size
     h, w = image.shape[-2:]
     ph, pw = fft_size_h - h, fft_size_w - w
-    too_much_padding = ph < h or pw < w
+    too_much_padding = ph > h or pw > w
     if too_much_padding:
         image_means = einops.reduce(
             image, 'tilt h w -> tilt 1 1', reduction='mean'
