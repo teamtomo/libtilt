@@ -23,7 +23,7 @@ def find_image_shift(
     image_a: torch.Tensor
         `(h, w)` image.
     image_b: torch.Tensor
-        `(y, x)` image with the same shape as image_a
+        `(h, w)` image with the same shape as image_a
     upsampling_factor: float
         How many times the correlation image is upsampled with bicubic
         interpolation to find an interpolated shift. The value needs to be larger or
