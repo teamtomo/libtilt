@@ -414,7 +414,7 @@ def _pad_to_best_fft_shape_2d(
     too_much_padding = ph > h or pw > w
     if too_much_padding:
         image_means = einops.reduce(
-            image, 'tilt h w -> tilt 1 1', reduction='mean'
+            image, '... h w -> ... 1 1', reduction='mean'
         )
         image -= image_means
         image = F.pad(image, pad=(0, pw, 0, ph), mode='constant', value=0)
