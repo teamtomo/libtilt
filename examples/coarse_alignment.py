@@ -80,7 +80,7 @@ for i in range(REFERENCE_TILT, tilt_series.shape[0] - 1, 1):
     coarse_shifts[i + 1] = current_shift
 
 # create aligned stack for common lines; apply the mask here to prevent recalculation
-coarse_aligned_masked = shift_2d(tilt_series, shifts=-coarse_shifts) * coarse_alignment_mask
+coarse_aligned_masked = shift_2d(tilt_series, shifts=coarse_shifts) * coarse_alignment_mask
 # generate a weighting for the common line ROI by projecting the mask
 mask_weights = project_image_real(coarse_alignment_mask, torch.eye(2).reshape(1, 2, 2))
 mask_weights /= mask_weights.max()  # normalise to 0 and 1
@@ -130,7 +130,7 @@ tilt_axis_prediction = tilt_axis_grid(interpolation_points).clone().detach()
 print('final tilt axis angle:', torch.unique(tilt_axis_prediction))
 
 # create the aligned stack
-coarse_aligned = shift_2d(tilt_series, shifts=-coarse_shifts)
+coarse_aligned = shift_2d(tilt_series, shifts=coarse_shifts)
 
 tomogram_center = dft_center(tomogram_dimensions, rfft=False, fftshifted=True)
 tilt_image_center = dft_center(tilt_dimensions, rfft=False, fftshifted=True)

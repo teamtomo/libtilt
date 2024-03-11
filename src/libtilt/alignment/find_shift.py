@@ -52,7 +52,7 @@ def find_image_shift(
         np.unravel_index(correlation.argmax().cpu(), shape=image_a.shape),
         device=image_a.device
     )
-    shift = center - maximum_idx
+    shift = maximum_idx - center
 
     # attempt interpolating the shift for higher precision
     if upsampling_factor == 1:
@@ -77,9 +77,9 @@ def find_image_shift(
         upsampled_center = dft_center(
             upsampled.shape, rfft=False, fftshifted=True, device=image_a.device
         )
-        upsampled_shift = upsampled_center - torch.tensor(
+        upsampled_shift = torch.tensor(
             np.unravel_index(upsampled.argmax().cpu(), shape=upsampled.shape),
             device=image_a.device
-        )
+        ) - upsampled_center
         full_shift = shift + upsampled_shift / upsampling_factor
         return full_shift

@@ -15,7 +15,7 @@ def test_find_image_shift():
         find_image_shift(a, b, upsampling_factor=0.5)
 
     shift = find_image_shift(a, b, upsampling_factor=5)
-    assert torch.all(shift == 1), ("Interpolating a shift too close to a border is "
+    assert torch.all(shift == -1), ("Interpolating a shift too close to a border is "
                                    "not possible, so an integer shift should be "
                                    "returned.")
 
@@ -25,10 +25,10 @@ def test_find_image_shift():
     b[4, 4] = .7
     b[4, 5] = .3
     shift = find_image_shift(a, b, upsampling_factor=1)
-    assert torch.all(shift == 1), ("Finding shift with upsampling_factor of 1 should "
+    assert torch.all(shift == -1), ("Finding shift with upsampling_factor of 1 should "
                                    "return an integer shift (i.e. no interpolation.")
 
     shift = find_image_shift(a, b)
-    assert shift[0] == 1.1, "y shift should be interpolated to specific value."
-    assert shift[1] == 1.2, "x shift should be interpolated to specific value."
+    assert shift[0] == -1.1, "y shift should be interpolated to specific value."
+    assert shift[1] == -1.2, "x shift should be interpolated to specific value."
 
