@@ -12,11 +12,9 @@ def find_image_shift(
         image_b: torch.Tensor,
         upsampling_factor: float = 10,
 ) -> torch.Tensor:
-    """Find the shift between two images. The shift specifies how far image_b is
-    shifted relative to image_a. Applying this shift to image_a will align it with
-    image_b. Applying the inverse shift to b, will align it with image_a. The
-    region around the maximum in the correlation image is by default upsampled with
-    bicubic interpolation to find a more precise shift.
+    """Find the shift between image a and b. Applying the shift to b aligns it with
+    image a. The region around the maximum in the correlation image is by default
+    upsampled with bicubic interpolation to find a more precise shift.
 
     Parameters
     ----------
