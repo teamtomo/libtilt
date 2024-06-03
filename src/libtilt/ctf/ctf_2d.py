@@ -252,7 +252,7 @@ def calculate_ctf_cached(
     astigmatism = torch.atleast_1d(torch.as_tensor(astigmatism, dtype=torch.float, device=device))
     astigmatism = astigmatism * 1e4  # micrometers -> angstroms
     astigmatism_angle = torch.atleast_1d(torch.as_tensor(astigmatism_angle, dtype=torch.float, device=device))
-    astigmatism_angle *= (C.pi / 180)  # degrees -> radians
+    astigmatism_angle = astigmatism_angle * (C.pi / 180)  # degrees -> radians
 
     k1, k2, k3, k4, k5, yy2, xx2, xy, n4 = prepare_near_constant_params(voltage, spherical_aberration,
                                                                         amplitude_contrast,b_factor, phase_shift,
