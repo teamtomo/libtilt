@@ -78,8 +78,8 @@ def extract_central_slices_rfft(
     conjugate_mask = grid[..., 2] < 0
     # conjugate_mask = einops.repeat(conjugate_mask, '... -> ... 3') #This operation does not compile
     conjugate_mask = conjugate_mask.unsqueeze(-1).expand(*[-1] * len(conjugate_mask.shape), 3) #This does compile
-    # grid[conjugate_mask] *= -1 #This is super slower. masked_scatter_ seems 15% faster, still slow #TODO: This is the cornercase
-    grid.masked_scatter_(conjugate_mask, -1 * grid.masked_select(conjugate_mask))
+    grid[conjugate_mask] *= -1 #This is slower. masked_scatter_ seems 15% faster, still slow. But the masks let gradient propagate #TODO: This is the cornercase
+    # grid.masked_scatter_(conjugate_mask, -1 * grid.masked_select(conjugate_mask))
 
     conjugate_mask = conjugate_mask[..., 0]  # un-repeat
 
@@ -92,8 +92,8 @@ def extract_central_slices_rfft(
     projections = sample_dft_3d(dft=dft, coordinates=grid)  # (..., h, w) rfft
 
     # take complex conjugate of values from redundant half transform
-    # projections[conjugate_mask] = torch.conj(projections[conjugate_mask]) #This is slower
-    projections.masked_scatter_(conjugate_mask, torch.conj(projections.masked_select(conjugate_mask)))
+    projections[conjugate_mask] = torch.conj(projections[conjugate_mask]) #This is slower but propagates gradients
+    # projections.masked_scatter_(conjugate_mask, torch.conj(projections.masked_select(conjugate_mask)))
     return projections
 
 def _compute_dft(
