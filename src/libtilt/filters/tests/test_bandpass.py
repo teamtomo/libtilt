@@ -1,8 +1,10 @@
 import torch
 
 from libtilt.filters.filters import bandpass_filter
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_bandpass_filter():
     filter = bandpass_filter(
         low=0.2,

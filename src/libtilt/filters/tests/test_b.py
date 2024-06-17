@@ -1,7 +1,10 @@
 import torch
 
 from libtilt.filters import bfactor_2d
+from libtilt.pytest_utils import device_test
 
+
+@device_test
 def test_bfactor_2d():
     # Generate an image
     image = torch.zeros((4,4))
