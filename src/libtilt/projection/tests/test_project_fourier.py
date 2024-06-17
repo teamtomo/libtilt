@@ -2,8 +2,10 @@ import torch
 from scipy.spatial.transform import Rotation as R
 
 from libtilt.projection.project_fourier import project_fourier
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_project_no_rotation():
     volume = torch.zeros((10, 10, 10))
     volume[5, 5, 5] = 1
@@ -15,6 +17,7 @@ def test_project_no_rotation():
     assert torch.allclose(projection, expected)
 
 
+@device_test
 def test_project_with_rotation():
     volume = torch.zeros((10, 10, 10))
     volume[5, 5, 5] = 1
