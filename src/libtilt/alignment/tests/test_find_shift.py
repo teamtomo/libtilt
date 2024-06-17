@@ -2,8 +2,10 @@ import torch
 import pytest
 
 from libtilt.alignment import find_image_shift
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_find_image_shift():
     a = torch.zeros((4, 4))
     a[1, 1] = 1
