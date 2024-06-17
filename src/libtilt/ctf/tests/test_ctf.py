@@ -3,8 +3,10 @@ import torch
 from libtilt.ctf.ctf_1d import calculate_ctf as calculate_ctf_1d
 from libtilt.ctf.relativistic_wavelength import \
     calculate_relativistic_electron_wavelength
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_1d_ctf_single():
     result = calculate_ctf_1d(
         defocus=1.5,
@@ -34,6 +36,7 @@ def test_1d_ctf_single():
     assert torch.allclose(result[0], expected, atol=1e-4)
 
 
+@device_test
 def test_1d_ctf_batch_defocus():
     result = calculate_ctf_1d(
         defocus=[1.5, 2.5],
@@ -56,6 +59,7 @@ def test_1d_ctf_batch_defocus():
     assert torch.allclose(result, expected, atol=1e-4)
 
 
+@device_test
 def test_calculate_relativistic_electron_wavelength():
     """Check function matches expected value from literature.
 
