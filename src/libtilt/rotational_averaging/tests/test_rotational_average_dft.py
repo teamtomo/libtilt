@@ -8,8 +8,10 @@ from libtilt.rotational_averaging.rotational_average_dft import (
     rotational_average_dft_2d,
     rotational_average_dft_3d,
 )
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_split_into_frequency_bins_2d():
     # no rfft, fftshifted
     frequencies = fftfreq_grid(
@@ -55,6 +57,7 @@ def test_split_into_frequency_bins_2d():
     assert torch.allclose(shells[0], frequencies[:, 14, 0].reshape((2, 1)))
 
 
+@device_test
 def test_split_into_shells_3d():
     # no rfft, fftshifted
     frequencies = fftfreq_grid(
@@ -100,6 +103,7 @@ def test_split_into_shells_3d():
     assert torch.allclose(shells[0], frequencies[:, 14, 14, 0].reshape((2, 1)))
 
 
+@device_test
 def test_rotational_average_dft_2d():
     # single image
     dft = fftfreq_grid(image_shape=(28, 28), rfft=False, fftshift=True, norm=True)
@@ -136,6 +140,7 @@ def test_rotational_average_dft_2d():
     assert rotational_average.shape == expected_shape
 
 
+@device_test
 def test_rotational_average_return_2d():
     # no batching
     image = fftfreq_grid(image_shape=(28, 28), rfft=False, fftshift=True, norm=True)
@@ -159,6 +164,7 @@ def test_rotational_average_return_2d():
                           atol=1e-2)
 
 
+@device_test
 def test_rotational_average_dft_3d():
     # single image
     dft = fftfreq_grid(image_shape=(28, 28, 28), rfft=False, fftshift=True, norm=True)
