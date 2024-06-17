@@ -50,6 +50,7 @@ def bfactor_dft(
         image_shape=image_shape,
         pixel_size=pixel_size,
         rfft=rfft,
-        fftshift=fftshifted
+        fftshift=fftshifted,
+        device=dft.device
     )
     return dft * b_env

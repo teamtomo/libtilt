@@ -1,9 +1,11 @@
 import torch
 
-from libtilt.shift.shift_image import shift_2d
+from libtilt.pytest_utils import device_test
 from libtilt.shift.phase_shift_dft import get_phase_shifts_2d
+from libtilt.shift.shift_image import shift_2d
 
 
+@device_test
 def test_get_phase_shifts_2d_full_fft():
     shifts = torch.zeros(size=(1, 2))
     phase_shifts = get_phase_shifts_2d(shifts, image_shape=(2, 2), rfft=False)
@@ -11,11 +13,13 @@ def test_get_phase_shifts_2d_full_fft():
 
     shifts = torch.tensor([[1, 2]])
     phase_shifts = get_phase_shifts_2d(shifts, image_shape=(2, 2), rfft=False)
-    expected = torch.tensor([[[1 + 0.0000e+00j, 1 + 1.7485e-07j],
-                              [-1 - 8.7423e-08j, -1 - 2.3850e-08j]]])
+    expected = torch.tensor(
+        [[[1 + 0.0000e00j, 1 + 1.7485e-07j], [-1 - 8.7423e-08j, -1 - 2.3850e-08j]]]
+    )
     assert torch.allclose(phase_shifts, expected)
 
 
+@device_test
 def test_get_phase_shifts_2d_rfft():
     shifts = torch.zeros(size=(1, 2))
     phase_shifts = get_phase_shifts_2d(shifts, image_shape=(2, 2), rfft=True)
@@ -25,11 +29,13 @@ def test_get_phase_shifts_2d_rfft():
 
     shifts = torch.tensor([[1, 2]])
     phase_shifts = get_phase_shifts_2d(shifts, image_shape=(2, 2), rfft=False)
-    expected = torch.tensor([[[1 + 0.0000e+00j, 1 + 1.7485e-07j],
-                              [-1 - 8.7423e-08j, -1 - 2.3850e-08j]]])
+    expected = torch.tensor(
+        [[[1 + 0.0000e00j, 1 + 1.7485e-07j], [-1 - 8.7423e-08j, -1 - 2.3850e-08j]]]
+    )
     assert torch.allclose(phase_shifts, expected)
 
 
+@device_test
 def test_phase_shift_images_2d():
     image = torch.zeros((4, 4))
     image[2, 2] = 1

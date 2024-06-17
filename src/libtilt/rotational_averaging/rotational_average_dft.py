@@ -95,7 +95,8 @@ def _find_shell_indices_1d(
     """Find indices which index to give values either side of split points."""
     sorted, sort_idx = torch.sort(values, descending=False)
     split_idx = torch.searchsorted(sorted, split_values)
-    return torch.tensor_split(sort_idx, split_idx)
+    # tensor_split requires the split_idx to live on cpu
+    return torch.tensor_split(sort_idx, split_idx.to('cpu'))
 
 
 def _find_shell_indices_2d(
@@ -107,7 +108,8 @@ def _find_shell_indices_2d(
     idx_2d = einops.rearrange(idx_2d, 'h w idx -> (h w) idx')
     sorted, sort_idx = torch.sort(values, descending=False)
     split_idx = torch.searchsorted(sorted, split_values)
-    return torch.tensor_split(idx_2d[sort_idx], split_idx)
+    # tensor_split requires the split_idx to live on cpu
+    return torch.tensor_split(idx_2d[sort_idx], split_idx.to('cpu'))
 
 
 def _find_shell_indices_3d(
@@ -119,7 +121,8 @@ def _find_shell_indices_3d(
     idx_3d = einops.rearrange(idx_3d, 'd h w idx -> (d h w) idx')
     sorted, sort_idx = torch.sort(values, descending=False)
     split_idx = torch.searchsorted(sorted, split_values)
-    return torch.tensor_split(idx_3d[sort_idx], split_idx)
+    # tensor_split requires the split_idx to live on cpu
+    return torch.tensor_split(idx_3d[sort_idx], split_idx.to('cpu'))
 
 
 def _split_into_frequency_bins_2d(

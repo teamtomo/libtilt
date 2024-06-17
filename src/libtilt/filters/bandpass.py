@@ -56,6 +56,7 @@ def bandpass_dft(
         falloff=falloff,
         image_shape=image_shape,
         rfft=rfft,
-        fftshift=fftshifted
+        fftshift=fftshifted,
+        device=dft.device
     )
     return dft * filter

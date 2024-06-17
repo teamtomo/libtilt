@@ -1,8 +1,10 @@
 import torch
 
 from libtilt.grids import central_slice_grid
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_central_slice_grid():
     input_shape = (6, 6, 6)
 

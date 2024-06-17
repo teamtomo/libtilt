@@ -8,7 +8,8 @@ def _add_soft_edge_single_binary_image(
 ) -> torch.FloatTensor:
     if smoothing_radius == 0:
         return image.float()
-    distances = ndi.distance_transform_edt(torch.logical_not(image))
+    # move explicitly to cpu for scipy
+    distances = ndi.distance_transform_edt(torch.logical_not(image).to("cpu"))
     distances = torch.as_tensor(distances, device=image.device).float()
     idx = torch.logical_and(distances > 0, distances <= smoothing_radius)
     output = torch.clone(image).float()
@@ -19,7 +20,7 @@ def _add_soft_edge_single_binary_image(
 def add_soft_edge_2d(
     image: torch.Tensor, smoothing_radius: torch.Tensor | float
 ) -> torch.Tensor:
-    image_packed, ps = einops.pack([image], '* h w')
+    image_packed, ps = einops.pack([image], "* h w")
     b = image_packed.shape[0]
 
     if isinstance(smoothing_radius, float | int):
@@ -30,18 +31,17 @@ def add_soft_edge_2d(
 
     results = [
         _add_soft_edge_single_binary_image(_image, smoothing_radius=_smoothing_radius)
-        for _image, _smoothing_radius
-        in zip(image_packed, smoothing_radius)
+        for _image, _smoothing_radius in zip(image_packed, smoothing_radius)
     ]
     results = torch.stack(results, dim=0)
-    [results] = einops.unpack(results, pattern='* h w', packed_shapes=ps)
+    [results] = einops.unpack(results, pattern="* h w", packed_shapes=ps)
     return results
 
 
 def add_soft_edge_3d(
     image: torch.Tensor, smoothing_radius: torch.Tensor | float
 ) -> torch.Tensor:
-    image_packed, ps = einops.pack([image], '* d h w')
+    image_packed, ps = einops.pack([image], "* d h w")
     b = image_packed.shape[0]
     if isinstance(smoothing_radius, float | int):
         smoothing_radius = torch.as_tensor(
@@ -50,9 +50,8 @@ def add_soft_edge_3d(
     smoothing_radius = torch.broadcast_to(smoothing_radius, (b,))
     results = [
         _add_soft_edge_single_binary_image(_image, smoothing_radius=_smoothing_radius)
-        for _image, _smoothing_radius
-        in zip(image_packed, smoothing_radius)
+        for _image, _smoothing_radius in zip(image_packed, smoothing_radius)
     ]
     results = torch.stack(results, dim=0)
-    [results] = einops.unpack(results, pattern='* d h w', packed_shapes=ps)
+    [results] = einops.unpack(results, pattern="* d h w", packed_shapes=ps)
     return results

@@ -47,7 +47,8 @@ def fsc(
     # find indices of all components in each shell
     sorted_frequencies, sort_idx = torch.sort(frequencies, descending=False)
     split_idx = torch.searchsorted(sorted_frequencies, split_points)
-    shell_idx = torch.tensor_split(sort_idx, split_idx)[:-1]
+    # tensor_split requires the split_idx to live on cpu
+    shell_idx = torch.tensor_split(sort_idx, split_idx.to('cpu'))[:-1]
 
     # calculate normalised cross correlation in each shell
     fsc = [

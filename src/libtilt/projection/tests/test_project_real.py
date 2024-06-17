@@ -1,8 +1,10 @@
 import torch
 
 from libtilt.projection.project_real import project_image_real, project_volume_real
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_real_space_projection_3d():
     volume_shape = (2, 10, 10)
     volume = torch.arange(2*10*10).reshape(volume_shape).float()
@@ -11,6 +13,7 @@ def test_real_space_projection_3d():
     assert torch.allclose(projection.squeeze(), torch.sum(volume, dim=0))
 
 
+@device_test
 def test_real_space_projection_2d():
     image_shape = (8, 12)
     image = torch.arange(8 * 12).reshape(image_shape).float()

@@ -5,8 +5,10 @@ from libtilt.interpolation.interpolate_dft_3d import sample_dft_3d, \
     insert_into_dft_3d
 from libtilt.grids import rotated_central_slice_grid
 from libtilt.fft_utils import fftfreq_to_dft_coordinates
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_fourier_slice_extraction_insertion_cycle_no_rotation():
     sidelength = 64
     volume = torch.zeros((sidelength, sidelength, sidelength), dtype=torch.complex64)
@@ -36,6 +38,7 @@ def test_fourier_slice_extraction_insertion_cycle_no_rotation():
     assert torch.allclose(input_slice, output_slice)
 
 
+@device_test
 def test_fourier_slice_extraction_insertion_cycle_with_rotation():
     sidelength = 64
 

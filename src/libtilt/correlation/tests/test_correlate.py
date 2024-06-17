@@ -1,10 +1,11 @@
 import torch
-import numpy as np
 
 from libtilt.correlation import correlate_2d, correlate_dft_2d
 from libtilt.fft_utils import fftshift_2d
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_correlate_2d():
     a = torch.zeros((10, 10))
     a[5, 5] = 1
@@ -20,6 +21,7 @@ def test_correlate_2d():
     assert torch.allclose(cross_correlation[peak_position], torch.tensor([1.]))
 
 
+@device_test
 def test_correlate_dft_2d():
     a = torch.zeros((10, 10))
     a[5, 5] = 1

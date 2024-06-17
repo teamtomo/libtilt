@@ -2,8 +2,10 @@ import einops
 import torch
 
 from libtilt.grids import coordinate_grid
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_coordinate_grid_simple():
     image_shape = (5, 3, 2)
     result = coordinate_grid(
@@ -15,6 +17,7 @@ def test_coordinate_grid_simple():
     assert torch.allclose(result[4, 2, 1], torch.tensor([4, 2, 1], dtype=torch.float))
 
 
+@device_test
 def test_coordinate_grid_centered():
     image_shape = (28, 28)
     result = coordinate_grid(
@@ -25,6 +28,7 @@ def test_coordinate_grid_centered():
     assert torch.allclose(result[0, 0], torch.tensor([-14, -14], dtype=torch.float))
 
 
+@device_test
 def test_coordinate_grid_centered_batched():
     image_shape = (28, 28)
     centers = [[0, 0], [14, 14]]
@@ -38,6 +42,7 @@ def test_coordinate_grid_centered_batched():
                           torch.as_tensor([-14, -14], dtype=torch.float))
 
 
+@device_test
 def test_coordinate_grid_centered_stacked():
     image_shape = (28, 28)
     centers = [[0, 0], [14, 14]]
@@ -51,6 +56,7 @@ def test_coordinate_grid_centered_stacked():
     assert torch.allclose(result[1, 0, 0, 0, 0], torch.as_tensor([-14, -14]).float())
 
 
+@device_test
 def test_coordinate_with_norm():
     image_shape = (5, 5)
     result = coordinate_grid(
