@@ -1,17 +1,18 @@
 import torch
-import numpy as np
 
 from libtilt.correlation import correlate_2d, correlate_dft_2d
 from libtilt.fft_utils import fftshift_2d
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_correlate_2d():
     a = torch.zeros((10, 10))
     a[5, 5] = 1
     b = torch.zeros((10, 10))
     b[6, 6] = 1
     cross_correlation = correlate_2d(a, b, normalize=True)
-    peak_position = np.unravel_index(
+    peak_position = torch.unravel_index(
         indices=torch.argmax(cross_correlation), shape=cross_correlation.shape
     )
     shift = torch.as_tensor(peak_position) - torch.tensor([5, 5])
@@ -20,6 +21,7 @@ def test_correlate_2d():
     assert torch.allclose(cross_correlation[peak_position], torch.tensor([1.]))
 
 
+@device_test
 def test_correlate_dft_2d():
     a = torch.zeros((10, 10))
     a[5, 5] = 1
