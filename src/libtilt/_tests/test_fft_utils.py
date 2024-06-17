@@ -18,6 +18,10 @@ from libtilt.grids.fftfreq_grid import _construct_fftfreq_grid_2d
 from libtilt.pytest_utils import device_test
 
 
+# seed the random number generator to ensure tests are consistent
+torch.manual_seed(0)
+
+
 @device_test
 def test_rfft_shape_from_signal_shape():
     # even
@@ -74,15 +78,14 @@ def test_rfft_to_symmetrised_dft_3d():
     fft = torch.fft.fftshift(torch.fft.fftn(image, dim=fft_dims), dim=fft_dims)
     rfft = torch.fft.rfftn(image, dim=(-3, -2, -1))
     symmetrised_dft = _rfft_to_symmetrised_dft_3d(rfft)
-    np.array(fft - symmetrised_dft[:-1, :-1, :-1])
     assert torch.allclose(fft, symmetrised_dft[:-1, :-1, :-1], atol=1e-5)
 
 
-@device_test
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
 )
+@device_test
 def test_symmetrised_dft_to_dft_2d(inplace: bool):
     image = torch.rand((10, 10))
     rfft = torch.fft.rfftn(image, dim=(-2, -1))
@@ -93,11 +96,11 @@ def test_symmetrised_dft_to_dft_2d(inplace: bool):
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
 
 
-@device_test
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
 )
+@device_test
 def test_symmetrised_dft_to_dft_2d_batched(inplace: bool):
     image = torch.rand((2, 10, 10))
     rfft = torch.fft.rfftn(image, dim=(-2, -1))
@@ -108,11 +111,11 @@ def test_symmetrised_dft_to_dft_2d_batched(inplace: bool):
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
 
 
-@device_test
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
 )
+@device_test
 def test_symmetrised_dft_to_rfft_2d(inplace: bool):
     image = torch.rand((10, 10))
     rfft = torch.fft.rfftn(image, dim=(-2, -1))
@@ -122,11 +125,11 @@ def test_symmetrised_dft_to_rfft_2d(inplace: bool):
     assert torch.allclose(desymmetrised_rfft, rfft, atol=1e-6)
 
 
-@device_test
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
 )
+@device_test
 def test_symmetrised_dft_to_dft_2d_batched(inplace: bool):
     image = torch.rand((2, 10, 10))
     rfft = torch.fft.rfftn(image, dim=(-2, -1))
@@ -137,11 +140,11 @@ def test_symmetrised_dft_to_dft_2d_batched(inplace: bool):
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-6)
 
 
-@device_test
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
 )
+@device_test
 def test_symmetrised_dft_to_dft_3d(inplace: bool):
     image = torch.rand((10, 10, 10))
     rfft = torch.fft.rfftn(image, dim=(-3, -2, -1))
@@ -154,11 +157,11 @@ def test_symmetrised_dft_to_dft_3d(inplace: bool):
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-5)
 
 
-@device_test
 @pytest.mark.parametrize(
     "inplace",
     [(True,), (False,)]
 )
+@device_test
 def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
     image = torch.rand((2, 10, 10, 10))
     rfft = torch.fft.rfftn(image, dim=(-3, -2, -1))
@@ -170,23 +173,25 @@ def test_symmetrised_dft_to_dft_3d_batched(inplace: bool):
     assert torch.allclose(desymmetrised_dft, fft, atol=1e-5)
 
 
-@device_test
 @pytest.mark.parametrize(
     "fftshifted, rfft, input, expected",
     [
-        (False, False, (5, 5, 5), torch.tensor([0., 0., 0.])),
-        (False, True, (5, 5, 5), torch.tensor([0., 0., 0.])),
-        (True, False, (5, 5, 5), torch.tensor([2., 2., 2.])),
-        (True, True, (5, 5, 5), torch.tensor([2., 2., 0.])),
-        (False, False, (4, 4, 4), torch.tensor([0., 0., 0.])),
-        (False, True, (4, 4, 4), torch.tensor([0., 0., 0.])),
-        (True, False, (4, 4, 4), torch.tensor([2., 2., 2.])),
-        (True, True, (4, 4, 4), torch.tensor([2., 2., 0.])),
+        (False, False, (5, 5, 5), [0., 0., 0.]),
+        (False, True, (5, 5, 5), [0., 0., 0.]),
+        (True, False, (5, 5, 5), [2., 2., 2.]),
+        (True, True, (5, 5, 5), [2., 2., 0.]),
+        (False, False, (4, 4, 4), [0., 0., 0.]),
+        (False, True, (4, 4, 4), [0., 0., 0.]),
+        (True, False, (4, 4, 4), [2., 2., 2.]),
+        (True, True, (4, 4, 4), [2., 2., 0.]),
     ],
 )
+@device_test
 def test_fft_center(fftshifted, rfft, input, expected):
     result = dft_center(input, fftshifted=fftshifted, rfft=rfft)
-    assert torch.allclose(result, expected.long())
+    assert torch.allclose(result, torch.tensor(
+        expected, device=result.device, dtype=result.dtype
+    ))
 
 
 @device_test
