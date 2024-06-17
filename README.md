@@ -30,3 +30,8 @@ Before making any pull request please make sure all the unittests pass:
 ```commandline
 python -m pytest
 ```
+
+The libtilt `device_test` decorator should be added to each test and tries to run
+the code on GPU. This can either be via CUDA or via the 'mps' backend for M1 chips.
+Please keep in mind that without a GPU available on your system, the code is not
+explicitly tested to run on GPU.
