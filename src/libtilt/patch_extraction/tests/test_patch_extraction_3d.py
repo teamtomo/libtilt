@@ -2,8 +2,10 @@ import torch
 
 from libtilt.patch_extraction.subpixel_cubic_patch_extraction import extract_cubes, \
     _extract_cubic_patches_from_single_3d_image
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_single_cubic_patch_from_single_image():
     """Test cubic patch extraction from single 3D image."""
     img = torch.zeros((28, 28, 28))
@@ -17,6 +19,7 @@ def test_single_cubic_patch_from_single_image():
     assert torch.allclose(patches, expected_image, atol=1e-6)
 
 
+@device_test
 def test_extract_cubic_patches():
     """Test extracting cubic patches from a 3D image."""
     img = torch.zeros((28, 28, 28))
