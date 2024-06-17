@@ -3,8 +3,10 @@ import torch
 import torch.nn.functional as F
 
 from libtilt.interpolation.interpolate_dft_3d import sample_dft_3d
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_extract_slices():
     volume = torch.zeros(4, 4, 4, dtype=torch.complex64)
 
