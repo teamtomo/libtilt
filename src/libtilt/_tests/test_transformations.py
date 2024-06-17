@@ -1,8 +1,10 @@
 import torch
 
 from libtilt.transformations import Rx, Ry, Rz, T
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_rotation_around_x():
     """Rotation of y around x should become z."""
     R = Rx(90)
@@ -16,6 +18,7 @@ def test_rotation_around_x():
     assert torch.allclose(R @ v, expected, atol=1e-6)
 
 
+@device_test
 def test_rotation_around_y():
     """Rotation of z around y should be x"""
     R = Ry(90)
@@ -29,6 +32,7 @@ def test_rotation_around_y():
     assert torch.allclose(R @ v, expected, atol=1e-6)
 
 
+@device_test
 def test_rotation_around_z():
     """Rotation of x around z should give y."""
     R = Rz(90)
@@ -42,6 +46,7 @@ def test_rotation_around_z():
     assert torch.allclose(R @ v, expected, atol=1e-6)
 
 
+@device_test
 def test_translation():
     """Translations"""
     M = T([1, 1, 1])

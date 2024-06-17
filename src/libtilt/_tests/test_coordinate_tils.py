@@ -9,8 +9,10 @@ from libtilt.coordinate_utils import (
     homogenise_coordinates,
 )
 from libtilt.grids.coordinate_grid import coordinate_grid
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_array_coordinates_to_grid_sample_coordinates_nd():
     array_shape = z, y, x = (4, 8, 12)
     array_coordinates = einops.rearrange(torch.tensor(np.indices(array_shape)),
@@ -27,6 +29,7 @@ def test_array_coordinates_to_grid_sample_coordinates_nd():
     assert torch.allclose(grid_sample_coordinates[:, 0, 0, 2], expected_z)
 
 
+@device_test
 def test_grid_sample_coordinates_to_array_coordinates_nd():
     array_shape = (4, 8, 12)
     expected_array_coordinates = einops.rearrange(
@@ -41,6 +44,7 @@ def test_grid_sample_coordinates_to_array_coordinates_nd():
     assert torch.allclose(array_coordinates, expected_array_coordinates)
 
 
+@device_test
 def test_add_implied_coordinate_from_dimension():
     batch_of_stacked_2d_coords = torch.zeros(size=(1, 5, 2))  # (b, stack, 2)
     result = add_positional_coordinate(batch_of_stacked_2d_coords, dim=1)
@@ -49,6 +53,7 @@ def test_add_implied_coordinate_from_dimension():
     assert torch.allclose(result, expected)
 
 
+@device_test
 def test_add_implied_coordinate_from_dimension_prepend():
     batch_of_stacked_2d_coords = torch.zeros(size=(1, 5, 2))  # (b, stack, 2)
     result = add_positional_coordinate(batch_of_stacked_2d_coords, dim=1,
@@ -58,6 +63,7 @@ def test_add_implied_coordinate_from_dimension_prepend():
     assert torch.allclose(result, expected)
 
 
+@device_test
 def test_get_grid_coordinates():
     coords = coordinate_grid(image_shape=(3, 2))
     assert coords.shape == (3, 2, 2)
@@ -74,6 +80,7 @@ def test_get_grid_coordinates():
     assert torch.allclose(coords, expected)
 
 
+@device_test
 def test_homogenise_coordinates():
     coords = torch.rand(size=(2, 3))
     homogenised = homogenise_coordinates(coords)
