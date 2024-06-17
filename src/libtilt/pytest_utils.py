@@ -2,9 +2,9 @@ import torch
 
 
 def device_test(test_func):
-    def wrapper():
+    def decorator():
         with torch.device('cpu'):
             test_func()
-        with torch.device('meta'):
+        with torch.device('cuda'):
             test_func()
-    return wrapper
+    return decorator
