@@ -1,8 +1,10 @@
 import torch
 
 from libtilt.grids import fftfreq_grid, central_slice_grid
+from libtilt.pytest_utils import device_test
 
 
+@device_test
 def test_fftfreq_grid_2d():
     input_shape = (6, 6)
     grid = fftfreq_grid(
