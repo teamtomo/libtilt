@@ -47,7 +47,7 @@ def find_image_shift(
         normalize=True
     )
     maximum_idx = torch.tensor(  # explicitly put tensor on CPU in case input is on GPU
-        np.unravel_index(correlation.argmax().cpu(), shape=image_a.shape),
+        torch.unravel_index(correlation.argmax().cpu(), shape=image_a.shape),
         device=image_a.device
     )
     shift = maximum_idx - center
@@ -76,7 +76,7 @@ def find_image_shift(
             upsampled.shape, rfft=False, fftshifted=True, device=image_a.device
         )
         upsampled_shift = torch.tensor(
-            np.unravel_index(upsampled.argmax().cpu(), shape=upsampled.shape),
+            torch.unravel_index(upsampled.argmax().cpu(), shape=upsampled.shape),
             device=image_a.device
         ) - upsampled_center
         full_shift = shift + upsampled_shift / upsampling_factor
