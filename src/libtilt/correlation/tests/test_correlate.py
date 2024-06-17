@@ -11,7 +11,7 @@ def test_correlate_2d():
     b = torch.zeros((10, 10))
     b[6, 6] = 1
     cross_correlation = correlate_2d(a, b, normalize=True)
-    peak_position = np.unravel_index(
+    peak_position = torch.unravel_index(
         indices=torch.argmax(cross_correlation), shape=cross_correlation.shape
     )
     shift = torch.as_tensor(peak_position) - torch.tensor([5, 5])

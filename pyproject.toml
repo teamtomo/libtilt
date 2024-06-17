@@ -26,6 +26,7 @@ dynamic = ["version"]
 dependencies = [
     "torch",
     "numpy",
+    "scipy",
     "einops",
     "torch-cubic-spline-grids",
 ]
