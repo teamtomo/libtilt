@@ -7,7 +7,7 @@ from libtilt.backprojection import backproject_fourier
 from libtilt.fft_utils import dft_center
 from libtilt.patch_extraction import extract_squares
 from libtilt.projection import project_fourier
-from libtilt.rescaling.rescale_fourier import rescale_2d
+from libtilt.rescaling.rescale_fourier_2d import rescale_2d
 from libtilt.shapes import circle
 from libtilt.shift.shift_image import shift_2d
 from libtilt.transformations import Ry, Rz
