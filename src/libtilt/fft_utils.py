@@ -1,6 +1,6 @@
 import functools
-from typing import Sequence, Tuple
 from itertools import combinations, permutations
+from typing import Sequence, Tuple
 
 import einops
 import numpy as np
@@ -27,7 +27,7 @@ def dft_center(
     if rfft is True:
         image_shape = torch.tensor(rfft_shape(image_shape))
     if fftshifted is True:
-        fft_center = torch.divide(image_shape, 2, rounding_mode='floor')
+        fft_center = torch.divide(image_shape, 2, rounding_mode="floor")
     if rfft is True:
         fft_center[-1] = 0
     return fft_center.long()
@@ -53,7 +53,7 @@ def fftshift_3d(input: torch.Tensor, rfft: bool):
     if rfft is False:
         output = torch.fft.fftshift(input, dim=(-3, -2, -1))
     else:
-        output = torch.fft.fftshift(input, dim=(-3, -2,))
+        output = torch.fft.fftshift(input, dim=(-3, -2))
     return output
 
 
@@ -61,7 +61,7 @@ def ifftshift_3d(input: torch.Tensor, rfft: bool):
     if rfft is False:
         output = torch.fft.ifftshift(input, dim=(-3, -2, -1))
     else:
-        output = torch.fft.ifftshift(input, dim=(-3, -2,))
+        output = torch.fft.ifftshift(input, dim=(-3, -2))
     return output
 
 
@@ -74,17 +74,16 @@ def fft_sizes(lower_bound: int = 0) -> torch.LongTensor:
     # numbers factorisable into the smallest primes 2, 3, and 5
     powers = [
         torch.tensor(list(set(permutations(combination))))
-        for combination
-        in combinations(range(6), 3)
+        for combination in combinations(range(6), 3)
     ]
-    i, j, k = einops.rearrange(powers, 'b1 b2 powers -> powers (b1 b2)')
+    i, j, k = einops.rearrange(powers, "b1 b2 powers -> powers (b1 b2)")
     prime_factors = [
         torch.pow(2, exponent=i),
         torch.pow(3, exponent=j),
         torch.pow(5, exponent=k),
     ]
-    prime_factors = einops.rearrange(prime_factors, 'f b -> b f')
-    fft_sizes = einops.reduce(prime_factors, 'b f -> b', reduction='prod')
+    prime_factors = einops.rearrange(prime_factors, "f b -> b f")
+    fft_sizes = einops.reduce(prime_factors, "b f -> b", reduction="prod")
     fft_sizes = torch.cat([powers_of_two, fft_sizes])
     fft_sizes, _ = torch.sort(fft_sizes)
     return fft_sizes[fft_sizes >= lower_bound]
@@ -131,7 +130,8 @@ def _rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     1D example:
     - rfftfreq: `[0.0000, 0.1667, 0.3333, 0.5000]`
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
-    - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
+    - symmetrised fftfreq:
+    `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
 
     Parameters
     ----------
@@ -157,7 +157,9 @@ def _rfft_to_symmetrised_dft_2d(rfft: torch.Tensor) -> torch.Tensor:
     output[..., :-1, dc:] = rfft  # place rfft in output
     output[..., -1, dc:] = rfft[..., 0, :]  # replicate components at Nyquist
     # fill redundant half
-    output[..., :, :dc] = torch.flip(torch.conj(output[..., :, dc + 1:]), dims=(-2, -1))
+    output[..., :, :dc] = torch.flip(
+        torch.conj(output[..., :, dc + 1 :]), dims=(-2, -1)
+    )
     return output
 
 
@@ -174,7 +176,8 @@ def _rfft_to_symmetrised_dft_3d(dft: torch.Tensor) -> torch.Tensor:
     1D example:
     - rfftfreq: `[0.0000, 0.1667, 0.3333, 0.5000]`
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
-    - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
+    - symmetrised fftfreq:
+    `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
     """
     r = dft.shape[-3]  # input dim length
     if dft.ndim == 3:
@@ -193,12 +196,14 @@ def _rfft_to_symmetrised_dft_3d(dft: torch.Tensor) -> torch.Tensor:
     output[..., -1, -1, dc:] = dft[..., 0, 0, :]
     # fill redundant half-spectrum
     output[..., :, :, :dc] = torch.flip(
-        torch.conj(output[..., :, :, dc + 1:]), dims=(-3, -2, -1)
+        torch.conj(output[..., :, :, dc + 1 :]), dims=(-3, -2, -1)
     )
     return output
 
 
-def _symmetrised_dft_to_dft_2d(dft: torch.Tensor, inplace: bool = True):
+def _symmetrised_dft_to_dft_2d(
+    dft: torch.Tensor, inplace2: bool = True
+) -> torch.Tensor:
     """Desymmetrise a symmetrised 2D discrete Fourier transform.
 
     Turn a symmetrised DFT into a normal DFT by averaging duplicated
@@ -206,34 +211,36 @@ def _symmetrised_dft_to_dft_2d(dft: torch.Tensor, inplace: bool = True):
 
     1D example:
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
-    - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
+    - symmetrised fftfreq:
+    `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
     - desymmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
 
     Parameters
     ----------
     dft: torch.Tensor
-        `(b, h, w)` or `(h, w)` array containing symmetrised discrete Fourier transform(s)
-    inplace: bool
+        `(b, h, w)` or `(h, w)`
+        array containing symmetrised discrete Fourier transform(s)
+    inplace2: bool
         Controls whether the operation is applied in place on the existing array.
 
     Returns
     -------
-
+    dft: torch.Tensor
     """
-    if inplace is False:
+    if inplace2 is False:
         dft = dft.clone()
     dft[..., :, 0] = (0.5 * dft[..., :, 0]) + (0.5 * dft[..., :, -1])
     dft[..., 0, :] = (0.5 * dft[..., 0, :]) + (0.5 * dft[..., -1, :])
     return dft[..., :-1, :-1]
 
 
-def symmetrised_dft_to_rfft_2d(dft: torch.Tensor, inplace: bool = True):
+def symmetrised_dft_to_rfft_2d(dft: torch.Tensor, inplace2: bool = True):
     if dft.ndim == 2:
-        dft = einops.rearrange(dft, 'h w -> 1 h w')
+        dft = einops.rearrange(dft, "h w -> 1 h w")
     _, h, w = dft.shape
     dc = h // 2
     r = dc + 1  # start of right half-spectrum
-    rfft = dft if inplace is True else torch.clone(dft)
+    rfft = dft if inplace2 is True else torch.clone(dft)
     # average hermitian symmetric halves
     rfft[..., :, r:] *= 0.5
     rfft[..., :, r:] += 0.5 * torch.flip(torch.conj(rfft[..., :, :dc]), dims=(-2, -1))
@@ -244,7 +251,9 @@ def symmetrised_dft_to_rfft_2d(dft: torch.Tensor, inplace: bool = True):
     return torch.fft.ifftshift(rfft, dim=-2)
 
 
-def _symmetrised_dft_to_dft_3d(dft: torch.Tensor, inplace: bool = True):
+def _symmetrised_dft_to_dft_3d(
+    dft: torch.Tensor, inplace2: bool = True
+) -> torch.Tensor:
     """Desymmetrise a symmetrised 3D discrete Fourier transform.
 
     Turn a symmetrised DFT into a normal DFT by averaging duplicated
@@ -252,21 +261,23 @@ def _symmetrised_dft_to_dft_3d(dft: torch.Tensor, inplace: bool = True):
 
     1D example:
     - fftshifted fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
-    - symmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
+    - symmetrised fftfreq:
+    `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333,  0.5000]`
     - desymmetrised fftfreq: `[-0.5000, -0.3333, -0.1667,  0.0000,  0.1667,  0.3333]`
 
     Parameters
     ----------
     dft: torch.Tensor
-        `(b, h, w)` or `(h, w)` array containing symmetrised discrete Fourier transform(s)
-    inplace: bool
+        `(b, h, w)` or `(h, w)`
+        array containing symmetrised discrete Fourier transform(s)
+    inplace2: bool
         Controls whether the operation is applied in place on the existing array.
 
     Returns
     -------
-
+    dft: torch.Tensor
     """
-    if inplace is False:
+    if inplace2 is False:
         dft = dft.clone()
     dft[..., :, :, 0] = (0.5 * dft[..., :, :, 0]) + (0.5 * dft[..., :, :, -1])
     dft[..., :, 0, :] = (0.5 * dft[..., :, 0, :]) + (0.5 * dft[..., :, -1, :])
@@ -316,20 +327,18 @@ def dft_to_rfft_3d(
     return dft
 
 
-def _indices_centered_on_dc_for_shifted_rfft(
-    rfft_shape: Sequence[int]
-) -> torch.Tensor:
+def _indices_centered_on_dc_for_shifted_rfft(rfft_shape: Sequence[int]) -> torch.Tensor:
     rfft_shape = torch.tensor(rfft_shape)
-    rfftn_dc_idx = torch.div(rfft_shape, 2, rounding_mode='floor')
+    rfftn_dc_idx = torch.div(rfft_shape, 2, rounding_mode="floor")
     rfftn_dc_idx[-1] = 0
     rfft_indices = torch.tensor(np.indices(rfft_shape))  # (c, (d), h, w)
-    rfft_indices = einops.rearrange(rfft_indices, 'c ... -> ... c')
+    rfft_indices = einops.rearrange(rfft_indices, "c ... -> ... c")
     return rfft_indices - rfftn_dc_idx
 
 
 def _distance_from_dc_for_shifted_rfft(rfft_shape: Sequence[int]) -> torch.Tensor:
     centered_indices = _indices_centered_on_dc_for_shifted_rfft(rfft_shape)
-    return einops.reduce(centered_indices ** 2, '... c -> ...', reduction='sum') ** 0.5
+    return einops.reduce(centered_indices**2, "... c -> ...", reduction="sum") ** 0.5
 
 
 def _indices_centered_on_dc_for_shifted_dft(
@@ -338,7 +347,7 @@ def _indices_centered_on_dc_for_shifted_dft(
     if rfft is True:
         return _indices_centered_on_dc_for_shifted_rfft(dft_shape)
     dft_indices = torch.tensor(np.indices(dft_shape)).float()
-    dft_indices = einops.rearrange(dft_indices, 'c ... -> ... c')
+    dft_indices = einops.rearrange(dft_indices, "c ... -> ... c")
     dc_idx = dft_center(dft_shape, fftshifted=True, rfft=False)
     return dft_indices - dc_idx
 
@@ -347,26 +356,26 @@ def _distance_from_dc_for_shifted_dft(
     dft_shape: Sequence[int], rfft: bool
 ) -> torch.Tensor:
     idx = _indices_centered_on_dc_for_shifted_dft(dft_shape, rfft=rfft)
-    return einops.reduce(idx ** 2, '... c -> ...', reduction='sum') ** 0.5
+    return einops.reduce(idx**2, "... c -> ...", reduction="sum") ** 0.5
 
 
 def indices_centered_on_dc_for_dft(
     dft_shape: Sequence[int], rfft: bool, fftshifted: bool
 ) -> torch.Tensor:
     dft_indices = _indices_centered_on_dc_for_shifted_dft(dft_shape, rfft=rfft)
-    dft_indices = einops.rearrange(dft_indices, '... c -> c ...')
+    dft_indices = einops.rearrange(dft_indices, "... c -> c ...")
     if fftshifted is False:
         dims_to_shift = tuple(torch.arange(start=-1 * len(dft_shape), end=0, step=1))
         dims_to_shift = dims_to_shift[:-1] if rfft is True else dims_to_shift
         dft_indices = torch.fft.ifftshift(dft_indices, dim=dims_to_shift)
-    return einops.rearrange(dft_indices, 'c ... -> ... c')
+    return einops.rearrange(dft_indices, "c ... -> ... c")
 
 
 def distance_from_dc_for_dft(
     dft_shape: Sequence[int], rfft: bool, fftshifted: bool
 ) -> torch.Tensor:
     idx = indices_centered_on_dc_for_dft(dft_shape, rfft=rfft, fftshifted=fftshifted)
-    return einops.reduce(idx ** 2, '... c -> ...', reduction='sum') ** 0.5
+    return einops.reduce(idx**2, "... c -> ...", reduction="sum") ** 0.5
 
 
 def _target_fftfreq_from_spacing(
@@ -374,9 +383,7 @@ def _target_fftfreq_from_spacing(
     target_spacing: Sequence[float],
 ) -> Sequence[float]:
     target_fftfreq = [
-        (_src / _target) * 0.5
-        for _src, _target
-        in zip(source_spacing, target_spacing)
+        (_src / _target) * 0.5 for _src, _target in zip(source_spacing, target_spacing)
     ]
     return target_fftfreq
 
@@ -390,38 +397,32 @@ def _best_fft_shape(
         best_fft_size(
             lower_bound=dim_length,
             target_fftfreq=_target_fftfreq,
-            maximum_relative_error=maximum_relative_error
+            maximum_relative_error=maximum_relative_error,
         )
-        for dim_length, _target_fftfreq
-        in zip(image_shape, target_fftfreq)
+        for dim_length, _target_fftfreq in zip(image_shape, target_fftfreq)
     ]
     return best_fft_shape
 
 
-def _pad_to_best_fft_shape_2d(
-    image: torch.Tensor,
-    target_fftfreq: tuple[float, float]
-):
+def _pad_to_best_fft_shape_2d(image: torch.Tensor, target_fftfreq: tuple[float, float]):
     fft_size_h, fft_size_w = _best_fft_shape(
         image_shape=image.shape[-2:], target_fftfreq=target_fftfreq
     )
     # padding is not supported for arrays with large ndim, pack
-    image, ps = einops.pack([image], pattern='* h w')
+    image, ps = einops.pack([image], pattern="* h w")
 
     # pad to best fft size
     h, w = image.shape[-2:]
     ph, pw = fft_size_h - h, fft_size_w - w
     too_much_padding = ph > h or pw > w
     if too_much_padding:
-        image_means = einops.reduce(
-            image, '... h w -> ... 1 1', reduction='mean'
-        )
+        image_means = einops.reduce(image, "... h w -> ... 1 1", reduction="mean")
         image -= image_means
-        image = F.pad(image, pad=(0, pw, 0, ph), mode='constant', value=0)
+        image = F.pad(image, pad=(0, pw, 0, ph), mode="constant", value=0)
         image += image_means
     else:
-        image = F.pad(image, pad=(0, pw, 0, ph), mode='reflect')
-    [image] = einops.unpack(image, pattern='* h w', packed_shapes=ps)
+        image = F.pad(image, pad=(0, pw, 0, ph), mode="reflect")
+    [image] = einops.unpack(image, pattern="* h w", packed_shapes=ps)
     return image
 
 
@@ -459,3 +460,81 @@ def fftfreq_to_dft_coordinates(
         coordinates[..., -1] = frequencies[..., -1] * image_shape[-1]
     dc = dft_center(image_shape, rfft=rfft, fftshifted=True, device=frequencies.device)
     return coordinates + dc
+
+
+def phase_randomize_2d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
+    """Phase randomize a 2D Fourier transform while preserving magnitude spectrum.
+
+    Parameters
+    ----------
+    dft: torch.Tensor
+        Complex tensor containing 2D Fourier transform(s). Can be batched with shape
+        (batch, h, w) or unbatched (h, w).
+    rfft: bool
+        Whether the input is from an rfft (True) or full fft (False)
+
+    Returns
+    -------
+    torch.Tensor
+        Phase randomized version of input with same shape and dtype
+    """
+    # Get magnitude spectrum
+    magnitudes = torch.abs(dft)
+
+    # Generate random phases between -π and π
+    shape = dft.shape
+    random_phases = torch.rand(shape, device=dft.device) * (2 * torch.pi) - torch.pi
+
+    # Convert to complex numbers (e^(iθ))
+    phase_factors = torch.complex(torch.cos(random_phases), torch.sin(random_phases))
+
+    # Combine with original magnitudes
+    randomized = magnitudes * phase_factors
+
+    if rfft:
+        # Enforce conjugate symmetry for rfft
+        if dft.ndim == 2:
+            randomized[0, :] = torch.real(randomized[0, :])
+        else:
+            randomized[:, 0, :] = torch.real(randomized[:, 0, :])
+
+    return randomized
+
+
+def phase_randomize_3d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
+    """Phase randomize a 3D Fourier transform while preserving magnitude spectrum.
+
+    Parameters
+    ----------
+    dft: torch.Tensor
+        Complex tensor containing 3D Fourier transform(s). Can be batched with shape
+        (batch, d, h, w) or unbatched (d, h, w).
+    rfft: bool
+        Whether the input is from an rfft (True) or full fft (False)
+
+    Returns
+    -------
+    torch.Tensor
+        Phase randomized version of input with same shape and dtype
+    """
+    # Get magnitude spectrum
+    magnitudes = torch.abs(dft)
+
+    # Generate random phases between -π and π
+    shape = dft.shape
+    random_phases = torch.rand(shape, device=dft.device) * (2 * torch.pi) - torch.pi
+
+    # Convert to complex numbers (e^(iθ))
+    phase_factors = torch.complex(torch.cos(random_phases), torch.sin(random_phases))
+
+    # Combine with original magnitudes
+    randomized = magnitudes * phase_factors
+
+    if rfft:
+        # Enforce conjugate symmetry for rfft
+        if dft.ndim == 3:
+            randomized[0, 0, :] = torch.real(randomized[0, 0, :])
+        else:
+            randomized[:, 0, 0, :] = torch.real(randomized[:, 0, 0, :])
+
+    return randomized
