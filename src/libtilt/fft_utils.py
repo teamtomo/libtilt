@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
+from libtilt.grids import fftfreq_grid
+
 
 def rfft_shape(input_shape: Sequence[int]) -> Tuple[int]:
     """Get the output shape of an rfft on an input with input_shape."""
@@ -462,7 +464,13 @@ def fftfreq_to_dft_coordinates(
     return coordinates + dc
 
 
-def phase_randomize_2d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
+def phase_randomize_2d(
+    dft: torch.Tensor,
+    rfft: bool = False,
+    cuton: float = 0,
+    fftshift: bool = False,
+    device: torch.device = None,
+) -> torch.Tensor:
     """Phase randomize a 2D Fourier transform while preserving magnitude spectrum.
 
     Parameters
@@ -472,7 +480,12 @@ def phase_randomize_2d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
         (batch, h, w) or unbatched (h, w).
     rfft: bool
         Whether the input is from an rfft (True) or full fft (False)
-
+    cuton: float
+        Fraction of Nyquist frequency to cut on
+    fftshift: bool
+        Whether the input is fftshifted
+    device: torch.device
+        Device to place tensors on
     Returns
     -------
     torch.Tensor
@@ -481,12 +494,34 @@ def phase_randomize_2d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
     # Get magnitude spectrum
     magnitudes = torch.abs(dft)
 
-    # Generate random phases between -π and π
-    shape = dft.shape
-    random_phases = torch.rand(shape, device=dft.device) * (2 * torch.pi) - torch.pi
+    # Create frequency grid
+    image_shape = dft.shape[-2:]
+    freq_grid = fftfreq_grid(
+        image_shape=image_shape,
+        rfft=rfft,
+        fftshift=fftshift,
+        norm=True,
+        device=device,
+    )
+
+    # Create mask for frequencies above cuton
+    freq_mask = freq_grid > cuton
+
+    # Generate random phases between -π and π only where freq > cuton
+    random_phases = torch.zeros_like(dft, dtype=torch.float32)
+    random_phases[..., freq_mask] = (
+        torch.rand(freq_mask.sum(), device=dft.device) * (2 * torch.pi) - torch.pi
+    )
 
     # Convert to complex numbers (e^(iθ))
     phase_factors = torch.complex(torch.cos(random_phases), torch.sin(random_phases))
+
+    # Keep original phases where freq <= cuton
+    original_phases = torch.angle(dft)
+    original_phase_factors = torch.complex(
+        torch.cos(original_phases), torch.sin(original_phases)
+    )
+    phase_factors[..., ~freq_mask] = original_phase_factors[..., ~freq_mask]
 
     # Combine with original magnitudes
     randomized = magnitudes * phase_factors
@@ -501,7 +536,13 @@ def phase_randomize_2d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
     return randomized
 
 
-def phase_randomize_3d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
+def phase_randomize_3d(
+    dft: torch.Tensor,
+    rfft: bool = False,
+    cuton: float = 0.0,
+    fftshift: bool = False,
+    device: torch.device = None,
+) -> torch.Tensor:
     """Phase randomize a 3D Fourier transform while preserving magnitude spectrum.
 
     Parameters
@@ -511,6 +552,12 @@ def phase_randomize_3d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
         (batch, d, h, w) or unbatched (d, h, w).
     rfft: bool
         Whether the input is from an rfft (True) or full fft (False)
+    cuton: float
+        Fraction of Nyquist frequency to cut on
+    fftshift: bool
+        Whether the input is fftshifted
+    device: torch.device
+        Device to place tensors on
 
     Returns
     -------
@@ -520,12 +567,34 @@ def phase_randomize_3d(dft: torch.Tensor, rfft: bool = False) -> torch.Tensor:
     # Get magnitude spectrum
     magnitudes = torch.abs(dft)
 
-    # Generate random phases between -π and π
-    shape = dft.shape
-    random_phases = torch.rand(shape, device=dft.device) * (2 * torch.pi) - torch.pi
+    # Create frequency grid
+    image_shape = dft.shape[-3:]
+    freq_grid = fftfreq_grid(
+        image_shape=image_shape,
+        rfft=rfft,
+        fftshift=fftshift,
+        norm=True,
+        device=device,
+    )
+
+    # Create mask for frequencies above cuton
+    freq_mask = freq_grid > cuton
+
+    # Generate random phases between -π and π only where freq > cuton
+    random_phases = torch.zeros_like(dft, dtype=torch.float32)
+    random_phases[..., freq_mask] = (
+        torch.rand(freq_mask.sum(), device=dft.device) * (2 * torch.pi) - torch.pi
+    )
 
     # Convert to complex numbers (e^(iθ))
     phase_factors = torch.complex(torch.cos(random_phases), torch.sin(random_phases))
+
+    # Keep original phases where freq <= cuton
+    original_phases = torch.angle(dft)
+    original_phase_factors = torch.complex(
+        torch.cos(original_phases), torch.sin(original_phases)
+    )
+    phase_factors[..., ~freq_mask] = original_phase_factors[..., ~freq_mask]
 
     # Combine with original magnitudes
     randomized = magnitudes * phase_factors
