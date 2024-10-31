@@ -466,6 +466,7 @@ def fftfreq_to_dft_coordinates(
 
 def phase_randomize_2d(
     dft: torch.Tensor,
+    image_shape: tuple[int, ...],
     rfft: bool = False,
     cuton: float = 0,
     fftshift: bool = False,
@@ -478,6 +479,8 @@ def phase_randomize_2d(
     dft: torch.Tensor
         Complex tensor containing 2D Fourier transform(s). Can be batched with shape
         (batch, h, w) or unbatched (h, w).
+    image_shape: tuple[int, ...]
+        Shape of the input image
     rfft: bool
         Whether the input is from an rfft (True) or full fft (False)
     cuton: float
@@ -495,7 +498,7 @@ def phase_randomize_2d(
     magnitudes = torch.abs(dft)
 
     # Create frequency grid
-    image_shape = dft.shape[-2:]
+    # image_shape = dft.shape[-2:]
     freq_grid = fftfreq_grid(
         image_shape=image_shape,
         rfft=rfft,
@@ -538,6 +541,7 @@ def phase_randomize_2d(
 
 def phase_randomize_3d(
     dft: torch.Tensor,
+    image_shape: tuple[int, ...],
     rfft: bool = False,
     cuton: float = 0.0,
     fftshift: bool = False,
@@ -550,6 +554,8 @@ def phase_randomize_3d(
     dft: torch.Tensor
         Complex tensor containing 3D Fourier transform(s). Can be batched with shape
         (batch, d, h, w) or unbatched (d, h, w).
+    image_shape: tuple[int, ...]
+        Shape of the input image
     rfft: bool
         Whether the input is from an rfft (True) or full fft (False)
     cuton: float
@@ -568,7 +574,7 @@ def phase_randomize_3d(
     magnitudes = torch.abs(dft)
 
     # Create frequency grid
-    image_shape = dft.shape[-3:]
+    # image_shape = dft.shape[-3:]
     freq_grid = fftfreq_grid(
         image_shape=image_shape,
         rfft=rfft,
