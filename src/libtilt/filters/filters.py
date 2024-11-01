@@ -120,7 +120,7 @@ def whitening_filter(
         fftshifted=fftshift,
         return_2d_average=return_2d_average,
     )
-    print(radial_average[0].shape)
+
     whiten_filter = 1 / (radial_average[0]) ** 0.5
     whiten_filter /= whiten_filter.max()
 

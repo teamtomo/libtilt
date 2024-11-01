@@ -466,7 +466,7 @@ def fftfreq_to_dft_coordinates(
 
 def phase_randomize_2d(
     dft: torch.Tensor,
-    image_shape: tuple[int, ...],
+    image_shape: tuple[int, int],
     rfft: bool = False,
     cuton: float = 0,
     fftshift: bool = False,
@@ -541,7 +541,7 @@ def phase_randomize_2d(
 
 def phase_randomize_3d(
     dft: torch.Tensor,
-    image_shape: tuple[int, ...],
+    image_shape: tuple[int, int, int],
     rfft: bool = False,
     cuton: float = 0.0,
     fftshift: bool = False,

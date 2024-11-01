@@ -13,10 +13,13 @@ def critical_exposure(fft_freq: torch.Tensor) -> torch.Tensor:
     return Ne
 
 
+def critical_exposure_Bfac(fft_freq: torch.Tensor, Bfac: float) -> torch.Tensor:
+    Ne = 2 / (Bfac * fft_freq**2)
+    return Ne
+
+
 def dose_weight_2d(
-    movie: torch.Tensor,
-    pixel_size: float = 1,
-    flux: float = 1,
+    movie: torch.Tensor, pixel_size: float = 1, flux: float = 1, Bfac: float = -1
 ) -> torch.Tensor:
 
     # FFT the movie frames
@@ -27,13 +30,17 @@ def dose_weight_2d(
         image_shape=movie[0].shape,
         rfft=True,
         fftshift=False,
-        spacing=pixel_size,
         norm=True,
     )
 
+    fft_freq_px = fft_freq / pixel_size
+
     # Get the critical exposure for each frequency
     Ne = torch.zeros_like(dft.real)
-    Ne[0] = critical_exposure(fft_freq=fft_freq)
+    if Bfac < 0:
+        Ne[0] = critical_exposure(fft_freq=fft_freq_px)
+    else:
+        Ne[0] = critical_exposure_Bfac(fft_freq=fft_freq_px, Bfac=Bfac)
     # Copy over each frame for ease of computation
     Ne[:] = Ne[0]
 
