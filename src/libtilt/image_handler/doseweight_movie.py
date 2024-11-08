@@ -112,8 +112,9 @@ def dose_weight_3d_volume(
     torch.Tensor
         The dose weighted volume.
     """
+    device = volume.device
     # FFT the volume
-    dft = torch.fft.rfftn(volume, dim=(-3, -2, -1))
+    dft = torch.fft.rfftn(volume.contiguous(), dim=(-3, -2, -1))
 
     # Get the frequency grid for 1 frame
     fft_freq_px = (
@@ -122,6 +123,7 @@ def dose_weight_3d_volume(
             rfft=True,
             fftshift=False,
             norm=True,
+            device=device,
         )
         / pixel_size
     )
@@ -135,7 +137,7 @@ def dose_weight_3d_volume(
 
     # Set up an exposure array with frame indices multiplied by flux
     frame_exposure = (
-        torch.arange(1, num_frames + 1, device=Ne.device).view(-1, 1, 1, 1) * flux
+        torch.arange(1, num_frames + 1, device=device).view(-1, 1, 1, 1) * flux
     )
 
     # Calculate the relative amplitudes
@@ -146,7 +148,6 @@ def dose_weight_3d_volume(
     fspace_sum = amp_dft.sum(dim=0) / torch.sqrt((amplitudes**2).sum(dim=0))
 
     # Convert back to real space
-    rspace_sum = torch.fft.irfftn(fspace_sum, dim=(-3, -2, -1)) * torch.sqrt(
-        torch.tensor(num_frames)
-    )
+    rspace_sum = torch.fft.irfftn(fspace_sum, dim=(-3, -2, -1)) * (num_frames**0.5)
+
     return rspace_sum
